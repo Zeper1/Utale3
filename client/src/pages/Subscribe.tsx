@@ -29,29 +29,32 @@ export default function Subscribe() {
     try {
       setIsProcessing(true);
 
-      // 1. Crear una intención de pago para la suscripción
-      const paymentResponse = await apiRequest("POST", "/api/create-subscription-payment", {
-        tierId: selectedTier.id,
-        userId,
-        returnUrl: `${window.location.origin}/subscription/success`
-      });
-
-      const paymentData = await paymentResponse.json();
-
-      // 2. Redirigir al usuario a la página de pago de Stripe
-      if (paymentData.url) {
-        window.location.href = paymentData.url;
-      } else {
-        // 3. Alternativa: Crear una suscripción directamente (para demostración/desarrollo)
-        const subscriptionResponse = await apiRequest("POST", "/api/subscriptions", {
+      // 1. Importar las funciones de Stripe
+      const { createSubscriptionCheckout, createSubscription } = await import('@/lib/stripe');
+      
+      try {
+        // 2. Intentar crear una sesión de checkout con Stripe
+        const checkoutSession = await createSubscriptionCheckout(
+          selectedTier.id, 
           userId,
-          tierId: selectedTier.id
-        });
-
-        if (subscriptionResponse.ok) {
+          `${window.location.origin}/subscription/success`
+        );
+        
+        // 3. Redirigir al usuario a la página de pago de Stripe
+        if (checkoutSession.url) {
+          window.location.href = checkoutSession.url;
+          return;
+        }
+      } catch (stripeError) {
+        console.warn("No se pudo crear la sesión de checkout con Stripe, usando modo demo:", stripeError);
+        
+        // 4. En caso de error con Stripe o en modo demo, crear una suscripción directamente
+        const subscription = await createSubscription(selectedTier.id, userId);
+        
+        if (subscription) {
           toast({
             title: "Suscripción creada",
-            description: "Tu suscripción ha sido creada con éxito."
+            description: "Tu suscripción ha sido creada con éxito (modo demostración)."
           });
           setLocation("/dashboard");
         } else {

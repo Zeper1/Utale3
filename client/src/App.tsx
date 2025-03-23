@@ -9,6 +9,9 @@ import CreateBook from "@/pages/CreateBook";
 import ProfileChat from "@/pages/ProfileChat";
 import BookPreview from "@/pages/BookPreview";
 import Checkout from "@/pages/Checkout";
+import Subscribe from "@/pages/Subscribe";
+import SubscriptionSuccess from "@/pages/SubscriptionSuccess";
+import SubscriptionCancel from "@/pages/SubscriptionCancel";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { AuthProvider } from "@/hooks/useAuth";
@@ -25,6 +28,9 @@ function Router() {
           <Route path="/profile-chat/:id" component={ProfileChat} />
           <Route path="/book-preview/:id" component={BookPreview} />
           <Route path="/checkout/:id" component={Checkout} />
+          <Route path="/subscribe" component={Subscribe} />
+          <Route path="/subscription/success" component={SubscriptionSuccess} />
+          <Route path="/subscription/cancel" component={SubscriptionCancel} />
           <Route component={NotFound} />
         </Switch>
       </main>

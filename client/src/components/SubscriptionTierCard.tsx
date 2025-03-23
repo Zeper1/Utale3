@@ -1,6 +1,8 @@
-import { Button } from "@/components/ui/button";
+import { Check, Star } from "lucide-react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 import type { SubscriptionTier } from "@shared/schema";
 
 interface SubscriptionTierCardProps {
@@ -12,53 +14,77 @@ interface SubscriptionTierCardProps {
 
 export function SubscriptionTierCard({ 
   tier, 
-  isRecommended = false, 
+  isRecommended = false,
   onSelect,
   isSelected = false
 }: SubscriptionTierCardProps) {
+  // Convertir el precio a un formato legible (de céntimos a euros)
   const formattedPrice = (tier.pricePerWeek / 100).toLocaleString('es-ES', {
     style: 'currency',
     currency: 'EUR'
   });
 
   return (
-    <Card className={`w-full ${isRecommended ? 'border-primary' : ''} ${isSelected ? 'ring-2 ring-primary' : ''}`}>
-      <CardHeader>
-        <div className="flex justify-between items-start">
-          <CardTitle className="text-xl">{tier.name}</CardTitle>
-          {isRecommended && (
-            <Badge variant="default" className="bg-primary text-white">
-              Recomendado
-            </Badge>
-          )}
-          {tier.discount > 0 && (
-            <Badge variant="outline" className="bg-green-100 text-green-800 border-green-300">
-              Ahorra {tier.discount}%
-            </Badge>
-          )}
-        </div>
-        <CardDescription>
-          {tier.books} libro{tier.books !== 1 ? 's' : ''} por semana
-          <br />
-          {tier.pages} página{tier.pages !== 1 ? 's' : ''} por libro
-        </CardDescription>
+    <Card className={cn(
+      "flex flex-col transition-all duration-200", 
+      isRecommended && "scale-105 shadow-lg border-primary",
+      isSelected && "ring-2 ring-primary ring-offset-2"
+    )}>
+      <CardHeader className={cn(
+        "pb-3", 
+        isRecommended && "bg-primary/10 rounded-t-lg"
+      )}>
+        {isRecommended && (
+          <Badge className="self-start mb-2 bg-primary text-white">
+            <Star className="h-3 w-3 mr-1 fill-current" /> Recomendado
+          </Badge>
+        )}
+        
+        <CardTitle>{tier.name}</CardTitle>
+        <CardDescription>{tier.description}</CardDescription>
       </CardHeader>
-      <CardContent>
-        <div className="flex items-end">
-          <span className="text-3xl font-bold">{formattedPrice}</span>
-          <span className="text-sm text-muted-foreground ml-1">/semana</span>
+      
+      <CardContent className="flex-grow pb-4">
+        <div className="text-3xl font-bold mb-4">
+          {formattedPrice}<span className="text-sm font-normal text-muted-foreground">/semana</span>
         </div>
-        <p className="mt-4 text-sm text-muted-foreground">
-          {tier.description}
-        </p>
+        
+        <ul className="space-y-2 text-sm">
+          <li className="flex items-start">
+            <Check className="h-5 w-5 mr-2 text-green-500 shrink-0" />
+            <span>{tier.books} {tier.books === 1 ? "libro" : "libros"} por semana</span>
+          </li>
+          <li className="flex items-start">
+            <Check className="h-5 w-5 mr-2 text-green-500 shrink-0" />
+            <span>{tier.pages} páginas por libro</span>
+          </li>
+          <li className="flex items-start">
+            <Check className="h-5 w-5 mr-2 text-green-500 shrink-0" />
+            <span>PDF de alta calidad</span>
+          </li>
+          <li className="flex items-start">
+            <Check className="h-5 w-5 mr-2 text-green-500 shrink-0" />
+            <span>Biblioteca digital</span>
+          </li>
+          {tier.discount > 0 && (
+            <li className="flex items-start">
+              <Check className="h-5 w-5 mr-2 text-green-500 shrink-0" />
+              <span className="text-green-600 font-medium">{tier.discount}% de descuento</span>
+            </li>
+          )}
+        </ul>
       </CardContent>
-      <CardFooter>
+      
+      <CardFooter className="pt-2">
         <Button 
           onClick={() => onSelect(tier.id)} 
-          className="w-full" 
-          variant={isSelected ? "default" : isRecommended ? "default" : "outline"}
+          variant={isSelected ? "default" : (isRecommended ? "default" : "outline")}
+          className={cn(
+            "w-full",
+            isRecommended && !isSelected && "bg-primary text-primary-foreground hover:bg-primary/90"
+          )}
         >
-          {isSelected ? "Plan seleccionado" : "Elegir este plan"}
+          {isSelected ? "Seleccionado" : "Seleccionar"}
         </Button>
       </CardFooter>
     </Card>
