@@ -553,6 +553,245 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // --- Advanced Book Generation Routes ---
+  
+  // Generate book content with AI
+  app.post("/api/books/generate-content", async (req: Request, res: Response) => {
+    try {
+      const { childProfileId, themeId } = req.body;
+      
+      if (!childProfileId || !themeId) {
+        return res.status(400).json({ message: "Child profile ID and theme ID are required" });
+      }
+      
+      const profile = await storage.getChildProfile(parseInt(childProfileId.toString()));
+      const theme = await storage.getBookTheme(parseInt(themeId.toString()));
+      
+      if (!profile) {
+        return res.status(404).json({ message: "Child profile not found" });
+      }
+      
+      if (!theme) {
+        return res.status(404).json({ message: "Book theme not found" });
+      }
+
+      // Get chat history for additional context
+      const chatHistory = await storage.getChatMessages(childProfileId);
+      
+      // Generate book content with OpenAI
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024
+        messages: [
+          {
+            role: "system",
+            content: `Create a personalized children's storybook with the theme: "${theme.name}". 
+                     The story should be appropriate for a child aged ${profile.age || '5-8'}.
+                     The story should incorporate the child's interests, favorite things, and personality traits.
+                     
+                     Create a JSON object with the following structure:
+                     {
+                       "title": "Story title including the child's name",
+                       "pages": [
+                         {
+                          "pageNumber": 1,
+                          "text": "Page text with the story narrative (2-3 sentences)",
+                          "imagePrompt": "Detailed description for illustrating this page in children's book style"
+                         },
+                         ...
+                       ],
+                       "summary": "Brief summary of the story",
+                       "targetAge": "Age range the story is appropriate for",
+                       "theme": "${theme.name}",
+                       "mainCharacter": "${profile.name}"
+                     }
+                     
+                     The book should have 8-12 pages total including a cover page.
+                     Each page should have engaging, age-appropriate text that moves the story forward.
+                     Image prompts should be detailed enough to create consistent, child-friendly illustrations.`
+          },
+          {
+            role: "user",
+            content: `Create a story for ${profile.name}, age ${profile.age || 'unknown'}.
+                     
+                     Child's interests: ${profile.interests ? profile.interests.join(', ') : 'various activities'}
+                     Favorite things: ${profile.favorites ? JSON.stringify(profile.favorites) : 'unknown'}
+                     Friends: ${profile.friends ? profile.friends.join(', ') : 'friends and family'}
+                     Personality traits: ${profile.traits ? profile.traits.join(', ') : 'friendly, curious'}
+                     
+                     Theme of the book: ${theme.name}
+                     Theme description: ${theme.description}
+                     
+                     Make the story personalized and engaging, incorporating elements from their profile.`
+          }
+        ],
+        response_format: { type: "json_object" }
+      });
+      
+      const bookContent = JSON.parse(completion.choices[0].message.content || "{}");
+      
+      res.status(200).json(bookContent);
+    } catch (error) {
+      console.error("Error generating book content:", error);
+      res.status(500).json({ message: "Failed to generate book content" });
+    }
+  });
+
+  // Generate images for book
+  app.post("/api/books/generate-images", async (req: Request, res: Response) => {
+    try {
+      const { bookContent } = req.body;
+      
+      if (!bookContent || !bookContent.pages) {
+        return res.status(400).json({ message: "Book content with pages is required" });
+      }
+      
+      // Create a directory for storing the generated images if it doesn't exist
+      const imageDir = path.join(process.cwd(), 'public', 'book-images');
+      if (!fs.existsSync(imageDir)) {
+        fs.mkdirSync(imageDir, { recursive: true });
+      }
+      
+      // Process each page and generate an image
+      const processedContent = { ...bookContent };
+      
+      // Generate images for each page (sequentially to avoid rate limiting)
+      for (let i = 0; i < processedContent.pages.length; i++) {
+        const page = processedContent.pages[i];
+        try {
+          const imageResponse = await openai.images.generate({
+            model: "dall-e-3",
+            prompt: `Create a children's book illustration for a story about ${processedContent.mainCharacter}: ${page.imagePrompt}. Make it colorful, child-friendly, and engaging. Style should be appropriate for a ${processedContent.targetAge} year old child.`,
+            n: 1,
+            size: "1024x1024",
+            quality: "standard",
+          });
+          
+          const imageUrl = imageResponse.data[0].url;
+          
+          // Save the image URL to the page
+          processedContent.pages[i].imageUrl = imageUrl;
+        } catch (imgError) {
+          console.error(`Error generating image for page ${i+1}:`, imgError);
+          // Continue with other pages even if one fails
+        }
+      }
+      
+      res.status(200).json(processedContent);
+    } catch (error) {
+      console.error("Error generating book images:", error);
+      res.status(500).json({ message: "Failed to generate book images" });
+    }
+  });
+
+  // Create PDF version of the book
+  app.post("/api/books/create-pdf", async (req: Request, res: Response) => {
+    try {
+      const { bookId } = req.body;
+      
+      if (!bookId) {
+        return res.status(400).json({ message: "Book ID is required" });
+      }
+      
+      const book = await storage.getBook(parseInt(bookId.toString()));
+      
+      if (!book) {
+        return res.status(404).json({ message: "Book not found" });
+      }
+      
+      // In a real implementation, you would use a PDF generation library
+      // For now, we'll just simulate PDF creation
+      const pdfUrl = `/api/books/${bookId}/download`;
+      
+      // Update book with PDF URL
+      await storage.updateBook(book.id, { 
+        orderReference: pdfUrl,
+        status: 'completed'
+      });
+      
+      res.status(200).json({ url: pdfUrl });
+    } catch (error) {
+      console.error("Error creating PDF:", error);
+      res.status(500).json({ message: "Failed to create PDF" });
+    }
+  });
+
+  // Download book as PDF
+  app.get("/api/books/:id/download", async (req: Request, res: Response) => {
+    try {
+      const bookId = parseInt(req.params.id);
+      const book = await storage.getBook(bookId);
+      
+      if (!book) {
+        return res.status(404).json({ message: "Book not found" });
+      }
+      
+      // In a real implementation, you would generate a PDF file
+      // For now, we'll just send a mock response
+      res.setHeader('Content-Type', 'application/json');
+      res.status(200).json({ 
+        message: "This endpoint would serve the PDF file for download", 
+        bookTitle: book.title 
+      });
+    } catch (error) {
+      console.error("Error downloading book:", error);
+      res.status(500).json({ message: "Failed to download book" });
+    }
+  });
+  
+  // Update book status
+  app.patch("/api/books/:id/status", async (req: Request, res: Response) => {
+    try {
+      const bookId = parseInt(req.params.id);
+      const { status } = req.body;
+      
+      if (!status) {
+        return res.status(400).json({ message: "Status is required" });
+      }
+      
+      const updatedBook = await storage.updateBook(bookId, { status });
+      
+      if (!updatedBook) {
+        return res.status(404).json({ message: "Book not found" });
+      }
+      
+      res.status(200).json(updatedBook);
+    } catch (error) {
+      console.error("Error updating book status:", error);
+      res.status(500).json({ message: "Failed to update book status" });
+    }
+  });
+  
+  // Create book preview
+  app.post("/api/books/:id/preview", async (req: Request, res: Response) => {
+    try {
+      const bookId = parseInt(req.params.id);
+      const book = await storage.getBook(bookId);
+      
+      if (!book) {
+        return res.status(404).json({ message: "Book not found" });
+      }
+      
+      // Generate a preview image for the book (first page/cover)
+      const bookContent = book.content as any;
+      if (!bookContent || !bookContent.pages || bookContent.pages.length === 0) {
+        return res.status(400).json({ message: "Book has no content" });
+      }
+      
+      const coverPage = bookContent.pages[0];
+      
+      // In a real implementation, you would use the cover page image
+      // For now, just update with a placeholder
+      const previewImage = coverPage.imageUrl || `/api/books/${bookId}/cover`;
+      
+      const updatedBook = await storage.updateBook(bookId, { previewImage });
+      
+      res.status(200).json({ previewImage });
+    } catch (error) {
+      console.error("Error creating book preview:", error);
+      res.status(500).json({ message: "Failed to create book preview" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
