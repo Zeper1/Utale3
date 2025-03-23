@@ -4,7 +4,10 @@ import {
   bookThemes, type BookTheme, type InsertBookTheme,
   books, type Book, type InsertBook,
   chatMessages, type ChatMessage, type InsertChatMessage,
-  orders, type Order, type InsertOrder
+  orders, type Order, type InsertOrder,
+  subscriptions, type Subscription, type InsertSubscription,
+  subscriptionTiers, type SubscriptionTier, type InsertSubscriptionTier,
+  bookDeliveries, type BookDelivery, type InsertBookDelivery
 } from "@shared/schema";
 
 export interface IStorage {
@@ -47,6 +50,27 @@ export interface IStorage {
   // Payment methods
   updateStripeCustomerId(userId: number, stripeCustomerId: string): Promise<User | undefined>;
   updatePayPalCustomerId(userId: number, paypalCustomerId: string): Promise<User | undefined>;
+  
+  // Subscription tier operations
+  getSubscriptionTiers(): Promise<SubscriptionTier[]>;
+  getSubscriptionTier(id: number): Promise<SubscriptionTier | undefined>;
+  createSubscriptionTier(tier: InsertSubscriptionTier): Promise<SubscriptionTier>;
+  updateSubscriptionTier(id: number, tierData: Partial<SubscriptionTier>): Promise<SubscriptionTier | undefined>;
+  
+  // Subscription operations
+  getUserSubscriptions(userId: number): Promise<Subscription[]>;
+  getSubscription(id: number): Promise<Subscription | undefined>;
+  createSubscription(subscription: InsertSubscription): Promise<Subscription>;
+  updateSubscription(id: number, subscriptionData: Partial<Subscription>): Promise<Subscription | undefined>;
+  cancelSubscription(id: number, cancelAtPeriodEnd?: boolean): Promise<Subscription | undefined>;
+  
+  // Book delivery operations
+  getBookDeliveries(userId: number): Promise<BookDelivery[]>;
+  getBookDeliveriesBySubscription(subscriptionId: number): Promise<BookDelivery[]>;
+  getBookDelivery(id: number): Promise<BookDelivery | undefined>;
+  createBookDelivery(delivery: InsertBookDelivery): Promise<BookDelivery>;
+  updateBookDeliveryStatus(id: number, status: string): Promise<BookDelivery | undefined>;
+  markDeliveryEmailSent(id: number): Promise<BookDelivery | undefined>;
 }
 
 export class MemStorage implements IStorage {
@@ -56,6 +80,9 @@ export class MemStorage implements IStorage {
   private books: Map<number, Book>;
   private chatMessages: Map<number, ChatMessage>;
   private orders: Map<number, Order>;
+  private subscriptionTiers: Map<number, SubscriptionTier>;
+  private subscriptions: Map<number, Subscription>;
+  private bookDeliveries: Map<number, BookDelivery>;
   
   private userId = 1;
   private childProfileId = 1;
@@ -63,6 +90,9 @@ export class MemStorage implements IStorage {
   private bookId = 1;
   private chatMessageId = 1;
   private orderId = 1;
+  private subscriptionTierId = 1;
+  private subscriptionId = 1;
+  private bookDeliveryId = 1;
 
   constructor() {
     this.users = new Map();
@@ -71,9 +101,63 @@ export class MemStorage implements IStorage {
     this.books = new Map();
     this.chatMessages = new Map();
     this.orders = new Map();
+    this.subscriptionTiers = new Map();
+    this.subscriptions = new Map();
+    this.bookDeliveries = new Map();
     
     // Initialize some book themes
     this.initializeBookThemes();
+    
+    // Initialize Spanish book themes
+    this.initializeSpanishBookThemes();
+  }
+  
+  private initializeSpanishBookThemes() {
+    const themes = [
+      {
+        name: "Aventura Espacial",
+        description: "Acompaña a tu hijo en un emocionante viaje por el cosmos, donde descubrirá planetas extraños y hará amigos alienígenas.",
+        ageRange: "4-8",
+        coverImage: "aventura-espacial.jpg",
+        active: true,
+      },
+      {
+        name: "Reino Submarino",
+        description: "Sumérgete con tu hijo mientras explora un mundo submarino encantado lleno de simpáticas criaturas marinas y tesoros escondidos.",
+        ageRange: "3-7",
+        coverImage: "reino-submarino.jpg",
+        active: true,
+      },
+      {
+        name: "Bosque Mágico",
+        description: "Sigue a tu hijo mientras descubre un bosque mágico donde animales parlantes y árboles encantados le ayudan en una misión especial.",
+        ageRange: "4-9",
+        coverImage: "bosque-magico.jpg",
+        active: true,
+      },
+      {
+        name: "Piratas del Mediterráneo",
+        description: "Embárcate en una aventura pirata por el Mediterráneo, buscando tesoros escondidos y viviendo emocionantes desafíos náuticos.",
+        ageRange: "5-10",
+        coverImage: "piratas-mediterraneo.jpg",
+        active: true,
+      },
+      {
+        name: "Exploradores de Castillos",
+        description: "Un viaje fascinante por los castillos más impresionantes de España, descubriendo secretos históricos y leyendas antiguas.",
+        ageRange: "6-11",
+        coverImage: "exploradores-castillos.jpg",
+        active: true,
+      },
+    ];
+
+    themes.forEach(theme => {
+      const id = this.bookThemeId++;
+      this.bookThemes.set(id, { 
+        ...theme, 
+        id,
+      } as BookTheme);
+    });
   }
 
   private initializeBookThemes() {
@@ -324,6 +408,145 @@ export class MemStorage implements IStorage {
     };
     this.users.set(userId, updatedUser);
     return updatedUser;
+  }
+  
+  // Subscription tier operations
+  async getSubscriptionTiers(): Promise<SubscriptionTier[]> {
+    return Array.from(this.subscriptionTiers.values());
+  }
+
+  async getSubscriptionTier(id: number): Promise<SubscriptionTier | undefined> {
+    return this.subscriptionTiers.get(id);
+  }
+
+  async createSubscriptionTier(tierData: InsertSubscriptionTier): Promise<SubscriptionTier> {
+    const id = this.subscriptionTierId++;
+    const now = new Date();
+    const tier: SubscriptionTier = { 
+      ...tierData, 
+      id,
+      createdAt: now,
+      updatedAt: now
+    };
+    this.subscriptionTiers.set(id, tier);
+    return tier;
+  }
+
+  async updateSubscriptionTier(id: number, tierData: Partial<SubscriptionTier>): Promise<SubscriptionTier | undefined> {
+    const tier = this.subscriptionTiers.get(id);
+    if (!tier) return undefined;
+    
+    const updatedTier = { 
+      ...tier, 
+      ...tierData,
+      updatedAt: new Date()
+    };
+    this.subscriptionTiers.set(id, updatedTier);
+    return updatedTier;
+  }
+  
+  // Subscription operations
+  async getUserSubscriptions(userId: number): Promise<Subscription[]> {
+    return Array.from(this.subscriptions.values())
+      .filter(subscription => subscription.userId === userId);
+  }
+
+  async getSubscription(id: number): Promise<Subscription | undefined> {
+    return this.subscriptions.get(id);
+  }
+
+  async createSubscription(subscriptionData: InsertSubscription): Promise<Subscription> {
+    const id = this.subscriptionId++;
+    const now = new Date();
+    const subscription: Subscription = { 
+      ...subscriptionData, 
+      id,
+      createdAt: now,
+      updatedAt: now
+    };
+    this.subscriptions.set(id, subscription);
+    return subscription;
+  }
+
+  async updateSubscription(id: number, subscriptionData: Partial<Subscription>): Promise<Subscription | undefined> {
+    const subscription = this.subscriptions.get(id);
+    if (!subscription) return undefined;
+    
+    const updatedSubscription = { 
+      ...subscription, 
+      ...subscriptionData,
+      updatedAt: new Date()
+    };
+    this.subscriptions.set(id, updatedSubscription);
+    return updatedSubscription;
+  }
+
+  async cancelSubscription(id: number, cancelAtPeriodEnd: boolean = true): Promise<Subscription | undefined> {
+    const subscription = this.subscriptions.get(id);
+    if (!subscription) return undefined;
+    
+    const updatedSubscription = { 
+      ...subscription, 
+      status: cancelAtPeriodEnd ? 'active' : 'canceled',
+      cancelAtPeriodEnd,
+      updatedAt: new Date()
+    };
+    this.subscriptions.set(id, updatedSubscription);
+    return updatedSubscription;
+  }
+  
+  // Book delivery operations
+  async getBookDeliveries(userId: number): Promise<BookDelivery[]> {
+    return Array.from(this.bookDeliveries.values())
+      .filter(delivery => delivery.userId === userId);
+  }
+
+  async getBookDeliveriesBySubscription(subscriptionId: number): Promise<BookDelivery[]> {
+    return Array.from(this.bookDeliveries.values())
+      .filter(delivery => delivery.subscriptionId === subscriptionId);
+  }
+
+  async getBookDelivery(id: number): Promise<BookDelivery | undefined> {
+    return this.bookDeliveries.get(id);
+  }
+
+  async createBookDelivery(deliveryData: InsertBookDelivery): Promise<BookDelivery> {
+    const id = this.bookDeliveryId++;
+    const now = new Date();
+    const delivery: BookDelivery = { 
+      ...deliveryData, 
+      id,
+      createdAt: now,
+      updatedAt: now
+    };
+    this.bookDeliveries.set(id, delivery);
+    return delivery;
+  }
+
+  async updateBookDeliveryStatus(id: number, status: string): Promise<BookDelivery | undefined> {
+    const delivery = this.bookDeliveries.get(id);
+    if (!delivery) return undefined;
+    
+    const updatedDelivery = { 
+      ...delivery, 
+      status,
+      updatedAt: new Date()
+    };
+    this.bookDeliveries.set(id, updatedDelivery);
+    return updatedDelivery;
+  }
+
+  async markDeliveryEmailSent(id: number): Promise<BookDelivery | undefined> {
+    const delivery = this.bookDeliveries.get(id);
+    if (!delivery) return undefined;
+    
+    const updatedDelivery = { 
+      ...delivery, 
+      emailSent: true,
+      updatedAt: new Date()
+    };
+    this.bookDeliveries.set(id, updatedDelivery);
+    return updatedDelivery;
   }
 }
 

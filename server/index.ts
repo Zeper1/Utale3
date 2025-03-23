@@ -54,6 +54,15 @@ app.use((req, res, next) => {
 (async () => {
   const server = await registerRoutes(app);
 
+  // Inicializar niveles de suscripción
+  try {
+    const { initializeSubscriptionTiers } = require("./initialize-subscription-tiers");
+    await initializeSubscriptionTiers();
+    log("Niveles de suscripción inicializados correctamente");
+  } catch (error) {
+    console.error("Error al inicializar niveles de suscripción:", error);
+  }
+
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     console.error(err);
     const status = err.status || err.statusCode || 500;

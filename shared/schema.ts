@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, jsonb, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, jsonb, timestamp, date } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -131,5 +131,77 @@ export type InsertBook = z.infer<typeof insertBookSchema>;
 export type ChatMessage = typeof chatMessages.$inferSelect;
 export type InsertChatMessage = z.infer<typeof insertChatMessageSchema>;
 
+// Subscription tiers schema
+export const subscriptionTiers = pgTable("subscription_tiers", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  books: integer("books").notNull(),
+  pages: integer("pages").notNull(),
+  pricePerWeek: integer("price_per_week").notNull(), // en céntimos
+  discount: integer("discount").notNull(), // porcentaje de descuento
+  description: text("description").notNull(),
+  stripePriceId: text("stripe_price_id").unique(),
+  active: boolean("active").default(true).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertSubscriptionTierSchema = createInsertSchema(subscriptionTiers).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+// User subscriptions schema
+export const subscriptions = pgTable("subscriptions", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  tierId: integer("tier_id").notNull().references(() => subscriptionTiers.id),
+  status: text("status").notNull(), // active, paused, canceled
+  currentPeriodStart: timestamp("current_period_start").notNull(),
+  currentPeriodEnd: timestamp("current_period_end").notNull(),
+  stripeSubscriptionId: text("stripe_subscription_id").unique(),
+  cancelAtPeriodEnd: boolean("cancel_at_period_end").default(false).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertSubscriptionSchema = createInsertSchema(subscriptions).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+// Book delivery schema (para control de envío de libros por suscripción)
+export const bookDeliveries = pgTable("book_deliveries", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  subscriptionId: integer("subscription_id").notNull().references(() => subscriptions.id),
+  bookId: integer("book_id").notNull().references(() => books.id),
+  childProfileId: integer("child_profile_id").notNull().references(() => childProfiles.id),
+  deliveryDate: timestamp("delivery_date").notNull(),
+  deliveryWeek: date("delivery_week").notNull(), // La semana a la que pertenece esta entrega
+  deliveryMethod: text("delivery_method").notNull(), // email, download, etc.
+  status: text("status").notNull(), // pending, sent, failed
+  emailSent: boolean("email_sent").default(false).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertBookDeliverySchema = createInsertSchema(bookDeliveries).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 export type Order = typeof orders.$inferSelect;
 export type InsertOrder = z.infer<typeof insertOrderSchema>;
+
+export type SubscriptionTier = typeof subscriptionTiers.$inferSelect;
+export type InsertSubscriptionTier = z.infer<typeof insertSubscriptionTierSchema>;
+
+export type Subscription = typeof subscriptions.$inferSelect;
+export type InsertSubscription = z.infer<typeof insertSubscriptionSchema>;
+
+export type BookDelivery = typeof bookDeliveries.$inferSelect;
+export type InsertBookDelivery = z.infer<typeof insertBookDeliverySchema>;
