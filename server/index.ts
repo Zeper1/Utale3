@@ -56,7 +56,7 @@ app.use((req, res, next) => {
 
   // Inicializar niveles de suscripción
   try {
-    const { initializeSubscriptionTiers } = require("./initialize-subscription-tiers");
+    const { initializeSubscriptionTiers } = await import("./initialize-subscription-tiers");
     await initializeSubscriptionTiers();
     log("Niveles de suscripción inicializados correctamente");
   } catch (error) {

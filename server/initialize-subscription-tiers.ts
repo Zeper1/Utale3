@@ -58,7 +58,10 @@ export async function initializeSubscriptionTiers() {
 }
 
 // Si este script se ejecuta directamente, inicializar los niveles
-if (require.main === module) {
+// Nota: En el contexto de ESM, no hay un equivalente directo de require.main === module
+// pero como este script se importa y no se ejecuta directamente, esta parte no se utiliza
+/*
+if (import.meta.url === process.argv[1]) {
   initializeSubscriptionTiers()
     .then(() => {
       console.log("Proceso completado.");
@@ -69,3 +72,4 @@ if (require.main === module) {
       process.exit(1);
     });
 }
+*/

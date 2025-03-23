@@ -1,7 +1,17 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertUserSchema, insertChildProfileSchema, insertBookSchema, insertChatMessageSchema, insertOrderSchema } from "@shared/schema";
+import { 
+  insertUserSchema, 
+  insertChildProfileSchema, 
+  insertBookSchema, 
+  insertChatMessageSchema, 
+  insertOrderSchema,
+  insertSubscriptionSchema,
+  insertSubscriptionTierSchema,
+  insertBookDeliverySchema
+} from "@shared/schema";
+import { getPriceTier, getRecommendedTiers } from "@shared/pricing";
 import OpenAI from "openai";
 import { z } from "zod";
 import Stripe from "stripe";
@@ -795,5 +805,413 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   const httpServer = createServer(app);
+  // --- Subscription Tier Routes ---
+  app.get("/api/subscription-tiers", async (req, res) => {
+    try {
+      const tiers = await storage.getSubscriptionTiers();
+      res.status(200).json(tiers);
+    } catch (error) {
+      res.status(500).json({ message: "Error al obtener niveles de suscripción" });
+    }
+  });
+
+  app.get("/api/subscription-tiers/recommended", async (req, res) => {
+    try {
+      // Obtenemos los tiers recomendados definidos en pricing.ts
+      const recommendedTiers = getRecommendedTiers();
+      
+      // Buscamos los datos completos en la base de datos
+      const fullTiers = await Promise.all(
+        recommendedTiers.map(async (tier) => {
+          const dbTiers = await storage.getSubscriptionTiers();
+          return dbTiers.find(t => t.books === tier.books && t.pages === tier.pages);
+        })
+      );
+      
+      res.status(200).json(fullTiers.filter(Boolean));
+    } catch (error) {
+      res.status(500).json({ message: "Error al obtener niveles de suscripción recomendados" });
+    }
+  });
+
+  app.get("/api/subscription-tiers/:id", async (req, res) => {
+    try {
+      const tierId = parseInt(req.params.id);
+      const tier = await storage.getSubscriptionTier(tierId);
+      
+      if (!tier) {
+        return res.status(404).json({ message: "Nivel de suscripción no encontrado" });
+      }
+      
+      res.status(200).json(tier);
+    } catch (error) {
+      res.status(500).json({ message: "Error al obtener nivel de suscripción" });
+    }
+  });
+
+  // --- Subscription Routes ---
+  app.get("/api/users/:userId/subscriptions", async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      const subscriptions = await storage.getUserSubscriptions(userId);
+      res.status(200).json(subscriptions);
+    } catch (error) {
+      res.status(500).json({ message: "Error al obtener suscripciones del usuario" });
+    }
+  });
+
+  app.get("/api/subscriptions/:id", async (req, res) => {
+    try {
+      const subscriptionId = parseInt(req.params.id);
+      const subscription = await storage.getSubscription(subscriptionId);
+      
+      if (!subscription) {
+        return res.status(404).json({ message: "Suscripción no encontrada" });
+      }
+      
+      res.status(200).json(subscription);
+    } catch (error) {
+      res.status(500).json({ message: "Error al obtener suscripción" });
+    }
+  });
+
+  app.post("/api/subscriptions", async (req, res) => {
+    try {
+      const subscriptionData = insertSubscriptionSchema.parse(req.body);
+      
+      // Verificar que el tier existe
+      const tier = await storage.getSubscriptionTier(subscriptionData.tierId);
+      if (!tier) {
+        return res.status(400).json({ message: "El nivel de suscripción no existe" });
+      }
+      
+      // Establecer fechas del período actual (una semana por defecto)
+      const now = new Date();
+      const currentPeriodStart = now;
+      const currentPeriodEnd = new Date(now);
+      currentPeriodEnd.setDate(currentPeriodEnd.getDate() + 7); // Una semana
+      
+      // Crear la suscripción
+      const newSubscription = await storage.createSubscription({
+        ...subscriptionData,
+        status: 'active',
+        currentPeriodStart,
+        currentPeriodEnd,
+        cancelAtPeriodEnd: false
+      });
+      
+      res.status(201).json(newSubscription);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Datos de suscripción inválidos", errors: error.errors });
+      }
+      res.status(500).json({ message: "Error al crear suscripción" });
+    }
+  });
+
+  app.patch("/api/subscriptions/:id/cancel", async (req, res) => {
+    try {
+      const subscriptionId = parseInt(req.params.id);
+      const { cancelAtPeriodEnd = true } = req.body;
+      
+      const updatedSubscription = await storage.cancelSubscription(subscriptionId, cancelAtPeriodEnd);
+      
+      if (!updatedSubscription) {
+        return res.status(404).json({ message: "Suscripción no encontrada" });
+      }
+      
+      res.status(200).json(updatedSubscription);
+    } catch (error) {
+      res.status(500).json({ message: "Error al cancelar suscripción" });
+    }
+  });
+
+  // --- Book Delivery Routes ---
+  app.get("/api/users/:userId/deliveries", async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      const deliveries = await storage.getBookDeliveries(userId);
+      res.status(200).json(deliveries);
+    } catch (error) {
+      res.status(500).json({ message: "Error al obtener entregas de libros" });
+    }
+  });
+
+  app.get("/api/subscriptions/:subscriptionId/deliveries", async (req, res) => {
+    try {
+      const subscriptionId = parseInt(req.params.subscriptionId);
+      const deliveries = await storage.getBookDeliveriesBySubscription(subscriptionId);
+      res.status(200).json(deliveries);
+    } catch (error) {
+      res.status(500).json({ message: "Error al obtener entregas de la suscripción" });
+    }
+  });
+
+  app.get("/api/deliveries/:id", async (req, res) => {
+    try {
+      const deliveryId = parseInt(req.params.id);
+      const delivery = await storage.getBookDelivery(deliveryId);
+      
+      if (!delivery) {
+        return res.status(404).json({ message: "Entrega no encontrada" });
+      }
+      
+      res.status(200).json(delivery);
+    } catch (error) {
+      res.status(500).json({ message: "Error al obtener entrega" });
+    }
+  });
+
+  app.post("/api/deliveries", async (req, res) => {
+    try {
+      const deliveryData = insertBookDeliverySchema.parse(req.body);
+      
+      // Verificar que la suscripción existe
+      const subscription = await storage.getSubscription(deliveryData.subscriptionId);
+      if (!subscription) {
+        return res.status(400).json({ message: "La suscripción no existe" });
+      }
+      
+      // Verificar que el libro existe
+      const book = await storage.getBook(deliveryData.bookId);
+      if (!book) {
+        return res.status(400).json({ message: "El libro no existe" });
+      }
+      
+      // Verificar que el perfil de niño existe
+      const childProfile = await storage.getChildProfile(deliveryData.childProfileId);
+      if (!childProfile) {
+        return res.status(400).json({ message: "El perfil del niño no existe" });
+      }
+      
+      // Construir semana de entrega (formato: YYYY-WW)
+      const deliveryDate = new Date(deliveryData.deliveryDate);
+      const year = deliveryDate.getFullYear();
+      const week = Math.ceil((deliveryDate.getDate() - 1 + new Date(year, 0, 1).getDay()) / 7);
+      const deliveryWeek = `${year}-${week.toString().padStart(2, '0')}`;
+      
+      // Crear la entrega
+      const newDelivery = await storage.createBookDelivery({
+        ...deliveryData,
+        status: 'pending',
+        deliveryWeek,
+        emailSent: false
+      });
+      
+      res.status(201).json(newDelivery);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Datos de entrega inválidos", errors: error.errors });
+      }
+      res.status(500).json({ message: "Error al crear entrega" });
+    }
+  });
+
+  app.patch("/api/deliveries/:id/status", async (req, res) => {
+    try {
+      const deliveryId = parseInt(req.params.id);
+      const { status } = req.body;
+      
+      if (!status) {
+        return res.status(400).json({ message: "El estado es requerido" });
+      }
+      
+      const updatedDelivery = await storage.updateBookDeliveryStatus(deliveryId, status);
+      
+      if (!updatedDelivery) {
+        return res.status(404).json({ message: "Entrega no encontrada" });
+      }
+      
+      res.status(200).json(updatedDelivery);
+    } catch (error) {
+      res.status(500).json({ message: "Error al actualizar estado de entrega" });
+    }
+  });
+
+  app.patch("/api/deliveries/:id/email-sent", async (req, res) => {
+    try {
+      const deliveryId = parseInt(req.params.id);
+      const updatedDelivery = await storage.markDeliveryEmailSent(deliveryId);
+      
+      if (!updatedDelivery) {
+        return res.status(404).json({ message: "Entrega no encontrada" });
+      }
+      
+      res.status(200).json(updatedDelivery);
+    } catch (error) {
+      res.status(500).json({ message: "Error al marcar el email como enviado" });
+    }
+  });
+
+  // --- Stripe Routes for Subscriptions ---
+  app.post("/api/create-subscription-payment", async (req, res) => {
+    try {
+      const { tierId, userId, returnUrl } = req.body;
+      
+      if (!tierId || !userId) {
+        return res.status(400).json({ message: "ID de nivel de suscripción y ID de usuario son requeridos" });
+      }
+      
+      // Obtener el tier de suscripción
+      const tier = await storage.getSubscriptionTier(parseInt(tierId));
+      if (!tier) {
+        return res.status(404).json({ message: "Nivel de suscripción no encontrado" });
+      }
+      
+      // Obtener el usuario
+      const user = await storage.getUser(parseInt(userId));
+      if (!user) {
+        return res.status(404).json({ message: "Usuario no encontrado" });
+      }
+      
+      let stripeCustomerId = user.stripeCustomerId;
+      
+      // Si el usuario no tiene un ID de cliente de Stripe, crear uno
+      if (!stripeCustomerId) {
+        const customer = await stripe.customers.create({
+          email: user.email,
+          name: user.displayName || user.username,
+        });
+        
+        stripeCustomerId = customer.id;
+        await storage.updateStripeCustomerId(user.id, stripeCustomerId);
+      }
+      
+      // Crear una sesión de pago con Stripe
+      const session = await stripe.checkout.sessions.create({
+        customer: stripeCustomerId,
+        payment_method_types: ['card'],
+        mode: 'subscription',
+        line_items: [
+          {
+            price_data: {
+              currency: 'eur',
+              product_data: {
+                name: `StoryMagic - ${tier.name}`,
+                description: tier.description,
+              },
+              unit_amount: tier.pricePerWeek, // Ya está en céntimos
+              recurring: {
+                interval: 'week',
+              },
+            },
+            quantity: 1,
+          },
+        ],
+        metadata: {
+          userId: user.id.toString(),
+          tierId: tier.id.toString(),
+        },
+        success_url: returnUrl || `${req.headers.origin}/subscription/success?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: returnUrl || `${req.headers.origin}/subscription/cancel`,
+      });
+      
+      res.status(200).json({ 
+        sessionId: session.id,
+        url: session.url
+      });
+    } catch (error) {
+      console.error("Error creating subscription payment:", error);
+      res.status(500).json({ message: "Error al crear pago de suscripción" });
+    }
+  });
+
+  app.post("/api/webhooks/stripe", async (req, res) => {
+    const signature = req.headers['stripe-signature'];
+    let event;
+    
+    // Verificar que la solicitud proviene de Stripe
+    try {
+      event = stripe.webhooks.constructEvent(
+        req.body,
+        signature,
+        process.env.STRIPE_WEBHOOK_SECRET || 'dummy_webhook_secret'
+      );
+    } catch (error) {
+      console.error('Webhook signature verification failed:', error);
+      return res.status(400).send(`Webhook Error: ${error.message}`);
+    }
+    
+    // Manejar eventos de suscripción
+    if (event.type === 'checkout.session.completed') {
+      const session = event.data.object;
+      
+      // Solo procesar eventos de suscripción
+      if (session.mode === 'subscription') {
+        try {
+          const userId = parseInt(session.metadata.userId);
+          const tierId = parseInt(session.metadata.tierId);
+          const stripeSubscriptionId = session.subscription;
+          
+          // Obtener detalles de la suscripción de Stripe
+          const stripeSubscription = await stripe.subscriptions.retrieve(stripeSubscriptionId);
+          
+          // Crear la suscripción en nuestra base de datos
+          const now = new Date();
+          const currentPeriodStart = new Date(stripeSubscription.current_period_start * 1000);
+          const currentPeriodEnd = new Date(stripeSubscription.current_period_end * 1000);
+          
+          await storage.createSubscription({
+            userId,
+            tierId,
+            status: 'active',
+            stripeSubscriptionId,
+            currentPeriodStart,
+            currentPeriodEnd,
+            cancelAtPeriodEnd: false
+          });
+          
+          console.log(`Suscripción creada para usuario ${userId}, nivel ${tierId}`);
+        } catch (error) {
+          console.error('Error procesando suscripción:', error);
+        }
+      }
+    } else if (event.type === 'customer.subscription.updated') {
+      const stripeSubscription = event.data.object;
+      
+      try {
+        // Encontrar nuestra suscripción por ID de Stripe
+        const subscriptions = await storage.getUserSubscriptions(0); // Obtener todas, no tenemos índice por stripeSubscriptionId
+        const subscription = subscriptions.find(s => s.stripeSubscriptionId === stripeSubscription.id);
+        
+        if (subscription) {
+          // Actualizar fechas de período
+          await storage.updateSubscription(subscription.id, {
+            currentPeriodStart: new Date(stripeSubscription.current_period_start * 1000),
+            currentPeriodEnd: new Date(stripeSubscription.current_period_end * 1000),
+            status: stripeSubscription.status,
+            cancelAtPeriodEnd: stripeSubscription.cancel_at_period_end
+          });
+          
+          console.log(`Suscripción ${subscription.id} actualizada`);
+        }
+      } catch (error) {
+        console.error('Error actualizando suscripción:', error);
+      }
+    } else if (event.type === 'customer.subscription.deleted') {
+      const stripeSubscription = event.data.object;
+      
+      try {
+        // Encontrar nuestra suscripción por ID de Stripe
+        const subscriptions = await storage.getUserSubscriptions(0); // Obtener todas, no tenemos índice por stripeSubscriptionId
+        const subscription = subscriptions.find(s => s.stripeSubscriptionId === stripeSubscription.id);
+        
+        if (subscription) {
+          // Marcar como cancelada
+          await storage.updateSubscription(subscription.id, {
+            status: 'canceled',
+            cancelAtPeriodEnd: false
+          });
+          
+          console.log(`Suscripción ${subscription.id} cancelada`);
+        }
+      } catch (error) {
+        console.error('Error cancelando suscripción:', error);
+      }
+    }
+    
+    res.status(200).json({ received: true });
+  });
+
   return httpServer;
 }
