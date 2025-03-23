@@ -590,53 +590,90 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get chat history for additional context
       const chatHistory = await storage.getChatMessages(childProfileId);
       
+      // Preparar el contexto del chat para una comprensión más profunda del niño
+      const chatContext = chatHistory.length > 0 
+        ? `Basado en conversaciones previas con ${profile.name}, se ha aprendido que: 
+          ${chatHistory.filter(m => m.sender === 'user').slice(-5).map(m => `- ${m.message}`).join('\n')}`
+        : '';
+      
       // Generate book content with OpenAI
       const completion = await openai.chat.completions.create({
         model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024
         messages: [
           {
             role: "system",
-            content: `Create a personalized children's storybook with the theme: "${theme.name}". 
-                     The story should be appropriate for a child aged ${profile.age || '5-8'}.
-                     The story should incorporate the child's interests, favorite things, and personality traits.
+            content: `Eres un experto narrador de cuentos infantiles que crea historias mágicas y educativas perfectamente adaptadas a cada niño.
                      
-                     Create a JSON object with the following structure:
+                     INSTRUCCIONES PARA LA CREACIÓN DE HISTORIAS:
+                     - Crea un libro infantil personalizado con el tema: "${theme.name}"
+                     - La historia debe ser apropiada para un niño de ${profile.age || '5-8'} años
+                     - La narrativa debe incorporar los intereses, cosas favoritas y rasgos de personalidad del niño
+                     - Utiliza un lenguaje sencillo pero enriquecedor, adaptado a la edad del niño
+                     - Incluye enseñanzas sutiles o valores positivos (amistad, valentía, respeto, etc.)
+                     - Asegúrate de que la historia tenga un arco narrativo claro: introducción, desarrollo, clímax y resolución
+                     - Las ilustraciones deben ser coherentes con la edad del niño y el estilo ilustrativo infantil
+                     - Evita cualquier contenido inapropiado, terrorífico o angustiante
+                     
+                     ESTRUCTURA DE LA HISTORIA:
+                     - Página 1: Portada con título e introducción del personaje principal (basado en ${profile.name})
+                     - Página 2-3: Establecimiento del escenario y situación inicial
+                     - Página 4-6: Desarrollo de la aventura o reto
+                     - Página 7-9: Clímax o momento crucial
+                     - Página 10-12: Resolución y final feliz con mensaje positivo
+                     
+                     Debes generar un objeto JSON con la siguiente estructura exacta:
                      {
-                       "title": "Story title including the child's name",
+                       "title": "Título de la historia incluyendo el nombre del niño",
                        "pages": [
                          {
                           "pageNumber": 1,
-                          "text": "Page text with the story narrative (2-3 sentences)",
-                          "imagePrompt": "Detailed description for illustrating this page in children's book style"
+                          "text": "Texto de la página con narración de la historia (2-3 frases)",
+                          "imagePrompt": "Descripción detallada para ilustrar esta página en estilo de libro infantil"
                          },
                          ...
                        ],
-                       "summary": "Brief summary of the story",
-                       "targetAge": "Age range the story is appropriate for",
+                       "summary": "Breve resumen de la historia",
+                       "targetAge": "Rango de edad apropiado para la historia",
                        "theme": "${theme.name}",
                        "mainCharacter": "${profile.name}"
                      }
                      
-                     The book should have 8-12 pages total including a cover page.
-                     Each page should have engaging, age-appropriate text that moves the story forward.
-                     Image prompts should be detailed enough to create consistent, child-friendly illustrations.`
+                     REQUISITOS TÉCNICOS:
+                     - El libro debe tener 10-12 páginas incluyendo portada
+                     - Cada página debe tener texto atractivo y apropiado para la edad que haga avanzar la historia
+                     - Los prompts de imagen deben ser detallados para crear ilustraciones consistentes y amigables para niños
+                     - Usa el estilo ilustrativo "acuarela infantil" o "ilustración infantil digital colorida" para consistencia
+                     - Menciona colores específicos y elementos de la escena en cada prompt de imagen`
           },
           {
             role: "user",
-            content: `Create a story for ${profile.name}, age ${profile.age || 'unknown'}.
+            content: `Crea una historia mágica y personalizada para ${profile.name}, de ${profile.age || 'edad escolar'} años.
                      
-                     Child's interests: ${profile.interests ? profile.interests.join(', ') : 'various activities'}
-                     Favorite things: ${profile.favorites ? JSON.stringify(profile.favorites) : 'unknown'}
-                     Friends: ${profile.friends ? profile.friends.join(', ') : 'friends and family'}
-                     Personality traits: ${profile.traits ? profile.traits.join(', ') : 'friendly, curious'}
+                     PERFIL DETALLADO DEL NIÑO:
+                     - Nombre: ${profile.name}
+                     - Edad: ${profile.age || 'escolar'}
+                     - Intereses: ${profile.interests ? profile.interests.join(', ') : 'juegos, aventuras, animales y descubrimientos'}
+                     - Cosas favoritas: ${profile.favorites ? JSON.stringify(profile.favorites, null, 2) : '(color favorito, animal favorito, etc. - usar lo que se deduzca del perfil)'}
+                     - Amigos y familia: ${profile.friends ? profile.friends.join(', ') : 'amigos, familia y posibles mascotas'}
+                     - Rasgos de personalidad: ${profile.traits ? profile.traits.join(', ') : 'amigable, curioso y valiente'}
                      
-                     Theme of the book: ${theme.name}
-                     Theme description: ${theme.description}
+                     TEMA DEL LIBRO:
+                     - Tema: ${theme.name}
+                     - Descripción del tema: ${theme.description}
                      
-                     Make the story personalized and engaging, incorporating elements from their profile.`
+                     ${chatContext ? `CONTEXTO ADICIONAL DE CONVERSACIONES:\n${chatContext}` : ''}
+                     
+                     Crea una historia única y encantadora que realmente se sienta como si fuera escrita específicamente para ${profile.name}, 
+                     incorporando sus intereses y personalidad de manera natural en la narrativa.
+                     
+                     Asegúrate de que la historia sea apropiada para la edad, educativa, divertida y con un mensaje positivo.
+                     Las ilustraciones deben ser coherentes con la historia y apropiadas para niños.
+                     `
           }
         ],
-        response_format: { type: "json_object" }
+        response_format: { type: "json_object" },
+        temperature: 0.7,
+        max_tokens: 2000
       });
       
       const bookContent = JSON.parse(completion.choices[0].message.content || "{}");
@@ -670,12 +707,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
       for (let i = 0; i < processedContent.pages.length; i++) {
         const page = processedContent.pages[i];
         try {
+          // Preparamos un prompt más detallado y controlado
+          const baseStyle = "Ilustración infantil en estilo acuarela digital, colorida y alegre, con colores vibrantes y apto para niños";
+          
+          // Mejoramos el prompt para DALL-E
+          const enhancedPrompt = `
+Crea una ilustración de libro infantil de alta calidad para un cuento sobre ${processedContent.mainCharacter}:
+
+${page.imagePrompt}
+
+ESTILO ARTÍSTICO REQUERIDO:
+- ${baseStyle}
+- Diseño apropiado para niños de ${processedContent.targetAge} años
+- Colores brillantes y amigables, escenas bien iluminadas
+- Personajes con expresiones faciales claras y amigables
+- Estilo consistente con ilustraciones de libros infantiles profesionales
+- Sin texto, solo la imagen
+- Proporciones correctas y anatomía apropiada para personajes infantiles
+
+NO INCLUIR:
+- Elementos aterradores, oscuros o inapropiados
+- Texto o letras dentro de la ilustración
+- Elementos que puedan causar miedo o ansiedad
+- Escenas violentas o perturbadoras
+
+Esta imagen es para un libro infantil que será leído por niños.
+`;
+
           const imageResponse = await openai.images.generate({
             model: "dall-e-3",
-            prompt: `Create a children's book illustration for a story about ${processedContent.mainCharacter}: ${page.imagePrompt}. Make it colorful, child-friendly, and engaging. Style should be appropriate for a ${processedContent.targetAge} year old child.`,
+            prompt: enhancedPrompt,
             n: 1,
             size: "1024x1024",
-            quality: "standard",
+            quality: "hd", // Calidad mejorada
+            style: "vivid", // Estilo más colorido y vibrante
           });
           
           const imageUrl = imageResponse.data[0].url;
