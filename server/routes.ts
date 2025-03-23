@@ -5,6 +5,8 @@ import { insertUserSchema, insertChildProfileSchema, insertBookSchema, insertCha
 import OpenAI from "openai";
 import { z } from "zod";
 import Stripe from "stripe";
+import * as fs from "fs";
+import * as path from "path";
 
 // Initialize OpenAI
 const openai = new OpenAI({

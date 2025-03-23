@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useLocation } from "wouter";
+import { useLocation, Link } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
+import BookLibrary from "@/components/BookLibrary";
 import { 
   BookOpen, 
   User, 
@@ -24,7 +25,9 @@ import {
   Pencil, 
   MoreHorizontal, 
   ChevronRight, 
-  Check
+  Check,
+  Eye,
+  Loader2
 } from "lucide-react";
 
 // Form schema for child profile creation
@@ -149,11 +152,6 @@ export default function Dashboard() {
       return;
     }
     setLocation('/create-book');
-  };
-
-  // Navigate to book preview
-  const goToBookPreview = (bookId: number) => {
-    setLocation(`/book-preview/${bookId}`);
   };
 
   if (!user) {
@@ -338,84 +336,18 @@ export default function Dashboard() {
               </CardContent>
             </Card>
           ) : (
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {books.map((book: any) => {
-                const childProfile = childProfiles.find((p: any) => p.id === book.childProfileId);
-                return (
-                  <Card key={book.id} className="overflow-hidden">
-                    <div className="relative h-48 bg-gray-100">
-                      {book.previewImage ? (
-                        <img 
-                          src={book.previewImage} 
-                          alt={book.title} 
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="flex items-center justify-center h-full bg-primary-50">
-                          <BookOpen className="h-12 w-12 text-primary/50" />
-                        </div>
-                      )}
-                      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-4">
-                        <h3 className="text-white font-semibold truncate">{book.title}</h3>
-                        <p className="text-white/80 text-sm">
-                          For {childProfile?.name || "Unknown"}, {book.format}
-                        </p>
-                      </div>
-                      <div className="absolute top-2 right-2 bg-white rounded-full px-2 py-1 text-xs font-medium shadow-sm">
-                        {book.status === 'draft' ? 'Draft' :
-                         book.status === 'preview' ? 'Preview' :
-                         book.status === 'completed' ? 'Completed' : 
-                         book.status === 'ordered' ? 'Ordered' : book.status}
-                      </div>
-                    </div>
-                    <CardContent className="pt-4">
-                      <div className="flex justify-between items-center">
-                        <div>
-                          <p className="text-sm text-gray-500">Created {new Date(book.createdAt).toLocaleDateString()}</p>
-                        </div>
-                        <div>
-                          {book.status === 'ordered' ? (
-                            <div className="flex items-center gap-1 text-green-600 text-sm">
-                              <Check className="h-4 w-4" /> Ordered
-                            </div>
-                          ) : (
-                            book.status === 'completed' ? (
-                              <div className="flex items-center gap-1 text-primary text-sm">
-                                <Check className="h-4 w-4" /> Ready
-                              </div>
-                            ) : null
-                          )}
-                        </div>
-                      </div>
-                    </CardContent>
-                    <CardFooter className="pt-0">
-                      <Button 
-                        onClick={() => goToBookPreview(book.id)}
-                        variant={book.status === 'completed' ? 'default' : 'outline'} 
-                        className="w-full justify-between"
-                      >
-                        {book.status === 'draft' ? 'Continue Editing' :
-                         book.status === 'preview' ? 'View Preview' :
-                         book.status === 'completed' ? 'Order Now' : 'View Book'}
-                        <ChevronRight className="h-4 w-4" />
-                      </Button>
-                    </CardFooter>
-                  </Card>
-                );
-              })}
-              <Card className="border-dashed border-2 flex flex-col justify-center items-center p-6 h-full">
-                <div className="bg-gray-100 p-4 rounded-full mb-4">
-                  <Plus className="h-6 w-6 text-gray-400" />
-                </div>
-                <h3 className="text-lg font-medium mb-2">Create New Book</h3>
-                <p className="text-gray-500 text-sm mb-4 text-center">
-                  Design another personalized book for your child
-                </p>
-                <Button onClick={goToCreateBook} variant="outline">
-                  New Book
+            <>
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold">Your Book Library</h2>
+                <Button onClick={goToCreateBook} variant="outline" className="flex items-center gap-2">
+                  <Plus className="h-4 w-4" /> Create New Book
                 </Button>
-              </Card>
-            </div>
+              </div>
+              
+              {user && user.id && (
+                <BookLibrary userId={user.id} />
+              )}
+            </>
           )}
         </TabsContent>
 

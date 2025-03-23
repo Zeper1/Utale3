@@ -67,24 +67,59 @@ export default function CreateBook() {
   // Book generation and creation mutation
   const generateBook = useMutation({
     mutationFn: async (values: { profileId: number, themeId: number }) => {
-      // First, generate book content with OpenAI
-      const generateResponse = await apiRequest('POST', '/api/generate-book', values);
-      const bookContent = await generateResponse.json();
+      // Step 1: Generate book content with OpenAI
+      const generateContentResponse = await apiRequest('POST', '/api/books/generate-content', {
+        childProfileId: values.profileId,
+        themeId: values.themeId
+      });
       
-      // Then, create a book entry in the database
-      const { title, pages } = bookContent;
+      if (!generateContentResponse.ok) {
+        throw new Error('Failed to generate book content');
+      }
       
-      const createResponse = await apiRequest('POST', '/api/books', {
+      const bookContent = await generateContentResponse.json();
+      
+      // Step 2: Create initial book entry in the database
+      const createBookResponse = await apiRequest('POST', '/api/books', {
         userId: user?.id,
         childProfileId: values.profileId,
         themeId: values.themeId,
-        title,
-        content: { pages },
+        title: bookContent.title,
+        content: bookContent,
         format: 'digital',
-        status: 'preview'
+        status: 'generating'
       });
       
-      return createResponse.json();
+      if (!createBookResponse.ok) {
+        throw new Error('Failed to create book record');
+      }
+      
+      const book = await createBookResponse.json();
+      
+      // Step 3: Generate images for each page
+      const generateImagesResponse = await apiRequest('POST', '/api/books/generate-images', {
+        bookContent
+      });
+      
+      if (!generateImagesResponse.ok) {
+        // Even if image generation fails, we continue
+        // We'll just have the book without images
+        await apiRequest('PATCH', `/api/books/${book.id}/status`, { status: 'completed' });
+        return book;
+      }
+      
+      const contentWithImages = await generateImagesResponse.json();
+      
+      // Step 4: Update book with images
+      const updateBookResponse = await apiRequest('PUT', `/api/books/${book.id}`, {
+        content: contentWithImages,
+        status: 'completed'
+      });
+      
+      // Step 5: Create book preview
+      await apiRequest('POST', `/api/books/${book.id}/preview`, {});
+      
+      return book;
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['/api/users', user?.id, 'books'] });
