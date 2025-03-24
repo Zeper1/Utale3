@@ -12,18 +12,18 @@ import { useAuth } from "@/hooks/useAuth";
 
 // Define form validation schemas
 const loginSchema = z.object({
-  email: z.string().email({ message: "Please enter a valid email address" }),
-  password: z.string().min(6, { message: "Password must be at least 6 characters" }),
+  email: z.string().email({ message: "Por favor, introduce una dirección de correo válida" }),
+  password: z.string().min(6, { message: "La contraseña debe tener al menos 6 caracteres" }),
   rememberMe: z.boolean().optional(),
 });
 
 const signupSchema = z.object({
-  firstName: z.string().min(1, { message: "First name is required" }),
-  lastName: z.string().min(1, { message: "Last name is required" }),
-  email: z.string().email({ message: "Please enter a valid email address" }),
-  password: z.string().min(6, { message: "Password must be at least 6 characters" }),
+  firstName: z.string().min(1, { message: "El nombre es obligatorio" }),
+  lastName: z.string().min(1, { message: "El apellido es obligatorio" }),
+  email: z.string().email({ message: "Por favor, introduce una dirección de correo válida" }),
+  password: z.string().min(6, { message: "La contraseña debe tener al menos 6 caracteres" }),
   termsAccepted: z.literal(true, {
-    errorMap: () => ({ message: "You must accept the terms and conditions" }),
+    errorMap: () => ({ message: "Debes aceptar los términos y condiciones" }),
   }),
 });
 
@@ -59,7 +59,7 @@ const AuthModal = ({ isOpen, onClose, view, setView }: AuthModalProps) => {
       lastName: "",
       email: "",
       password: "",
-      termsAccepted: false,
+      termsAccepted: false as any, // Esto permite iniciar con false aunque el esquema requiera true
     },
   });
 
@@ -68,15 +68,15 @@ const AuthModal = ({ isOpen, onClose, view, setView }: AuthModalProps) => {
     try {
       await signIn(data.email, data.password);
       toast({
-        title: "Login successful",
-        description: "Welcome back to StoryMagic!",
+        title: "Inicio de sesión exitoso",
+        description: "¡Bienvenido de nuevo a Utale!",
       });
       onClose();
     } catch (error) {
       console.error("Login error:", error);
       toast({
-        title: "Login failed",
-        description: "Please check your credentials and try again.",
+        title: "Error de inicio de sesión",
+        description: "Por favor, verifica tus credenciales e inténtalo de nuevo.",
         variant: "destructive",
       });
     } finally {
@@ -90,15 +90,15 @@ const AuthModal = ({ isOpen, onClose, view, setView }: AuthModalProps) => {
       const displayName = `${data.firstName} ${data.lastName}`;
       await signUp(data.email, data.password, displayName);
       toast({
-        title: "Account created",
-        description: "Welcome to StoryMagic!",
+        title: "Cuenta creada",
+        description: "¡Bienvenido a Utale!",
       });
       onClose();
     } catch (error) {
       console.error("Signup error:", error);
       toast({
-        title: "Signup failed",
-        description: "There was an error creating your account. Please try again.",
+        title: "Error de registro",
+        description: "Hubo un error al crear tu cuenta. Por favor, inténtalo de nuevo.",
         variant: "destructive",
       });
     } finally {
@@ -113,8 +113,8 @@ const AuthModal = ({ isOpen, onClose, view, setView }: AuthModalProps) => {
     } catch (error) {
       console.error("Google sign-in error:", error);
       toast({
-        title: "Google sign-in failed",
-        description: "There was an error signing in with Google. Please try again.",
+        title: "Error de inicio con Google",
+        description: "Hubo un error al iniciar sesión con Google. Por favor, inténtalo de nuevo.",
         variant: "destructive",
       });
     }
