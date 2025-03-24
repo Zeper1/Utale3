@@ -60,13 +60,13 @@ export default function Home() {
           <div className="flex flex-col lg:flex-row items-center gap-12">
             <div className="lg:w-1/2 flex flex-col items-start gap-6">
               <div className="bg-primary-100 text-primary-800 py-2 px-4 rounded-full text-sm font-medium">
-                Personalized Stories for Your Little Ones
+                Historias personalizadas para tus pequeños
               </div>
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold font-heading text-gray-900 leading-tight">
-                Create Magical <span className="text-primary">Storybooks</span> Tailored to Your Child
+                Crea <span className="text-primary">Libros Mágicos</span> adaptados a tu hijo
               </h1>
               <p className="text-lg text-gray-600 max-w-lg">
-                Craft unique adventures featuring your child as the main character, incorporating their interests, friends, and adventures into beautifully illustrated books they'll cherish forever.
+                Diseña aventuras únicas con tu hijo como protagonista, incorporando sus intereses, amigos y aventuras en libros bellamente ilustrados que atesorarán para siempre.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
                 <Button 
@@ -74,7 +74,7 @@ export default function Home() {
                   size="lg" 
                   className="px-6 py-3 rounded-full text-lg font-medium"
                 >
-                  Create Your First Book
+                  Crea tu primer libro
                 </Button>
                 <Button 
                   onClick={() => howItWorksRef.current?.scrollIntoView({ behavior: 'smooth' })}
@@ -82,7 +82,7 @@ export default function Home() {
                   size="lg" 
                   className="px-6 py-3 rounded-full border border-gray-300 hover:border-primary-400 text-gray-700 hover:text-primary text-lg font-medium"
                 >
-                  Learn More
+                  Saber más
                 </Button>
               </div>
               <div className="flex items-center gap-3 text-sm text-gray-500 mt-4">
@@ -121,9 +121,9 @@ export default function Home() {
       <section className="py-20 bg-white">
         <div className="container mx-auto px-4">
           <div className="text-center max-w-2xl mx-auto mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold font-heading text-gray-900 mb-4">Why Parents Love StoryMagic</h2>
+            <h2 className="text-3xl md:text-4xl font-bold font-heading text-gray-900 mb-4">Por qué los padres adoran Utale</h2>
             <p className="text-lg text-gray-600">
-              We combine AI-powered storytelling with your personal touches to create books your children will treasure for years to come.
+              Combinamos la narración potenciada por IA con tus toques personales para crear libros que tus hijos atesorarán durante años.
             </p>
           </div>
           

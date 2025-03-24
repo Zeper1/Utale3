@@ -76,7 +76,7 @@ export default function Subscribe() {
   return (
     <div className="container max-w-6xl mx-auto py-8">
       <div className="text-center mb-12">
-        <h1 className="text-4xl font-bold mb-4">Suscríbete a StoryMagic</h1>
+        <h1 className="text-4xl font-bold mb-4">Suscríbete a Utale</h1>
         <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
           Elige el plan perfecto para ti y comienza a crear mágicas historias personalizadas para los más pequeños.
         </p>

@@ -295,7 +295,7 @@ const AuthModal = ({ isOpen, onClose, view, setView }: AuthModalProps) => {
                       </FormControl>
                       <div className="space-y-1 leading-none">
                         <FormLabel className="text-sm">
-                          I agree to the <Button variant="link" className="p-0 h-auto">Terms of Service</Button> and <Button variant="link" className="p-0 h-auto">Privacy Policy</Button>
+                          Acepto los <Button variant="link" className="p-0 h-auto">Términos de Servicio</Button> y la <Button variant="link" className="p-0 h-auto">Política de Privacidad</Button>
                         </FormLabel>
                         <FormMessage />
                       </div>
@@ -304,14 +304,14 @@ const AuthModal = ({ isOpen, onClose, view, setView }: AuthModalProps) => {
                 />
                 
                 <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading ? "Creating Account..." : "Create Account"}
+                  {isLoading ? "Creando cuenta..." : "Crear cuenta"}
                 </Button>
               </form>
             </Form>
             
             <div className="relative flex items-center justify-center my-4">
               <div className="border-t border-gray-300 absolute w-full"></div>
-              <span className="bg-background px-3 text-sm text-muted-foreground relative">or sign up with</span>
+              <span className="bg-background px-3 text-sm text-muted-foreground relative">o regístrate con</span>
             </div>
             
             <div className="grid grid-cols-1 gap-2">
@@ -324,9 +324,9 @@ const AuthModal = ({ isOpen, onClose, view, setView }: AuthModalProps) => {
             </div>
             
             <div className="text-center text-sm text-muted-foreground">
-              Already have an account?{" "}
+              ¿Ya tienes una cuenta?{" "}
               <Button variant="link" className="p-0 h-auto" onClick={toggleView}>
-                Log in
+                Inicia sesión
               </Button>
             </div>
           </>
