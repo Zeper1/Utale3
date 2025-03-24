@@ -291,7 +291,7 @@ export default function Home() {
                   variant="link" 
                   className="text-primary hover:text-primary/90 font-medium flex items-center gap-2 p-0"
                 >
-                  Preview Book <ArrowRight className="h-4 w-4" />
+                  Ver libro <ArrowRight className="h-4 w-4" />
                 </Button>
               </div>
             </div>
@@ -318,7 +318,7 @@ export default function Home() {
                   variant="link" 
                   className="text-primary hover:text-primary/90 font-medium flex items-center gap-2 p-0"
                 >
-                  Preview Book <ArrowRight className="h-4 w-4" />
+                  Ver libro <ArrowRight className="h-4 w-4" />
                 </Button>
               </div>
             </div>
@@ -345,7 +345,7 @@ export default function Home() {
                   variant="link" 
                   className="text-primary hover:text-primary/90 font-medium flex items-center gap-2 p-0"
                 >
-                  Preview Book <ArrowRight className="h-4 w-4" />
+                  Ver libro <ArrowRight className="h-4 w-4" />
                 </Button>
               </div>
             </div>
@@ -357,9 +357,9 @@ export default function Home() {
       <section id="pricing" ref={pricingRef} className="py-20 bg-gray-50">
         <div className="container mx-auto px-4">
           <div className="text-center max-w-2xl mx-auto mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold font-heading text-gray-900 mb-4">Simple, Transparent Pricing</h2>
+            <h2 className="text-3xl md:text-4xl font-bold font-heading text-gray-900 mb-4">Precios simples y transparentes</h2>
             <p className="text-lg text-gray-600">
-              Choose the format that best suits your needs. All options include full personalization.
+              Elige el formato que mejor se adapte a tus necesidades. Todas las opciones incluyen personalización completa.
             </p>
           </div>
           
@@ -367,32 +367,32 @@ export default function Home() {
             {/* Digital Option */}
             <div className="bg-white rounded-xl overflow-hidden shadow-soft border border-gray-100 transition-transform hover:-translate-y-1 duration-300">
               <div className="p-6 border-b border-gray-100">
-                <h3 className="text-xl font-bold font-heading text-gray-900 mb-2">Digital Edition</h3>
+                <h3 className="text-xl font-bold font-heading text-gray-900 mb-2">Edición Digital</h3>
                 <div className="flex items-end gap-1 mb-4">
-                  <span className="text-3xl font-bold text-gray-900">$14.99</span>
-                  <span className="text-sm text-gray-500 mb-1">per book</span>
+                  <span className="text-3xl font-bold text-gray-900">14,99€</span>
+                  <span className="text-sm text-gray-500 mb-1">por libro</span>
                 </div>
                 <p className="text-gray-600 text-sm">
-                  Instant download of your personalized story in digital format.
+                  Descarga inmediata de tu historia personalizada en formato digital.
                 </p>
               </div>
               <div className="p-6">
                 <ul className="space-y-3 mb-6">
                   <li className="flex items-start gap-3">
                     <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
-                    <span className="text-gray-600">Instant download (PDF)</span>
+                    <span className="text-gray-600">Descarga inmediata (PDF)</span>
                   </li>
                   <li className="flex items-start gap-3">
                     <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
-                    <span className="text-gray-600">Full personalization</span>
+                    <span className="text-gray-600">Personalización completa</span>
                   </li>
                   <li className="flex items-start gap-3">
                     <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
-                    <span className="text-gray-600">Read on any device</span>
+                    <span className="text-gray-600">Lee en cualquier dispositivo</span>
                   </li>
                   <li className="flex items-start gap-3">
                     <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
-                    <span className="text-gray-600">Print at home option</span>
+                    <span className="text-gray-600">Opción de impresión en casa</span>
                   </li>
                 </ul>
                 <Button 
