@@ -48,7 +48,7 @@ const Header = () => {
           <div className="text-primary text-2xl">
             <BookOpen />
           </div>
-          <h1 className="text-xl font-bold font-heading text-primary">StoryMagic</h1>
+          <h1 className="text-xl font-bold font-heading text-primary">Utale</h1>
         </Link>
         <div className="hidden md:flex items-center gap-6">
           <nav>
@@ -58,7 +58,7 @@ const Header = () => {
                   onClick={() => scrollToSection("how-it-works")}
                   className="text-gray-700 hover:text-primary transition-colors"
                 >
-                  How It Works
+                  Cómo Funciona
                 </button>
               </li>
               <li>
@@ -66,7 +66,7 @@ const Header = () => {
                   onClick={() => scrollToSection("book-showcase")}
                   className="text-gray-700 hover:text-primary transition-colors"
                 >
-                  Examples
+                  Ejemplos
                 </button>
               </li>
               <li>
@@ -74,13 +74,13 @@ const Header = () => {
                   onClick={() => scrollToSection("pricing")}
                   className="text-gray-700 hover:text-primary transition-colors"
                 >
-                  Pricing
+                  Precios
                 </button>
               </li>
               {user && (
                 <li>
                   <Link href="/dashboard" className="text-gray-700 hover:text-primary transition-colors">
-                    Dashboard
+                    Panel
                   </Link>
                 </li>
               )}
@@ -92,11 +92,11 @@ const Header = () => {
               onClick={handleLoginClick}
               className="text-primary hover:text-primary/90"
             >
-              {user ? "Logout" : "Login"}
+              {user ? "Cerrar Sesión" : "Iniciar Sesión"}
             </Button>
             {!user && (
               <Button onClick={handleSignup} className="rounded-full">
-                Get Started
+                Comenzar
               </Button>
             )}
           </div>
@@ -111,34 +111,34 @@ const Header = () => {
           </SheetTrigger>
           <SheetContent>
             <nav className="flex flex-col gap-4 mt-8">
-              <Link href="/" className="text-lg font-medium py-2">Home</Link>
+              <Link href="/" className="text-lg font-medium py-2">Inicio</Link>
               <button
                 onClick={() => scrollToSection("how-it-works")}
                 className="text-left text-lg font-medium py-2"
               >
-                How It Works
+                Cómo Funciona
               </button>
               <button
                 onClick={() => scrollToSection("book-showcase")}
                 className="text-left text-lg font-medium py-2"
               >
-                Examples
+                Ejemplos
               </button>
               <button
                 onClick={() => scrollToSection("pricing")}
                 className="text-left text-lg font-medium py-2"
               >
-                Pricing
+                Precios
               </button>
               {user && (
                 <Link href="/dashboard" className="text-lg font-medium py-2">
-                  Dashboard
+                  Panel
                 </Link>
               )}
               <div className="border-t border-gray-100 mt-2 pt-4">
                 {user ? (
                   <Button onClick={signOut} variant="ghost" className="text-lg font-medium w-full justify-start pl-0">
-                    Logout
+                    Cerrar Sesión
                   </Button>
                 ) : (
                   <>
@@ -147,13 +147,13 @@ const Header = () => {
                       variant="ghost" 
                       className="text-lg font-medium w-full justify-start pl-0"
                     >
-                      Login
+                      Iniciar Sesión
                     </Button>
                     <Button 
                       onClick={handleSignup} 
                       className="w-full mt-2 rounded-full"
                     >
-                      Get Started
+                      Comenzar
                     </Button>
                   </>
                 )}
