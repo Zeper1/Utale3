@@ -554,17 +554,17 @@ export default function Home() {
                 ))}
               </div>
               <p className="text-gray-700 mb-6 italic">
-                "I've ordered three books now for my son, and each one gets better as his profile becomes more detailed. The quality of the hardcover books is excellent!"
+                "He pedido tres libros ya para mi hijo, y cada uno mejora a medida que su perfil se vuelve más detallado. ¡La calidad de los libros de tapa dura es excelente!"
               </p>
               <div className="flex items-center gap-3">
                 <img 
                   src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=60&h=60&q=80" 
-                  alt="Michael T." 
+                  alt="Miguel T." 
                   className="w-12 h-12 rounded-full object-cover"
                 />
                 <div>
-                  <h4 className="font-medium text-gray-900">Michael T.</h4>
-                  <p className="text-sm text-gray-500">Father of Lucas, 7</p>
+                  <h4 className="font-medium text-gray-900">Miguel T.</h4>
+                  <p className="text-sm text-gray-500">Padre de Lucas, 7</p>
                 </div>
               </div>
             </div>
@@ -576,17 +576,17 @@ export default function Home() {
                 ))}
               </div>
               <p className="text-gray-700 mb-6 italic">
-                "I purchased a book for my niece's birthday and it was the hit of the party. The chat interface made it so easy to create her profile and the customer service was outstanding."
+                "Compré un libro para el cumpleaños de mi sobrina y fue el éxito de la fiesta. La interfaz de chat hizo muy fácil crear su perfil y el servicio al cliente fue excepcional."
               </p>
               <div className="flex items-center gap-3">
                 <img 
                   src="https://images.unsplash.com/photo-1580489944761-15a19d654956?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=60&h=60&q=80" 
-                  alt="Jennifer R." 
+                  alt="Jeniffer R." 
                   className="w-12 h-12 rounded-full object-cover"
                 />
                 <div>
-                  <h4 className="font-medium text-gray-900">Jennifer R.</h4>
-                  <p className="text-sm text-gray-500">Aunt of Sophia, 6</p>
+                  <h4 className="font-medium text-gray-900">Jeniffer R.</h4>
+                  <p className="text-sm text-gray-500">Tía de Sofía, 6</p>
                 </div>
               </div>
             </div>
@@ -598,9 +598,9 @@ export default function Home() {
       <section className="py-20 bg-primary text-white">
         <div className="container mx-auto px-4">
           <div className="max-w-3xl mx-auto text-center">
-            <h2 className="text-3xl md:text-4xl font-bold font-heading mb-6">Ready to Create a Magical Story?</h2>
+            <h2 className="text-3xl md:text-4xl font-bold font-heading mb-6">¿Listo para Crear una Historia Mágica?</h2>
             <p className="text-xl text-primary-100 mb-8 max-w-2xl mx-auto">
-              Start building your child's profile today and create a personalized book they'll treasure for years to come.
+              Comienza a construir el perfil de tu hijo hoy y crea un libro personalizado que atesorarán durante años.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button 
@@ -609,7 +609,7 @@ export default function Home() {
                 size="lg" 
                 className="px-8 py-4 rounded-full bg-white text-primary hover:bg-gray-100 text-lg font-medium"
               >
-                Create Your First Book
+                Crea Tu Primer Libro
               </Button>
               <Button 
                 onClick={() => bookShowcaseRef.current?.scrollIntoView({ behavior: 'smooth' })}
@@ -617,7 +617,7 @@ export default function Home() {
                 size="lg" 
                 className="px-8 py-4 rounded-full border border-white bg-transparent hover:bg-primary-900 text-lg font-medium text-white"
               >
-                View Sample Books
+                Ver Libros de Muestra
               </Button>
             </div>
           </div>
@@ -628,9 +628,9 @@ export default function Home() {
       <section className="py-20 bg-white">
         <div className="container mx-auto px-4">
           <div className="text-center max-w-2xl mx-auto mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold font-heading text-gray-900 mb-4">Frequently Asked Questions</h2>
+            <h2 className="text-3xl md:text-4xl font-bold font-heading text-gray-900 mb-4">Preguntas Frecuentes</h2>
             <p className="text-lg text-gray-600">
-              Find answers to common questions about StoryMagic books.
+              Encuentra respuestas a preguntas comunes sobre los libros de Utale.
             </p>
           </div>
           
@@ -638,46 +638,46 @@ export default function Home() {
             <Accordion type="single" collapsible className="space-y-4">
               <AccordionItem value="item-1" className="border-b border-gray-200">
                 <AccordionTrigger className="text-lg font-medium text-gray-900 py-4">
-                  How personalized are the books?
+                  ¿Qué nivel de personalización tienen los libros?
                 </AccordionTrigger>
                 <AccordionContent className="text-gray-600 pr-12">
-                  Our books are highly personalized based on the information you provide in your child's profile. This includes their name, appearance, interests, friends, pets, and more. As you interact with our chat system and update their profile over time, the stories become even more tailored to their unique personality and experiences.
+                  Nuestros libros están altamente personalizados según la información que proporcionas en el perfil de tu hijo. Esto incluye su nombre, apariencia, intereses, amigos, mascotas y más. A medida que interactúas con nuestro sistema de chat y actualizas su perfil con el tiempo, las historias se adaptan aún más a su personalidad y experiencias únicas.
                 </AccordionContent>
               </AccordionItem>
               
               <AccordionItem value="item-2" className="border-b border-gray-200">
                 <AccordionTrigger className="text-lg font-medium text-gray-900 py-4">
-                  How long does it take to create and receive a book?
+                  ¿Cuánto tiempo tarda crear y recibir un libro?
                 </AccordionTrigger>
                 <AccordionContent className="text-gray-600 pr-12">
-                  Digital books are available for download immediately after creation. For printed books, production takes 2-3 business days, and shipping typically takes 3-7 business days, depending on your location. Expedited shipping options are available at checkout.
+                  Los libros digitales están disponibles para descarga inmediatamente después de su creación. Para libros impresos, la producción tarda 2-3 días hábiles, y el envío normalmente toma 3-7 días hábiles, dependiendo de tu ubicación. Opciones de envío urgente están disponibles al finalizar la compra.
                 </AccordionContent>
               </AccordionItem>
               
               <AccordionItem value="item-3" className="border-b border-gray-200">
                 <AccordionTrigger className="text-lg font-medium text-gray-900 py-4">
-                  Can I update my child's profile over time?
+                  ¿Puedo actualizar el perfil de mi hijo con el tiempo?
                 </AccordionTrigger>
                 <AccordionContent className="text-gray-600 pr-12">
-                  Yes! In fact, we encourage it. Your child's profile can be updated at any time through our friendly chat interface. As your child grows and their interests evolve, you can update their profile to ensure future books reflect these changes. Each new book will incorporate the latest information from their profile.
+                  ¡Sí! De hecho, lo recomendamos. El perfil de tu hijo puede actualizarse en cualquier momento a través de nuestra amigable interfaz de chat. A medida que tu hijo crece y sus intereses evolucionan, puedes actualizar su perfil para asegurar que los futuros libros reflejen estos cambios. Cada nuevo libro incorporará la información más reciente de su perfil.
                 </AccordionContent>
               </AccordionItem>
               
               <AccordionItem value="item-4" className="border-b border-gray-200">
                 <AccordionTrigger className="text-lg font-medium text-gray-900 py-4">
-                  What age range are the books suitable for?
+                  ¿Para qué rango de edad son adecuados los libros?
                 </AccordionTrigger>
                 <AccordionContent className="text-gray-600 pr-12">
-                  Our books are primarily designed for children ages 2-10, with different themes and complexity levels available for different age groups. Each book listing indicates the recommended age range. The language and storylines adapt based on the age you specify in your child's profile.
+                  Nuestros libros están diseñados principalmente para niños de 2 a 10 años, con diferentes temas y niveles de complejidad disponibles para distintos grupos de edad. Cada libro indica el rango de edad recomendado. El lenguaje y las tramas se adaptan según la edad que especifiques en el perfil de tu hijo.
                 </AccordionContent>
               </AccordionItem>
               
               <AccordionItem value="item-5" className="border-b border-gray-200">
                 <AccordionTrigger className="text-lg font-medium text-gray-900 py-4">
-                  Is my child's data secure?
+                  ¿Están seguros los datos de mi hijo?
                 </AccordionTrigger>
                 <AccordionContent className="text-gray-600 pr-12">
-                  Yes, we take data security very seriously. All personal information is stored securely using encryption, and we never share your data with third parties. Our platform complies with relevant data protection regulations, and you can delete your account and associated data at any time through your account settings.
+                  Sí, nos tomamos la seguridad de los datos muy en serio. Toda la información personal se almacena de forma segura mediante cifrado, y nunca compartimos tus datos con terceros. Nuestra plataforma cumple con las normativas relevantes de protección de datos, y puedes eliminar tu cuenta y los datos asociados en cualquier momento a través de la configuración de tu cuenta.
                 </AccordionContent>
               </AccordionItem>
             </Accordion>
@@ -687,7 +687,7 @@ export default function Home() {
                 variant="link" 
                 className="text-primary hover:text-primary/90 font-medium flex items-center justify-center gap-2 text-base"
               >
-                View all FAQs <ArrowRight className="h-4 w-4" />
+                Ver todas las preguntas <ArrowRight className="h-4 w-4" />
               </Button>
             </div>
           </div>
