@@ -131,9 +131,9 @@ const AuthModal = ({ isOpen, onClose, view, setView }: AuthModalProps) => {
       <DialogContent className="sm:max-w-md">
         {view === "login" ? (
           <>
-            <DialogTitle className="text-2xl text-center">Welcome Back</DialogTitle>
+            <DialogTitle className="text-2xl text-center">Bienvenido de nuevo</DialogTitle>
             <DialogDescription className="text-center">
-              Log in to your StoryMagic account
+              Inicia sesión en tu cuenta de Utale
             </DialogDescription>
             
             <Form {...loginForm}>
@@ -143,9 +143,9 @@ const AuthModal = ({ isOpen, onClose, view, setView }: AuthModalProps) => {
                   name="email"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Email</FormLabel>
+                      <FormLabel>Correo electrónico</FormLabel>
                       <FormControl>
-                        <Input placeholder="your@email.com" {...field} />
+                        <Input placeholder="tu@correo.com" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -157,7 +157,7 @@ const AuthModal = ({ isOpen, onClose, view, setView }: AuthModalProps) => {
                   name="password"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Password</FormLabel>
+                      <FormLabel>Contraseña</FormLabel>
                       <FormControl>
                         <Input type="password" placeholder="••••••••" {...field} />
                       </FormControl>
@@ -178,25 +178,25 @@ const AuthModal = ({ isOpen, onClose, view, setView }: AuthModalProps) => {
                             onCheckedChange={field.onChange}
                           />
                         </FormControl>
-                        <FormLabel className="text-sm cursor-pointer">Remember me</FormLabel>
+                        <FormLabel className="text-sm cursor-pointer">Recordarme</FormLabel>
                       </FormItem>
                     )}
                   />
                   
-                  <Button variant="link" className="p-0 h-auto" onClick={() => toast({ title: "Coming soon", description: "Password reset feature will be available soon." })}>
-                    Forgot password?
+                  <Button variant="link" className="p-0 h-auto" onClick={() => toast({ title: "Próximamente", description: "La función de restablecimiento de contraseña estará disponible pronto." })}>
+                    ¿Olvidaste la contraseña?
                   </Button>
                 </div>
                 
                 <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading ? "Logging in..." : "Log In"}
+                  {isLoading ? "Iniciando sesión..." : "Iniciar Sesión"}
                 </Button>
               </form>
             </Form>
             
             <div className="relative flex items-center justify-center my-4">
               <div className="border-t border-gray-300 absolute w-full"></div>
-              <span className="bg-background px-3 text-sm text-muted-foreground relative">or continue with</span>
+              <span className="bg-background px-3 text-sm text-muted-foreground relative">o continuar con</span>
             </div>
             
             <div className="grid grid-cols-1 gap-2">
@@ -209,17 +209,17 @@ const AuthModal = ({ isOpen, onClose, view, setView }: AuthModalProps) => {
             </div>
             
             <div className="text-center text-sm text-muted-foreground">
-              Don't have an account?{" "}
+              ¿No tienes una cuenta?{" "}
               <Button variant="link" className="p-0 h-auto" onClick={toggleView}>
-                Sign up
+                Regístrate
               </Button>
             </div>
           </>
         ) : (
           <>
-            <DialogTitle className="text-2xl text-center">Create an Account</DialogTitle>
+            <DialogTitle className="text-2xl text-center">Crear una cuenta</DialogTitle>
             <DialogDescription className="text-center">
-              Join StoryMagic to create personalized books
+              Únete a Utale para crear libros personalizados
             </DialogDescription>
             
             <Form {...signupForm}>
@@ -230,7 +230,7 @@ const AuthModal = ({ isOpen, onClose, view, setView }: AuthModalProps) => {
                     name="firstName"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>First Name</FormLabel>
+                        <FormLabel>Nombre</FormLabel>
                         <FormControl>
                           <Input {...field} />
                         </FormControl>
@@ -244,7 +244,7 @@ const AuthModal = ({ isOpen, onClose, view, setView }: AuthModalProps) => {
                     name="lastName"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Last Name</FormLabel>
+                        <FormLabel>Apellido</FormLabel>
                         <FormControl>
                           <Input {...field} />
                         </FormControl>
@@ -259,9 +259,9 @@ const AuthModal = ({ isOpen, onClose, view, setView }: AuthModalProps) => {
                   name="email"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Email</FormLabel>
+                      <FormLabel>Correo electrónico</FormLabel>
                       <FormControl>
-                        <Input placeholder="your@email.com" {...field} />
+                        <Input placeholder="tu@correo.com" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -273,9 +273,9 @@ const AuthModal = ({ isOpen, onClose, view, setView }: AuthModalProps) => {
                   name="password"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Password</FormLabel>
+                      <FormLabel>Contraseña</FormLabel>
                       <FormControl>
-                        <Input type="password" placeholder="At least 6 characters" {...field} />
+                        <Input type="password" placeholder="Al menos 6 caracteres" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
