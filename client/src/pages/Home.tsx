@@ -195,9 +195,9 @@ export default function Home() {
       <section id="how-it-works" ref={howItWorksRef} className="py-20 bg-primary-50">
         <div className="container mx-auto px-4">
           <div className="text-center max-w-2xl mx-auto mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold font-heading text-gray-900 mb-4">How StoryMagic Works</h2>
+            <h2 className="text-3xl md:text-4xl font-bold font-heading text-gray-900 mb-4">¿Cómo funciona Utale?</h2>
             <p className="text-lg text-gray-600">
-              Creating your personalized book is simple and fun with our easy four-step process.
+              Crear tu libro personalizado es sencillo y divertido con nuestro proceso de cuatro pasos.
             </p>
           </div>
           
@@ -209,9 +209,9 @@ export default function Home() {
                 <div className="bg-primary w-12 h-12 flex items-center justify-center rounded-full mb-4 text-white font-bold text-xl">
                   1
                 </div>
-                <h3 className="text-xl font-bold font-heading text-gray-900 mb-2">Create a Profile</h3>
+                <h3 className="text-xl font-bold font-heading text-gray-900 mb-2">Crea un perfil</h3>
                 <p className="text-gray-600">
-                  Build your child's profile through our friendly chat interface, sharing details about their interests, friends, and personality.
+                  Crea el perfil de tu hijo a través de nuestra amigable interfaz de chat, compartiendo detalles sobre sus intereses, amigos y personalidad.
                 </p>
               </div>
               
@@ -219,9 +219,9 @@ export default function Home() {
                 <div className="bg-primary w-12 h-12 flex items-center justify-center rounded-full mb-4 text-white font-bold text-xl">
                   2
                 </div>
-                <h3 className="text-xl font-bold font-heading text-gray-900 mb-2">Choose a Story Theme</h3>
+                <h3 className="text-xl font-bold font-heading text-gray-900 mb-2">Elige un tema</h3>
                 <p className="text-gray-600">
-                  Select from various themes like space adventures, underwater journeys, magical kingdoms, or everyday heroes.
+                  Selecciona entre varios temas como aventuras espaciales, viajes submarinos, reinos mágicos o héroes cotidianos.
                 </p>
               </div>
               
@@ -229,9 +229,9 @@ export default function Home() {
                 <div className="bg-primary w-12 h-12 flex items-center justify-center rounded-full mb-4 text-white font-bold text-xl">
                   3
                 </div>
-                <h3 className="text-xl font-bold font-heading text-gray-900 mb-2">Preview & Customize</h3>
+                <h3 className="text-xl font-bold font-heading text-gray-900 mb-2">Vista previa y personalización</h3>
                 <p className="text-gray-600">
-                  Review your generated story, make any desired adjustments, and see how it all comes together before finalizing.
+                  Revisa tu historia generada, haz los ajustes que desees y visualiza el resultado final antes de confirmar.
                 </p>
               </div>
               
@@ -239,9 +239,9 @@ export default function Home() {
                 <div className="bg-primary w-12 h-12 flex items-center justify-center rounded-full mb-4 text-white font-bold text-xl">
                   4
                 </div>
-                <h3 className="text-xl font-bold font-heading text-gray-900 mb-2">Order & Enjoy</h3>
+                <h3 className="text-xl font-bold font-heading text-gray-900 mb-2">Ordena y disfruta</h3>
                 <p className="text-gray-600">
-                  Choose your preferred format (digital, hardcover, softcover), place your order, and enjoy your unique creation.
+                  Elige tu formato preferido (digital, tapa dura, tapa blanda), realiza tu pedido y disfruta de tu creación única.
                 </p>
               </div>
             </div>
@@ -252,7 +252,7 @@ export default function Home() {
               onClick={handleCreateProfile} 
               className="px-6 py-3 rounded-full text-lg font-medium"
             >
-              Start Creating Your Story
+              Comienza a crear tu historia
             </Button>
           </div>
         </div>
