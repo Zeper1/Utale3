@@ -262,9 +262,9 @@ export default function Home() {
       <section id="book-showcase" ref={bookShowcaseRef} className="py-20 bg-white">
         <div className="container mx-auto px-4">
           <div className="text-center max-w-2xl mx-auto mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold font-heading text-gray-900 mb-4">Book Showcase</h2>
+            <h2 className="text-3xl md:text-4xl font-bold font-heading text-gray-900 mb-4">Muestra de libros</h2>
             <p className="text-lg text-gray-600">
-              Browse through some examples of our magical personalized storybooks.
+              Explora algunos ejemplos de nuestros mágicos libros personalizados.
             </p>
           </div>
           
@@ -278,13 +278,13 @@ export default function Home() {
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent"></div>
                 <div className="absolute bottom-0 left-0 p-6 text-white">
-                  <h3 className="text-xl font-bold font-heading">Space Adventure</h3>
-                  <p className="text-sm text-white/80">Ages 4-8</p>
+                  <h3 className="text-xl font-bold font-heading">Aventura Espacial</h3>
+                  <p className="text-sm text-white/80">Edades 4-8</p>
                 </div>
               </div>
               <div className="p-6 bg-white">
                 <p className="text-gray-600 mb-4">
-                  Join [Child's Name] on an exciting journey through the cosmos, where they'll discover strange planets and make alien friends.
+                  Acompaña a [Nombre del niño] en un emocionante viaje por el cosmos, donde descubrirá planetas extraños y hará amigos alienígenas.
                 </p>
                 <Button 
                   onClick={handleCreateProfile}
@@ -305,13 +305,13 @@ export default function Home() {
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent"></div>
                 <div className="absolute bottom-0 left-0 p-6 text-white">
-                  <h3 className="text-xl font-bold font-heading">Underwater Kingdom</h3>
-                  <p className="text-sm text-white/80">Ages 3-7</p>
+                  <h3 className="text-xl font-bold font-heading">Reino Submarino</h3>
+                  <p className="text-sm text-white/80">Edades 3-7</p>
                 </div>
               </div>
               <div className="p-6 bg-white">
                 <p className="text-gray-600 mb-4">
-                  Dive deep with [Child's Name] as they explore an enchanted underwater world filled with friendly sea creatures and hidden treasures.
+                  Sumérgete con [Nombre del niño] mientras explora un mundo submarino encantado lleno de amistosas criaturas marinas y tesoros escondidos.
                 </p>
                 <Button 
                   onClick={handleCreateProfile}
@@ -332,13 +332,13 @@ export default function Home() {
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent"></div>
                 <div className="absolute bottom-0 left-0 p-6 text-white">
-                  <h3 className="text-xl font-bold font-heading">Magical Forest</h3>
-                  <p className="text-sm text-white/80">Ages 4-9</p>
+                  <h3 className="text-xl font-bold font-heading">Bosque Mágico</h3>
+                  <p className="text-sm text-white/80">Edades 4-9</p>
                 </div>
               </div>
               <div className="p-6 bg-white">
                 <p className="text-gray-600 mb-4">
-                  Follow [Child's Name] as they discover a magical forest where talking animals and enchanted trees help them on a special quest.
+                  Sigue a [Nombre del niño] mientras descubre un bosque mágico donde animales parlantes y árboles encantados le ayudan en una misión especial.
                 </p>
                 <Button 
                   onClick={handleCreateProfile}
