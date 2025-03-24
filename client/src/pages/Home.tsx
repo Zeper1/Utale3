@@ -400,7 +400,7 @@ export default function Home() {
                   variant="outline" 
                   className="w-full py-3 rounded-full border border-primary text-primary hover:bg-primary-50 font-medium"
                 >
-                  Choose Digital
+                  Elegir Digital
                 </Button>
               </div>
             </div>
@@ -408,42 +408,42 @@ export default function Home() {
             {/* Softcover Option */}
             <div className="bg-white rounded-xl overflow-hidden shadow-card border border-primary-200 relative transform scale-105 z-10">
               <div className="absolute top-0 right-0 bg-primary text-white text-xs py-1 px-3 rounded-bl-lg font-medium">
-                Most Popular
+                Más Popular
               </div>
               <div className="p-6 border-b border-gray-100 bg-primary-50">
-                <h3 className="text-xl font-bold font-heading text-gray-900 mb-2">Softcover Book</h3>
+                <h3 className="text-xl font-bold font-heading text-gray-900 mb-2">Libro Tapa Blanda</h3>
                 <div className="flex items-end gap-1 mb-4">
-                  <span className="text-3xl font-bold text-gray-900">$24.99</span>
-                  <span className="text-sm text-gray-500 mb-1">per book</span>
+                  <span className="text-3xl font-bold text-gray-900">24,99€</span>
+                  <span className="text-sm text-gray-500 mb-1">por libro</span>
                 </div>
                 <p className="text-gray-600 text-sm">
-                  Beautiful softcover edition plus digital version included.
+                  Hermosa edición de tapa blanda con versión digital incluida.
                 </p>
               </div>
               <div className="p-6">
                 <ul className="space-y-3 mb-6">
                   <li className="flex items-start gap-3">
                     <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
-                    <span className="text-gray-600">Printed softcover book</span>
+                    <span className="text-gray-600">Libro impreso tapa blanda</span>
                   </li>
                   <li className="flex items-start gap-3">
                     <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
-                    <span className="text-gray-600">Digital copy included</span>
+                    <span className="text-gray-600">Copia digital incluida</span>
                   </li>
                   <li className="flex items-start gap-3">
                     <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
-                    <span className="text-gray-600">Premium color printing</span>
+                    <span className="text-gray-600">Impresión a color premium</span>
                   </li>
                   <li className="flex items-start gap-3">
                     <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
-                    <span className="text-gray-600">Free shipping</span>
+                    <span className="text-gray-600">Envío gratuito</span>
                   </li>
                 </ul>
                 <Button 
                   onClick={handleCreateProfile}
                   className="w-full py-3 rounded-full font-medium"
                 >
-                  Choose Softcover
+                  Elegir Tapa Blanda
                 </Button>
               </div>
             </div>
@@ -451,32 +451,32 @@ export default function Home() {
             {/* Hardcover Option */}
             <div className="bg-white rounded-xl overflow-hidden shadow-soft border border-gray-100 transition-transform hover:-translate-y-1 duration-300">
               <div className="p-6 border-b border-gray-100">
-                <h3 className="text-xl font-bold font-heading text-gray-900 mb-2">Hardcover Book</h3>
+                <h3 className="text-xl font-bold font-heading text-gray-900 mb-2">Libro Tapa Dura</h3>
                 <div className="flex items-end gap-1 mb-4">
-                  <span className="text-3xl font-bold text-gray-900">$34.99</span>
-                  <span className="text-sm text-gray-500 mb-1">per book</span>
+                  <span className="text-3xl font-bold text-gray-900">34,99€</span>
+                  <span className="text-sm text-gray-500 mb-1">por libro</span>
                 </div>
                 <p className="text-gray-600 text-sm">
-                  Premium hardcover edition built to last for years.
+                  Edición premium de tapa dura diseñada para durar años.
                 </p>
               </div>
               <div className="p-6">
                 <ul className="space-y-3 mb-6">
                   <li className="flex items-start gap-3">
                     <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
-                    <span className="text-gray-600">Durable hardcover book</span>
+                    <span className="text-gray-600">Libro duradero de tapa dura</span>
                   </li>
                   <li className="flex items-start gap-3">
                     <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
-                    <span className="text-gray-600">Digital copy included</span>
+                    <span className="text-gray-600">Copia digital incluida</span>
                   </li>
                   <li className="flex items-start gap-3">
                     <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
-                    <span className="text-gray-600">Highest quality printing</span>
+                    <span className="text-gray-600">Impresión de máxima calidad</span>
                   </li>
                   <li className="flex items-start gap-3">
                     <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
-                    <span className="text-gray-600">Gift-ready packaging</span>
+                    <span className="text-gray-600">Empaquetado listo para regalo</span>
                   </li>
                 </ul>
                 <Button 
@@ -484,7 +484,7 @@ export default function Home() {
                   variant="outline" 
                   className="w-full py-3 rounded-full border border-primary text-primary hover:bg-primary-50 font-medium"
                 >
-                  Choose Hardcover
+                  Elegir Tapa Dura
                 </Button>
               </div>
             </div>
@@ -496,9 +496,9 @@ export default function Home() {
                 <Info className="h-6 w-6" />
               </div>
               <div>
-                <h4 className="font-medium text-gray-900 mb-1">Bulk discounts available</h4>
+                <h4 className="font-medium text-gray-900 mb-1">Descuentos por volumen disponibles</h4>
                 <p className="text-gray-600 text-sm">
-                  Creating books for multiple children or as gifts? Contact us for special pricing on orders of 3 or more books.
+                  ¿Creando libros para varios niños o como regalos? Contáctanos para precios especiales en pedidos de 3 o más libros.
                 </p>
               </div>
               <div className="shrink-0 ml-auto">
@@ -506,7 +506,7 @@ export default function Home() {
                   variant="secondary" 
                   className="whitespace-nowrap rounded-full text-sm"
                 >
-                  Contact Us
+                  Contáctanos
                 </Button>
               </div>
             </div>
@@ -518,9 +518,9 @@ export default function Home() {
       <section className="py-20 bg-white">
         <div className="container mx-auto px-4">
           <div className="text-center max-w-2xl mx-auto mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold font-heading text-gray-900 mb-4">What Parents Say</h2>
+            <h2 className="text-3xl md:text-4xl font-bold font-heading text-gray-900 mb-4">Lo Que Dicen Los Padres</h2>
             <p className="text-lg text-gray-600">
-              See why families love StoryMagic personalized books.
+              Descubre por qué las familias adoran los libros personalizados de Utale.
             </p>
           </div>
           
@@ -532,17 +532,17 @@ export default function Home() {
                 ))}
               </div>
               <p className="text-gray-700 mb-6 italic">
-                "My daughter's face lit up when she saw herself as the main character in her book. She asks me to read it every night! The personalization is incredibly detailed."
+                "La cara de mi hija se iluminó cuando se vio a sí misma como protagonista del libro. ¡Me pide que se lo lea todas las noches! La personalización es increíblemente detallada."
               </p>
               <div className="flex items-center gap-3">
                 <img 
                   src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=60&h=60&q=80" 
-                  alt="Sarah J." 
+                  alt="Sara J." 
                   className="w-12 h-12 rounded-full object-cover"
                 />
                 <div>
-                  <h4 className="font-medium text-gray-900">Sarah J.</h4>
-                  <p className="text-sm text-gray-500">Mother of Emma, 5</p>
+                  <h4 className="font-medium text-gray-900">Sara J.</h4>
+                  <p className="text-sm text-gray-500">Madre de Emma, 5</p>
                 </div>
               </div>
             </div>
