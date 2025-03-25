@@ -1,4 +1,4 @@
-import type { Express, Request, Response } from "express";
+import express, { type Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { 
@@ -17,6 +17,8 @@ import { z } from "zod";
 import Stripe from "stripe";
 import * as fs from "fs";
 import * as path from "path";
+import multer from "multer";
+import * as crypto from "crypto";
 
 // Initialize OpenAI
 const openai = new OpenAI({
@@ -868,6 +870,94 @@ Esta imagen es para un libro infantil que será leído por niños.
       res.status(500).json({ message: "Failed to create book preview" });
     }
   });
+
+  // Configuración para subida de imágenes
+  const uploadsDir = path.join(process.cwd(), 'public', 'uploads');
+  
+  // Asegurarnos de que el directorio de uploads existe
+  if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir, { recursive: true });
+  }
+  
+  // Configurar almacenamiento para multer
+  const multerStorage = multer.diskStorage({
+    destination: (_req, _file, cb) => {
+      cb(null, uploadsDir);
+    },
+    filename: (_req, file, cb) => {
+      // Generar un nombre de archivo único para evitar colisiones
+      const randomName = crypto.randomBytes(16).toString('hex');
+      const fileExt = path.extname(file.originalname).toLowerCase();
+      cb(null, `${randomName}${fileExt}`);
+    }
+  });
+  
+  // Filtrar solo imágenes
+  const fileFilter = (_req: any, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Solo se permiten archivos de imagen'));
+    }
+  };
+  
+  const upload = multer({ 
+    storage: multerStorage, 
+    fileFilter,
+    limits: {
+      fileSize: 5 * 1024 * 1024 // Límite de 5MB
+    }
+  });
+  
+  // Ruta para subir imagen de perfil
+  app.post('/api/profiles/:id/avatar', upload.single('avatar'), async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: 'No se ha subido ninguna imagen' });
+      }
+      
+      const profileId = parseInt(req.params.id);
+      const profile = await storage.getChildProfile(profileId);
+      
+      if (!profile) {
+        // Eliminar archivo si el perfil no existe
+        if (req.file.path) {
+          fs.unlinkSync(req.file.path);
+        }
+        return res.status(404).json({ message: 'Perfil no encontrado' });
+      }
+      
+      // Si el perfil ya tenía una imagen, eliminarla
+      if (profile.avatarUrl) {
+        const oldAvatarPath = path.join(process.cwd(), 'public', profile.avatarUrl.replace(/^\//, ''));
+        if (fs.existsSync(oldAvatarPath)) {
+          fs.unlinkSync(oldAvatarPath);
+        }
+      }
+      
+      // La URL relativa para acceder a la imagen
+      const avatarUrl = `/uploads/${path.basename(req.file.path)}`;
+      
+      // Actualizar el perfil con la URL de la imagen
+      const updatedProfile = await storage.updateChildProfile(profileId, { avatarUrl });
+      
+      if (!updatedProfile) {
+        return res.status(500).json({ message: 'Error al actualizar el perfil' });
+      }
+      
+      res.status(200).json({ 
+        profileId, 
+        avatarUrl, 
+        message: 'Imagen de perfil actualizada exitosamente' 
+      });
+    } catch (error) {
+      console.error('Error en subida de imagen:', error);
+      res.status(500).json({ message: 'Error en la subida de la imagen de perfil' });
+    }
+  });
+  
+  // Servir archivos estáticos de la carpeta public
+  app.use('/uploads', express.static(path.join(process.cwd(), 'public', 'uploads')));
 
   const httpServer = createServer(app);
   // --- Subscription Tier Routes ---

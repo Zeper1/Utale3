@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useLocation, Link } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -27,14 +28,23 @@ import {
   ChevronRight, 
   Check,
   Eye,
-  Loader2
+  Loader2,
+  Upload,
+  Camera
 } from "lucide-react";
 
 // Form schema for child profile creation
 const profileSchema = z.object({
-  name: z.string().min(2, "Name must be at least 2 characters"),
-  age: z.string().transform(val => parseInt(val, 10)).refine(val => !isNaN(val) && val > 0 && val <= 18, "Age must be between 1 and 18"),
+  name: z.string().min(2, "El nombre debe tener al menos 2 caracteres"),
+  age: z.string()
+    .transform(val => parseInt(val, 10))
+    .refine(val => !isNaN(val) && val > 0 && val <= 18, "La edad debe estar entre 1 y 18 años"),
   gender: z.string().optional(),
+  physicalDescription: z.string().optional(),
+  personality: z.string().optional(),
+  likes: z.string().optional(),
+  dislikes: z.string().optional(),
+  additionalInfo: z.string().optional(),
 });
 
 type ProfileFormValues = z.infer<typeof profileSchema>;
@@ -45,6 +55,10 @@ export default function Dashboard() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isNewProfileOpen, setIsNewProfileOpen] = useState(false);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Redirect if not logged in
   useEffect(() => {
@@ -112,6 +126,60 @@ export default function Dashboard() {
     }
   });
 
+  // Handle file input change
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setAvatarFile(file);
+      
+      // Create preview
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setAvatarPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Trigger file input click
+  const handleUploadClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  // Upload avatar for a profile
+  const uploadAvatar = async (profileId: number) => {
+    if (!avatarFile) return null;
+    
+    setUploadingAvatar(true);
+    
+    try {
+      const formData = new FormData();
+      formData.append('avatar', avatarFile);
+      
+      const response = await fetch(`/api/profiles/${profileId}/avatar`, {
+        method: 'POST',
+        body: formData,
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to upload avatar');
+      }
+      
+      const data = await response.json();
+      setUploadingAvatar(false);
+      return data.avatarUrl;
+    } catch (error) {
+      console.error('Error uploading avatar:', error);
+      toast({
+        title: "Error al subir imagen",
+        description: "No se pudo subir la imagen de perfil. Por favor, inténtalo de nuevo.",
+        variant: "destructive",
+      });
+      setUploadingAvatar(false);
+      return null;
+    }
+  };
+
   // Configure profile form
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileSchema),
@@ -119,21 +187,65 @@ export default function Dashboard() {
       name: "",
       age: "",
       gender: "",
+      physicalDescription: "",
+      personality: "",
+      likes: "",
+      dislikes: "",
+      additionalInfo: ""
     },
   });
 
   // Handle form submission
-  const onSubmit = (values: ProfileFormValues) => {
-    createProfile.mutate({
-      name: values.name,
-      age: parseInt(values.age.toString(), 10),
-      gender: values.gender,
-      userId: user?.id,
-      interests: [],
-      favorites: {},
-      friends: [],
-      traits: [],
-    });
+  const onSubmit = async (values: ProfileFormValues) => {
+    try {
+      // First create the profile
+      const profileResponse = await apiRequest('POST', '/api/profiles', { 
+        name: values.name,
+        age: parseInt(values.age.toString(), 10),
+        gender: values.gender,
+        userId: user?.id,
+        interests: [],
+        favorites: {},
+        friends: [],
+        traits: [],
+        physicalDescription: values.physicalDescription || null,
+        personality: values.personality || null,
+        likes: values.likes || null,
+        dislikes: values.dislikes || null,
+        additionalInfo: values.additionalInfo || null,
+      });
+      
+      if (!profileResponse.ok) {
+        throw new Error('Failed to create profile');
+      }
+      
+      const profile = await profileResponse.json();
+      
+      // If we have an avatar file, upload it
+      if (avatarFile) {
+        await uploadAvatar(profile.id);
+      }
+      
+      // Refresh the profiles list
+      queryClient.invalidateQueries({ queryKey: ['/api/users', user?.id, 'profiles'] });
+      
+      // Close the dialog and reset form
+      setIsNewProfileOpen(false);
+      setAvatarFile(null);
+      setAvatarPreview(null);
+      form.reset();
+      
+      toast({
+        title: "Perfil creado",
+        description: "El perfil del niño ha sido creado exitosamente.",
+      });
+    } catch (error) {
+      toast({
+        title: "Error al crear perfil",
+        description: "Hubo un error al crear el perfil. Por favor, inténtalo de nuevo.",
+        variant: "destructive",
+      });
+    }
   };
 
   // Navigate to profile chat
