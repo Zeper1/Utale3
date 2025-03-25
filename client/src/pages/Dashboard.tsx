@@ -551,25 +551,70 @@ export default function Dashboard() {
       </Tabs>
 
       {/* Create Profile Dialog */}
-      <Dialog open={isNewProfileOpen} onOpenChange={setIsNewProfileOpen}>
-        <DialogContent className="sm:max-w-[500px]">
+      <Dialog open={isNewProfileOpen} onOpenChange={(open) => {
+        if (!open) {
+          form.reset();
+          setAvatarFile(null);
+          setAvatarPreview(null);
+        }
+        setIsNewProfileOpen(open);
+      }}>
+        <DialogContent className="sm:max-w-[550px]">
           <DialogHeader>
-            <DialogTitle>Create Child Profile</DialogTitle>
+            <DialogTitle>Crear perfil infantil</DialogTitle>
             <DialogDescription>
-              Add basic information about the child to personalize their stories. You can add more details later through the chat interface.
+              Añade detalles sobre el niño para personalizar sus historias. Podrás actualizar esta información más adelante.
             </DialogDescription>
           </DialogHeader>
           
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              {/* Avatar upload */}
+              <div className="flex flex-col items-center space-y-4 mb-6">
+                <div 
+                  className="w-24 h-24 rounded-full border-2 border-dashed border-gray-300 flex items-center justify-center overflow-hidden cursor-pointer hover:border-primary transition-colors"
+                  onClick={handleUploadClick}
+                >
+                  {avatarPreview ? (
+                    <img 
+                      src={avatarPreview} 
+                      alt="Avatar preview" 
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <Camera className="h-8 w-8 text-gray-400" />
+                  )}
+                </div>
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  className="hidden"
+                  accept="image/*"
+                  onChange={handleFileChange}
+                />
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  size="sm"
+                  onClick={handleUploadClick}
+                  className="flex items-center gap-2"
+                >
+                  <Upload className="h-4 w-4" />
+                  Subir foto
+                </Button>
+                <p className="text-xs text-gray-500 text-center">
+                  Opcional: Sube una foto del niño para personalizar su avatar en los libros
+                </p>
+              </div>
+
               <FormField
                 control={form.control}
                 name="name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Child's Name</FormLabel>
+                    <FormLabel>Nombre</FormLabel>
                     <FormControl>
-                      <Input placeholder="Enter name" {...field} />
+                      <Input placeholder="Nombre del niño" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -582,13 +627,13 @@ export default function Dashboard() {
                   name="age"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Age</FormLabel>
+                      <FormLabel>Edad</FormLabel>
                       <FormControl>
                         <Input 
                           type="number" 
                           min="1" 
                           max="18" 
-                          placeholder="Age" 
+                          placeholder="Edad" 
                           {...field} 
                         />
                       </FormControl>
@@ -602,21 +647,21 @@ export default function Dashboard() {
                   name="gender"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Gender (Optional)</FormLabel>
+                      <FormLabel>Género (Opcional)</FormLabel>
                       <Select 
                         onValueChange={field.onChange} 
                         defaultValue={field.value}
                       >
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder="Select gender" />
+                            <SelectValue placeholder="Selecciona género" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="boy">Boy</SelectItem>
-                          <SelectItem value="girl">Girl</SelectItem>
-                          <SelectItem value="non-binary">Non-binary</SelectItem>
-                          <SelectItem value="prefer-not-to-say">Prefer not to say</SelectItem>
+                          <SelectItem value="boy">Niño</SelectItem>
+                          <SelectItem value="girl">Niña</SelectItem>
+                          <SelectItem value="non-binary">No binario</SelectItem>
+                          <SelectItem value="prefer-not-to-say">Prefiero no decirlo</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />
@@ -624,17 +669,119 @@ export default function Dashboard() {
                   )}
                 />
               </div>
-              
-              <FormDescription>
-                After creating the profile, you'll be able to add more details through the chat interface to make the stories even more personalized.
-              </FormDescription>
+
+              {/* Additional description fields */}
+              <FormField
+                control={form.control}
+                name="physicalDescription"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Descripción física (Opcional)</FormLabel>
+                    <FormControl>
+                      <Textarea 
+                        placeholder="Describe el aspecto físico del niño: color de pelo, ojos, altura, etc." 
+                        className="resize-none" 
+                        {...field} 
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="personality"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Personalidad (Opcional)</FormLabel>
+                    <FormControl>
+                      <Textarea 
+                        placeholder="Describe la personalidad del niño: tímido, aventurero, curioso, etc." 
+                        className="resize-none" 
+                        {...field} 
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="likes"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Le gusta (Opcional)</FormLabel>
+                      <FormControl>
+                        <Textarea 
+                          placeholder="¿Qué le gusta al niño? Juguetes, actividades, comidas favoritas..." 
+                          className="resize-none h-24" 
+                          {...field} 
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="dislikes"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>No le gusta (Opcional)</FormLabel>
+                      <FormControl>
+                        <Textarea 
+                          placeholder="¿Qué no le gusta al niño? Comidas, situaciones, miedos..." 
+                          className="resize-none h-24" 
+                          {...field} 
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <FormField
+                control={form.control}
+                name="additionalInfo"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Información adicional (Opcional)</FormLabel>
+                    <FormControl>
+                      <Textarea 
+                        placeholder="Cualquier otra información relevante que quieras compartir para personalizar mejor los libros" 
+                        className="resize-none" 
+                        {...field} 
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
               
               <DialogFooter>
-                <Button variant="outline" type="button" onClick={() => setIsNewProfileOpen(false)}>
-                  Cancel
+                <Button variant="outline" type="button" onClick={() => {
+                  setIsNewProfileOpen(false);
+                  form.reset();
+                  setAvatarFile(null);
+                  setAvatarPreview(null);
+                }}>
+                  Cancelar
                 </Button>
-                <Button type="submit" disabled={createProfile.isPending}>
-                  {createProfile.isPending ? "Creating..." : "Create Profile"}
+                <Button 
+                  type="submit" 
+                  disabled={createProfile.isPending || uploadingAvatar}
+                >
+                  {createProfile.isPending || uploadingAvatar ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Creando...
+                    </>
+                  ) : 'Crear perfil'}
                 </Button>
               </DialogFooter>
             </form>
