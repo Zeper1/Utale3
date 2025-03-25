@@ -274,17 +274,17 @@ export default function Dashboard() {
     <div className="container mx-auto px-4 py-12">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
         <div>
-          <h1 className="text-3xl font-bold">My Dashboard</h1>
-          <p className="text-gray-600">Manage profiles, books, and orders all in one place</p>
+          <h1 className="text-3xl font-bold">Mi panel</h1>
+          <p className="text-gray-600">Gestiona perfiles, libros y pedidos en un solo lugar</p>
         </div>
         <div className="flex gap-4">
           <Button onClick={goToCreateBook} className="flex items-center gap-2">
             <BookOpen className="h-4 w-4" />
-            Create New Book
+            Crear nuevo libro
           </Button>
           <Button onClick={() => setIsNewProfileOpen(true)} variant="outline" className="flex items-center gap-2">
             <User className="h-4 w-4" />
-            Add Child Profile
+            Añadir perfil infantil
           </Button>
         </div>
       </div>
@@ -337,26 +337,77 @@ export default function Dashboard() {
               {childProfiles.map((profile: any) => (
                 <Card key={profile.id} className="overflow-hidden">
                   <CardHeader className="bg-primary-50 pb-4">
-                    <div className="flex justify-between items-start">
-                      <CardTitle>{profile.name}</CardTitle>
-                      <div className="flex items-center gap-1">
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
+                    <div className="flex items-start gap-4">
+                      <div className="h-16 w-16 rounded-full overflow-hidden bg-gray-200 flex-shrink-0">
+                        {profile.avatarUrl ? (
+                          <img 
+                            src={profile.avatarUrl} 
+                            alt={`Avatar de ${profile.name}`} 
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <User className="h-8 w-8 text-gray-400" />
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex justify-between items-start">
+                          <CardTitle>{profile.name}</CardTitle>
+                          <div className="flex items-center gap-1">
+                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                        <CardDescription>
+                          {profile.age} años • {profile.gender === 'boy' ? 'Niño' : 
+                                        profile.gender === 'girl' ? 'Niña' : 
+                                        profile.gender === 'non-binary' ? 'No binario' : 
+                                        "No especificado"}
+                        </CardDescription>
                       </div>
                     </div>
-                    <CardDescription>
-                      {profile.age} years old • {profile.gender || "Not specified"}
-                    </CardDescription>
                   </CardHeader>
                   <CardContent className="pt-6">
                     <div className="space-y-4">
+                      {profile.physicalDescription && (
+                        <div>
+                          <h4 className="text-sm font-semibold mb-1">Descripción física</h4>
+                          <p className="text-sm text-gray-600">{profile.physicalDescription}</p>
+                        </div>
+                      )}
+                      
+                      {profile.personality && (
+                        <div>
+                          <h4 className="text-sm font-semibold mb-1">Personalidad</h4>
+                          <p className="text-sm text-gray-600">{profile.personality}</p>
+                        </div>
+                      )}
+                      
+                      <div className="grid grid-cols-2 gap-4">
+                        {profile.likes && (
+                          <div>
+                            <h4 className="text-sm font-semibold mb-1">Le gusta</h4>
+                            <p className="text-sm text-gray-600">{profile.likes}</p>
+                          </div>
+                        )}
+                        
+                        {profile.dislikes && (
+                          <div>
+                            <h4 className="text-sm font-semibold mb-1">No le gusta</h4>
+                            <p className="text-sm text-gray-600">{profile.dislikes}</p>
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* Mantener los campos originales si están presentes */}
                       {profile.interests && profile.interests.length > 0 && (
                         <div>
-                          <h4 className="text-sm font-semibold mb-1">Interests</h4>
+                          <h4 className="text-sm font-semibold mb-1">Intereses</h4>
                           <div className="flex flex-wrap gap-1">
                             {profile.interests.map((interest: string, idx: number) => (
                               <span key={idx} className="bg-gray-100 px-2 py-1 rounded-full text-xs">
@@ -369,17 +420,17 @@ export default function Dashboard() {
                       
                       {profile.friends && profile.friends.length > 0 && (
                         <div>
-                          <h4 className="text-sm font-semibold mb-1">Friends</h4>
+                          <h4 className="text-sm font-semibold mb-1">Amigos</h4>
                           <p className="text-sm text-gray-600">
                             {profile.friends.slice(0, 3).join(", ")}
-                            {profile.friends.length > 3 && ` and ${profile.friends.length - 3} more`}
+                            {profile.friends.length > 3 && ` y ${profile.friends.length - 3} más`}
                           </p>
                         </div>
                       )}
                       
                       {profile.traits && profile.traits.length > 0 && (
                         <div>
-                          <h4 className="text-sm font-semibold mb-1">Personality</h4>
+                          <h4 className="text-sm font-semibold mb-1">Rasgos</h4>
                           <div className="flex flex-wrap gap-1">
                             {profile.traits.slice(0, 3).map((trait: string, idx: number) => (
                               <span key={idx} className="bg-gray-100 px-2 py-1 rounded-full text-xs">
@@ -387,7 +438,7 @@ export default function Dashboard() {
                               </span>
                             ))}
                             {profile.traits.length > 3 && (
-                              <span className="text-xs text-gray-500">+{profile.traits.length - 3} more</span>
+                              <span className="text-xs text-gray-500">+{profile.traits.length - 3} más</span>
                             )}
                           </div>
                         </div>
@@ -399,7 +450,7 @@ export default function Dashboard() {
                       <MessageSquare className="h-4 w-4" /> Chat
                     </Button>
                     <Button onClick={goToCreateBook} className="flex-1 gap-1">
-                      <BookOpen className="h-4 w-4" /> Create Book
+                      <BookOpen className="h-4 w-4" /> Crear libro
                     </Button>
                   </CardFooter>
                 </Card>
@@ -408,12 +459,12 @@ export default function Dashboard() {
                 <div className="bg-gray-100 p-4 rounded-full mb-4">
                   <Plus className="h-6 w-6 text-gray-400" />
                 </div>
-                <h3 className="text-lg font-medium mb-2">Add Another Profile</h3>
+                <h3 className="text-lg font-medium mb-2">Añadir otro perfil</h3>
                 <p className="text-gray-500 text-sm mb-4 text-center">
-                  Create profiles for more children to personalize books for them
+                  Crea perfiles para más niños y personaliza libros para ellos
                 </p>
                 <Button onClick={() => setIsNewProfileOpen(true)} variant="outline">
-                  Add Profile
+                  Añadir perfil
                 </Button>
               </Card>
             </div>
