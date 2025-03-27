@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -30,7 +31,8 @@ import {
   Eye,
   Loader2,
   Upload,
-  Camera
+  Camera,
+  Trash
 } from "lucide-react";
 
 // Form schema for character creation
@@ -68,6 +70,8 @@ export default function Dashboard() {
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [characterType, setCharacterType] = useState<string>("child");
+  const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
+  const [selectedProfile, setSelectedProfile] = useState<any>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Redirect if not logged in
@@ -129,8 +133,50 @@ export default function Dashboard() {
     },
     onError: (error) => {
       toast({
-        title: "Error creating profile",
-        description: "There was an error creating the profile. Please try again.",
+        title: "Error al crear perfil",
+        description: "Hubo un error al crear el perfil. Por favor, inténtalo de nuevo.",
+        variant: "destructive",
+      });
+    }
+  });
+  
+  // Update character profile mutation
+  const updateProfile = useMutation({
+    mutationFn: (profileData: any) => 
+      apiRequest('PATCH', `/api/profiles/${profileData.id}`, profileData),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/users', user?.id, 'characters'] });
+      setIsEditProfileOpen(false);
+      setSelectedProfile(null);
+      toast({
+        title: "Perfil actualizado",
+        description: "El perfil ha sido actualizado exitosamente.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error al actualizar perfil",
+        description: "Hubo un error al actualizar el perfil. Por favor, inténtalo de nuevo.",
+        variant: "destructive",
+      });
+    }
+  });
+  
+  // Delete character profile mutation
+  const deleteProfile = useMutation({
+    mutationFn: (profileId: number) => 
+      apiRequest('DELETE', `/api/profiles/${profileId}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/users', user?.id, 'characters'] });
+      toast({
+        title: "Perfil eliminado",
+        description: "El perfil ha sido eliminado exitosamente.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error al eliminar perfil",
+        description: "Hubo un error al eliminar el perfil. Por favor, inténtalo de nuevo.",
         variant: "destructive",
       });
     }
@@ -367,12 +413,69 @@ export default function Dashboard() {
                         <div className="flex justify-between items-start">
                           <CardTitle>{profile.name}</CardTitle>
                           <div className="flex items-center gap-1">
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-8 w-8"
+                              onClick={() => {
+                                setSelectedProfile(profile);
+                                setCharacterType(profile.type || 'child');
+                                setIsEditProfileOpen(true);
+                                form.reset({
+                                  name: profile.name,
+                                  type: profile.type || 'child',
+                                  age: profile.age,
+                                  gender: profile.gender || '',
+                                  physicalDescription: profile.physicalDescription || '',
+                                  personality: profile.personality || '',
+                                  likes: profile.likes || '',
+                                  dislikes: profile.dislikes || '',
+                                  additionalInfo: profile.additionalInfo || ''
+                                });
+                                if (profile.avatarUrl) {
+                                  setAvatarPreview(profile.avatarUrl);
+                                }
+                              }}
+                            >
                               <Pencil className="h-4 w-4" />
                             </Button>
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8">
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem
+                                  onClick={() => goToProfileChat(profile.id)}
+                                  className="cursor-pointer"
+                                >
+                                  <MessageSquare className="mr-2 h-4 w-4" />
+                                  <span>Chatear</span>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() => {
+                                    setLocation(`/create-book?character=${profile.id}`);
+                                  }}
+                                  className="cursor-pointer"
+                                >
+                                  <BookOpen className="mr-2 h-4 w-4" />
+                                  <span>Crear libro con este personaje</span>
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem
+                                  onClick={() => {
+                                    if (confirm(`¿Estás seguro de que quieres eliminar a ${profile.name}?`)) {
+                                      deleteProfile.mutate(profile.id);
+                                    }
+                                  }}
+                                  className="text-red-600 cursor-pointer"
+                                >
+                                  <Trash className="mr-2 h-4 w-4" />
+                                  <span>Eliminar personaje</span>
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
                           </div>
                         </div>
                         <CardDescription>
