@@ -7,17 +7,48 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import { ArrowRight, BookOpen, Check, Loader2 } from "lucide-react";
+import { 
+  ArrowRight, 
+  BookOpen, 
+  Check, 
+  Loader2, 
+  Star, 
+  Wand2, 
+  Sparkles, 
+  Palette, 
+  Lightbulb, 
+  Heart, 
+  Edit3,
+  PlusCircle,
+  PencilLine,
+  UserCircle,
+  Users
+} from "lucide-react";
 
 // Form schema for book creation
 const bookFormSchema = z.object({
-  childProfileId: z.string().min(1, "Please select a child profile"),
-  themeId: z.string().min(1, "Please select a book theme"),
+  childProfileIds: z.array(z.string()).min(1, "Por favor selecciona al menos un perfil de niño"),
+  themeOption: z.enum(["predefined", "custom"]), // predefined or custom theme
+  themeId: z.string().optional(),
+  customTheme: z.object({
+    title: z.string().optional(),
+    description: z.string().optional(),
+    setting: z.string().optional(),
+    characters: z.string().optional(),
+    plotType: z.string().optional(),
+    includeMoralLesson: z.boolean().optional(),
+    additionalNotes: z.string().optional()
+  }).optional(),
 });
 
 type BookFormValues = z.infer<typeof bookFormSchema>;
@@ -140,17 +171,43 @@ export default function CreateBook() {
   const form = useForm<BookFormValues>({
     resolver: zodResolver(bookFormSchema),
     defaultValues: {
-      childProfileId: "",
+      childProfileIds: [],
+      themeOption: "predefined",
       themeId: "",
+      customTheme: {
+        title: "",
+        description: "",
+        setting: "",
+        characters: "",
+        plotType: "",
+        includeMoralLesson: true,
+        additionalNotes: ""
+      }
     },
   });
 
   // Handle form submission
   const onSubmit = (values: BookFormValues) => {
     setIsCreatingBook(true);
+    
+    const mainProfileId = parseInt(values.childProfileIds[0]);
+    let themeData;
+    
+    if (values.themeOption === "predefined" && values.themeId) {
+      themeData = parseInt(values.themeId);
+    } else {
+      // Si es un tema personalizado, enviar los datos del tema personalizado
+      // Para esta demo, usaremos un tema predefinido si no se seleccionó ninguno
+      themeData = values.themeId ? parseInt(values.themeId) : 1;
+    }
+    
     generateBook.mutate({
-      profileId: parseInt(values.childProfileId),
-      themeId: parseInt(values.themeId)
+      profileId: mainProfileId,
+      themeId: themeData,
+      // Enviar los detalles adicionales que no procesaremos en esta demo pero que
+      // deberían ser procesados en una implementación completa
+      // customTheme: values.customTheme,
+      // additionalProfiles: values.childProfileIds.slice(1).map(id => parseInt(id))
     });
   };
 

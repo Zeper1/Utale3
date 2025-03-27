@@ -1,10 +1,11 @@
+@import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;500;600;700&family=Nunito:wght@400;500;600;700&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
+    --background: 46 100% 97%;
     --foreground: 222.2 84% 4.9%;
 
     --card: 0 0% 100%;
@@ -13,26 +14,29 @@
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
 
-    --primary: 265 84% 56%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 356 89% 65%; /* Rosa */
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 30 95% 51%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 205 85% 65%; /* Azul claro */
+    --secondary-foreground: 0 0% 100%;
 
     --muted: 210 40% 96.1%;
     --muted-foreground: 215.4 16.3% 46.9%;
 
-    --accent: 210 40% 96.1%;
+    --accent: 44 96% 65%; /* Amarillo */
     --accent-foreground: 222.2 47.4% 11.2%;
+
+    --success: 142 69% 58%; /* Verde */
+    --success-foreground: 0 0% 100%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
 
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 265 84% 56%;
+    --ring: 356 89% 65%;
 
-    --radius: 0.5rem;
+    --radius: 1.5rem;
   }
 
   .dark {
@@ -45,24 +49,27 @@
     --popover: 222.2 84% 4.9%;
     --popover-foreground: 210 40% 98%;
 
-    --primary: 265 84% 56%;
-    --primary-foreground: 222.2 47.4% 11.2%;
+    --primary: 356 89% 65%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 30 95% 51%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 205 85% 65%;
+    --secondary-foreground: 0 0% 100%;
 
     --muted: 217.2 32.6% 17.5%;
     --muted-foreground: 215 20.2% 65.1%;
 
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
+    --accent: 44 96% 65%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+
+    --success: 142 69% 58%;
+    --success-foreground: 0 0% 100%;
 
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
 
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
-    --ring: 265 84% 56%;
+    --ring: 356 89% 65%;
   }
 
   * {
@@ -70,16 +77,44 @@
   }
 
   body {
-    @apply bg-background text-foreground font-sans antialiased;
+    @apply bg-background text-foreground antialiased;
+    font-family: 'Nunito', sans-serif;
+    background-image: 
+      url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 30m-4 0a4 4 0 1 0 8 0 4 4 0 1 0-8 0' fill='%23f9a8d4' fill-opacity='0.15'/%3E%3C/svg%3E"),
+      url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M80 70a10 10 0 1 0 0-20 10 10 0 0 0 0 20zm0-5a5 5 0 1 1 0-10 5 5 0 0 1 0 10z' fill='%2393c5fd' fill-opacity='0.1'/%3E%3C/svg%3E"),
+      url("data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M20 20L40 20L40 40L20 40Z' fill='%23fde68a' fill-opacity='0.1'/%3E%3C/svg%3E");
+    background-size: 60px 60px, 100px 100px, 80px 80px;
+    background-position: 0 0, 30px 30px, 50px 50px;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    @apply font-heading;
+    font-family: 'Baloo 2', cursive;
+    @apply font-bold tracking-tight;
   }
 
   /* Animation classes */
   .animate-float {
     animation: float 6s ease-in-out infinite;
+  }
+
+  .animate-bounce-slow {
+    animation: bounce 3s ease-in-out infinite;
+  }
+
+  .animate-wiggle {
+    animation: wiggle 1.5s ease-in-out infinite;
+  }
+
+  .animate-pulse-soft {
+    animation: pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  .animate-tada {
+    animation: tada 1.5s ease-in-out;
+  }
+
+  .animate-pop {
+    animation: pop 0.5s cubic-bezier(0.18, 0.89, 0.32, 1.28);
   }
 
   @keyframes float {
@@ -89,5 +124,207 @@
     50% {
       transform: translateY(-10px);
     }
+  }
+
+  @keyframes bounce {
+    0%, 100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-15px);
+    }
+  }
+
+  @keyframes wiggle {
+    0%, 100% {
+      transform: rotate(-3deg);
+    }
+    50% {
+      transform: rotate(3deg);
+    }
+  }
+
+  @keyframes pulse {
+    0%, 100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.8;
+    }
+  }
+
+  @keyframes tada {
+    0% { transform: scale(1); }
+    10%, 20% { transform: scale(0.9) rotate(-3deg); }
+    30%, 50%, 70%, 90% { transform: scale(1.1) rotate(3deg); }
+    40%, 60%, 80% { transform: scale(1.1) rotate(-3deg); }
+    100% { transform: scale(1) rotate(0); }
+  }
+
+  @keyframes pop {
+    0% { transform: scale(0.8); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+  
+  @keyframes float {
+    0% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
+    100% { transform: translateY(0px); }
+  }
+  
+  @keyframes wiggle {
+    0%, 100% { transform: rotate(0deg); }
+    25% { transform: rotate(10deg); }
+    50% { transform: rotate(0deg); }
+    75% { transform: rotate(-10deg); }
+  }
+  
+  @keyframes pulse-soft {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.05); opacity: 0.8; }
+  }
+  
+  .animate-float {
+    animation: float 3s ease-in-out infinite;
+  }
+  
+  .animate-wiggle {
+    animation: wiggle 2s ease-in-out infinite;
+  }
+  
+  .animate-pulse-soft {
+    animation: pulse-soft 2s ease-in-out infinite;
+  }
+  
+  .tooltip-wrapper {
+    position: relative;
+    overflow: visible;
+  }
+  
+  .tooltip-wrapper::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: -30px;
+    left: 50%;
+    transform: translateX(-50%) scale(0);
+    background-color: theme('colors.primary.500');
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    opacity: 0;
+    transition: all 0.2s ease;
+    pointer-events: none;
+    white-space: nowrap;
+    z-index: 10;
+  }
+  
+  .tooltip-wrapper:hover::after {
+    transform: translateX(-50%) scale(1);
+    opacity: 1;
+  }
+  
+  /* Efecto avatar glow personalizado */
+  .avatar-glow-border {
+    position: relative;
+  }
+  
+  .avatar-glow-border::before {
+    content: '';
+    position: absolute;
+    inset: -3px;
+    background: linear-gradient(45deg, 
+      theme('colors.primary.500'), 
+      theme('colors.secondary.400'), 
+      theme('colors.accent.300'),
+      theme('colors.primary.500')
+    );
+    border-radius: inherit;
+    z-index: -1;
+    animation: rotate 3s linear infinite;
+  }
+  
+  @keyframes rotate {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+
+  /* Componentes estilizados para la aplicación infantil */
+  .kids-card {
+    @apply bg-white rounded-3xl border-[6px] shadow-lg overflow-hidden relative;
+    border-color: theme('colors.primary.300');
+    box-shadow: 0 12px 0 theme('colors.primary.300');
+    transition: all 0.3s ease;
+  }
+  
+  .kids-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 16px 0 theme('colors.primary.300');
+  }
+  
+  .kids-button {
+    @apply rounded-full font-bold text-lg py-3 px-6 transition-all transform hover:-translate-y-1 active:translate-y-1;
+    box-shadow: 0 6px 0 rgba(0,0,0,0.2);
+  }
+
+  .kids-button:hover {
+    box-shadow: 0 8px 0 rgba(0,0,0,0.2);
+  }
+
+  .kids-button:active {
+    box-shadow: 0 4px 0 rgba(0,0,0,0.2);
+  }
+
+  .kids-tab {
+    @apply rounded-t-xl font-bold transition-all pt-2 pb-3 px-5 -mb-[6px] border-x-[3px] border-t-[3px] border-b-0;
+    border-color: theme('colors.secondary.300');
+  }
+
+  .kids-tab[data-state="active"] {
+    @apply bg-white border-b-0;
+    border-color: theme('colors.secondary.300');
+  }
+
+  .kids-tab[data-state="inactive"] {
+    @apply bg-gray-100 text-gray-500;
+    border-color: transparent;
+  }
+
+  .cloud-bg {
+    background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30,60 Q35,55 40,60 T50,60 T60,60 T70,60 Q75,58 70,65 Q75,70 65,70 L35,70 Q25,70 30,60' fill='white' /%3E%3C/svg%3E");
+    background-size: 100px 100px;
+  }
+
+  .avatar-glow {
+    box-shadow: 0 0 15px 5px rgba(249, 168, 212, 0.4);
+  }
+
+  /* Personalización de componentes de shadcn */
+  .tab-highlight {
+    @apply relative overflow-hidden;
+  }
+
+  .tab-highlight:after {
+    content: '';
+    @apply absolute bottom-0 left-0 h-1 bg-primary w-full transform scale-x-0 transition-transform duration-300;
+  }
+
+  .tab-highlight[data-state="active"]:after {
+    @apply scale-x-100;
+  }
+
+  /* Tooltip personalizado */
+  [data-tooltip] {
+    position: relative;
+  }
+
+  [data-tooltip]:hover:after {
+    content: attr(data-tooltip);
+    @apply absolute bottom-full left-1/2 transform -translate-x-1/2 bg-accent text-black text-xs font-bold px-2 py-1 rounded-full z-20 mb-2 whitespace-nowrap;
+  }
+
+  [data-tooltip]:hover:before {
+    content: '';
+    @apply absolute bottom-full left-1/2 transform -translate-x-1/2 border-4 border-solid border-transparent border-t-accent z-20 mb-1;
   }
 }
