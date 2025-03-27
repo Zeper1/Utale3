@@ -16,6 +16,9 @@ import Profile from "@/pages/Profile";
 import Notifications from "@/pages/Notifications";
 import Settings from "@/pages/Settings";
 import Subscription from "@/pages/Subscription";
+import FAQs from "@/pages/FAQs";
+import Contacto from "@/pages/Contacto";
+import Terminos from "@/pages/Terminos";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { AuthProvider } from "@/hooks/useAuth";
@@ -40,6 +43,12 @@ function Router() {
           <Route path="/profile" component={Profile} />
           <Route path="/notifications" component={Notifications} />
           <Route path="/settings" component={Settings} />
+          {/* Páginas del pie de página */}
+          <Route path="/faqs" component={FAQs} />
+          <Route path="/contacto" component={Contacto} />
+          <Route path="/terminos" component={Terminos} />
+          <Route path="/privacidad" component={Terminos} /> {/* Temporalmente dirigida a Términos */}
+          <Route path="/cookies" component={Terminos} /> {/* Temporalmente dirigida a Términos */}
           <Route component={NotFound} />
         </Switch>
       </main>

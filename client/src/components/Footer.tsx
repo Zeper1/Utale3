@@ -14,8 +14,8 @@ const Footer = () => {
     
     if (email) {
       toast({
-        title: "Newsletter subscription successful",
-        description: "Thank you for subscribing to our newsletter!",
+        title: "Suscripción exitosa",
+        description: "¡Gracias por suscribirte a nuestro boletín!",
       });
       form.reset();
     }
@@ -30,10 +30,10 @@ const Footer = () => {
               <div className="text-primary-400 text-2xl">
                 <BookOpen />
               </div>
-              <h2 className="text-xl font-bold font-heading text-white">StoryMagic</h2>
+              <h2 className="text-xl font-bold font-heading text-white">Utale</h2>
             </div>
             <p className="text-gray-400 mb-6">
-              Creating personalized stories that capture your child's imagination and create lasting memories.
+              Creando historias personalizadas que capturan la imaginación de tu hijo y crean recuerdos duraderos.
             </p>
             <div className="flex gap-4">
               <a href="#" className="text-gray-400 hover:text-primary transition-colors" aria-label="Facebook">
@@ -52,38 +52,38 @@ const Footer = () => {
           </div>
           
           <div>
-            <h3 className="text-white font-bold mb-4">Quick Links</h3>
+            <h3 className="text-white font-bold mb-4">Enlaces Rápidos</h3>
             <ul className="space-y-3">
-              <li><Link href="/" className="text-gray-400 hover:text-primary transition-colors">How It Works</Link></li>
-              <li><Link href="/" className="text-gray-400 hover:text-primary transition-colors">Book Showcase</Link></li>
-              <li><Link href="/" className="text-gray-400 hover:text-primary transition-colors">Pricing</Link></li>
-              <li><Link href="/" className="text-gray-400 hover:text-primary transition-colors">Gift Cards</Link></li>
-              <li><Link href="/" className="text-gray-400 hover:text-primary transition-colors">Testimonials</Link></li>
+              <li><Link href="/como-funciona" className="text-gray-400 hover:text-primary transition-colors">Cómo Funciona</Link></li>
+              <li><Link href="/catalogo" className="text-gray-400 hover:text-primary transition-colors">Catálogo de Libros</Link></li>
+              <li><Link href="/precios" className="text-gray-400 hover:text-primary transition-colors">Precios</Link></li>
+              <li><Link href="/tarjetas-regalo" className="text-gray-400 hover:text-primary transition-colors">Tarjetas Regalo</Link></li>
+              <li><Link href="/testimonios" className="text-gray-400 hover:text-primary transition-colors">Testimonios</Link></li>
             </ul>
           </div>
           
           <div>
-            <h3 className="text-white font-bold mb-4">Support</h3>
+            <h3 className="text-white font-bold mb-4">Soporte</h3>
             <ul className="space-y-3">
-              <li><Link href="/" className="text-gray-400 hover:text-primary transition-colors">FAQs</Link></li>
-              <li><Link href="/" className="text-gray-400 hover:text-primary transition-colors">Contact Us</Link></li>
-              <li><Link href="/" className="text-gray-400 hover:text-primary transition-colors">Shipping Policy</Link></li>
-              <li><Link href="/" className="text-gray-400 hover:text-primary transition-colors">Return Policy</Link></li>
-              <li><Link href="/" className="text-gray-400 hover:text-primary transition-colors">Help Center</Link></li>
+              <li><Link href="/faqs" className="text-gray-400 hover:text-primary transition-colors">Preguntas Frecuentes</Link></li>
+              <li><Link href="/contacto" className="text-gray-400 hover:text-primary transition-colors">Contáctanos</Link></li>
+              <li><Link href="/envios" className="text-gray-400 hover:text-primary transition-colors">Política de Envíos</Link></li>
+              <li><Link href="/devoluciones" className="text-gray-400 hover:text-primary transition-colors">Política de Devoluciones</Link></li>
+              <li><Link href="/ayuda" className="text-gray-400 hover:text-primary transition-colors">Centro de Ayuda</Link></li>
             </ul>
           </div>
           
           <div>
-            <h3 className="text-white font-bold mb-4">Newsletter</h3>
+            <h3 className="text-white font-bold mb-4">Boletín</h3>
             <p className="text-gray-400 mb-4">
-              Subscribe to receive updates, access to exclusive deals, and more.
+              Suscríbete para recibir actualizaciones, acceso a ofertas exclusivas y más.
             </p>
             <form className="mb-4" onSubmit={handleSubscribe}>
               <div className="flex">
                 <Input 
                   type="email" 
                   name="email"
-                  placeholder="Your email address" 
+                  placeholder="Tu dirección de correo" 
                   className="rounded-l-lg bg-gray-800 border-gray-700 text-white"
                   required
                 />
@@ -96,7 +96,7 @@ const Footer = () => {
               </div>
             </form>
             <p className="text-xs text-gray-500">
-              By subscribing you agree to our Privacy Policy and provide consent to receive updates from our company.
+              Al suscribirte aceptas nuestra Política de Privacidad y das tu consentimiento para recibir actualizaciones de nuestra empresa.
             </p>
           </div>
         </div>
@@ -104,12 +104,12 @@ const Footer = () => {
         <div className="border-t border-gray-800 pt-8">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <p className="text-gray-500 text-sm mb-4 md:mb-0">
-              &copy; {new Date().getFullYear()} StoryMagic. All rights reserved.
+              &copy; {new Date().getFullYear()} Utale. Todos los derechos reservados.
             </p>
             <div className="flex gap-6">
-              <Link href="/" className="text-gray-500 hover:text-primary text-sm transition-colors">Privacy Policy</Link>
-              <Link href="/" className="text-gray-500 hover:text-primary text-sm transition-colors">Terms of Service</Link>
-              <Link href="/" className="text-gray-500 hover:text-primary text-sm transition-colors">Cookie Policy</Link>
+              <Link href="/privacidad" className="text-gray-500 hover:text-primary text-sm transition-colors">Política de Privacidad</Link>
+              <Link href="/terminos" className="text-gray-500 hover:text-primary text-sm transition-colors">Términos de Servicio</Link>
+              <Link href="/cookies" className="text-gray-500 hover:text-primary text-sm transition-colors">Política de Cookies</Link>
             </div>
           </div>
         </div>
