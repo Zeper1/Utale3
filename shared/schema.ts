@@ -227,6 +227,7 @@ export const bookDeliveries = pgTable("book_deliveries", {
   userId: integer("user_id").notNull().references(() => users.id),
   subscriptionId: integer("subscription_id").notNull().references(() => subscriptions.id),
   bookId: integer("book_id").notNull().references(() => books.id),
+  characterId: integer("character_id").notNull().references(() => characters.id),
   deliveryDate: timestamp("delivery_date").notNull(),
   deliveryWeek: date("delivery_week").notNull(), // La semana a la que pertenece esta entrega
   deliveryMethod: text("delivery_method").notNull(), // email, download, etc.

@@ -72,14 +72,14 @@ export default function Dashboard() {
     }
   }, [user, setLocation, toast]);
 
-  // Fetch child profiles
+  // Fetch character profiles
   const { 
     data: childProfiles = [],
     isLoading: profilesLoading,
     error: profilesError
   } = useQuery({
-    queryKey: ['/api/users', user?.id, 'profiles'],
-    queryFn: () => apiRequest('GET', `/api/users/${user?.id}/profiles`).then(res => res.json()),
+    queryKey: ['/api/users', user?.id, 'characters'],
+    queryFn: () => apiRequest('GET', `/api/users/${user?.id}/characters`).then(res => res.json()),
     enabled: !!user?.id,
   });
 
@@ -105,16 +105,16 @@ export default function Dashboard() {
     enabled: !!user?.id,
   });
 
-  // Create child profile mutation
+  // Create character profile mutation
   const createProfile = useMutation({
     mutationFn: (profile: any) => 
       apiRequest('POST', '/api/profiles', { ...profile, userId: user?.id }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/users', user?.id, 'profiles'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/users', user?.id, 'characters'] });
       setIsNewProfileOpen(false);
       toast({
-        title: "Profile created",
-        description: "Child profile has been successfully created.",
+        title: "Perfil creado",
+        description: "El perfil ha sido creado exitosamente.",
       });
     },
     onError: (error) => {
@@ -227,7 +227,7 @@ export default function Dashboard() {
       }
       
       // Refresh the profiles list
-      queryClient.invalidateQueries({ queryKey: ['/api/users', user?.id, 'profiles'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/users', user?.id, 'characters'] });
       
       // Close the dialog and reset form
       setIsNewProfileOpen(false);

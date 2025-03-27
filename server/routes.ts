@@ -118,14 +118,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // --- Child Profile Routes ---
+  // --- Character Routes ---
+  app.get("/api/users/:userId/characters", async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      const characters = await storage.getCharacters(userId);
+      res.status(200).json(characters);
+    } catch (error) {
+      res.status(500).json({ message: "Error al obtener personajes" });
+    }
+  });
+  
+  // Ruta legacy para mantener compatibilidad
   app.get("/api/users/:userId/profiles", async (req, res) => {
     try {
       const userId = parseInt(req.params.userId);
-      const profiles = await storage.getCharacters(userId);
-      res.status(200).json(profiles);
+      const characters = await storage.getCharacters(userId);
+      res.status(200).json(characters);
     } catch (error) {
-      res.status(500).json({ message: "Failed to retrieve character profiles" });
+      res.status(500).json({ message: "Error al obtener perfiles de personajes" });
     }
   });
 
@@ -910,27 +921,27 @@ Esta imagen es para un libro infantil que será leído por niños.
     }
   });
   
-  // Ruta para subir imagen de perfil
-  app.post('/api/profiles/:id/avatar', upload.single('avatar'), async (req, res) => {
+  // Ruta para subir imagen de personaje
+  app.post('/api/characters/:id/avatar', upload.single('avatar'), async (req, res) => {
     try {
       if (!req.file) {
         return res.status(400).json({ message: 'No se ha subido ninguna imagen' });
       }
       
-      const profileId = parseInt(req.params.id);
-      const profile = await storage.getChildProfile(profileId);
+      const characterId = parseInt(req.params.id);
+      const character = await storage.getCharacter(characterId);
       
-      if (!profile) {
-        // Eliminar archivo si el perfil no existe
+      if (!character) {
+        // Eliminar archivo si el personaje no existe
         if (req.file.path) {
           fs.unlinkSync(req.file.path);
         }
-        return res.status(404).json({ message: 'Perfil no encontrado' });
+        return res.status(404).json({ message: 'Personaje no encontrado' });
       }
       
-      // Si el perfil ya tenía una imagen, eliminarla
-      if (profile.avatarUrl) {
-        const oldAvatarPath = path.join(process.cwd(), 'public', profile.avatarUrl.replace(/^\//, ''));
+      // Si el personaje ya tenía una imagen, eliminarla
+      if (character.avatarUrl) {
+        const oldAvatarPath = path.join(process.cwd(), 'public', character.avatarUrl.replace(/^\//, ''));
         if (fs.existsSync(oldAvatarPath)) {
           fs.unlinkSync(oldAvatarPath);
         }
@@ -939,21 +950,21 @@ Esta imagen es para un libro infantil que será leído por niños.
       // La URL relativa para acceder a la imagen
       const avatarUrl = `/uploads/${path.basename(req.file.path)}`;
       
-      // Actualizar el perfil con la URL de la imagen
-      const updatedProfile = await storage.updateChildProfile(profileId, { avatarUrl });
+      // Actualizar el personaje con la URL de la imagen
+      const updatedCharacter = await storage.updateCharacter(characterId, { avatarUrl });
       
-      if (!updatedProfile) {
-        return res.status(500).json({ message: 'Error al actualizar el perfil' });
+      if (!updatedCharacter) {
+        return res.status(500).json({ message: 'Error al actualizar el personaje' });
       }
       
       res.status(200).json({ 
-        profileId, 
+        characterId, 
         avatarUrl, 
-        message: 'Imagen de perfil actualizada exitosamente' 
+        message: 'Imagen de personaje actualizada exitosamente' 
       });
     } catch (error) {
       console.error('Error en subida de imagen:', error);
-      res.status(500).json({ message: 'Error en la subida de la imagen de perfil' });
+      res.status(500).json({ message: 'Error en la subida de la imagen del personaje' });
     }
   });
   
@@ -1134,10 +1145,10 @@ Esta imagen es para un libro infantil que será leído por niños.
         return res.status(400).json({ message: "El libro no existe" });
       }
       
-      // Verificar que el perfil de niño existe
-      const childProfile = await storage.getChildProfile(deliveryData.childProfileId);
-      if (!childProfile) {
-        return res.status(400).json({ message: "El perfil del niño no existe" });
+      // Verificar que el personaje existe
+      const character = await storage.getCharacter(deliveryData.characterId);
+      if (!character) {
+        return res.status(400).json({ message: "El personaje no existe" });
       }
       
       // Construir semana de entrega (formato: YYYY-WW)
