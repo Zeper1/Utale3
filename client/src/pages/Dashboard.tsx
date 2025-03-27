@@ -321,7 +321,7 @@ export default function Dashboard() {
           ) : profilesError ? (
             <Card>
               <CardContent className="pt-6">
-                <p className="text-red-500">Error loading profiles. Please try again later.</p>
+                <p className="text-red-500">Error al cargar los personajes. Por favor, inténtalo de nuevo más tarde.</p>
               </CardContent>
             </Card>
           ) : childProfiles.length === 0 ? (
@@ -487,7 +487,7 @@ export default function Dashboard() {
           ) : booksError ? (
             <Card>
               <CardContent className="pt-6">
-                <p className="text-red-500">Error loading books. Please try again later.</p>
+                <p className="text-red-500">Error al cargar los libros. Por favor, inténtalo de nuevo más tarde.</p>
               </CardContent>
             </Card>
           ) : books.length === 0 ? (
@@ -530,7 +530,7 @@ export default function Dashboard() {
           ) : ordersError ? (
             <Card>
               <CardContent className="pt-6">
-                <p className="text-red-500">Error loading orders. Please try again later.</p>
+                <p className="text-red-500">Error al cargar los pedidos. Por favor, inténtalo de nuevo más tarde.</p>
               </CardContent>
             </Card>
           ) : orders.length === 0 ? (
@@ -539,12 +539,12 @@ export default function Dashboard() {
                 <div className="bg-primary-50 p-4 rounded-full mb-4">
                   <Package className="h-8 w-8 text-primary" />
                 </div>
-                <h3 className="text-xl font-semibold mb-2">No Orders Yet</h3>
+                <h3 className="text-xl font-semibold mb-2">Aún no hay pedidos</h3>
                 <p className="text-gray-600 mb-6 max-w-md">
-                  After creating your personalized book, you can place an order for a printed copy or digital download.
+                  Después de crear tu libro personalizado, puedes hacer un pedido para obtener una copia impresa o descarga digital.
                 </p>
                 <Button onClick={goToCreateBook}>
-                  <Plus className="h-4 w-4 mr-2" /> Create a Book First
+                  <Plus className="h-4 w-4 mr-2" /> Crea un libro primero
                 </Button>
               </CardContent>
             </Card>
@@ -561,7 +561,7 @@ export default function Dashboard() {
                             {book?.previewImage ? (
                               <img 
                                 src={book.previewImage} 
-                                alt={book?.title || "Book cover"} 
+                                alt={book?.title || "Portada del libro"} 
                                 className="h-full w-full object-cover rounded"
                               />
                             ) : (
@@ -569,12 +569,12 @@ export default function Dashboard() {
                             )}
                           </div>
                           <div>
-                            <h3 className="font-semibold">{book?.title || "Personalized Book"}</h3>
+                            <h3 className="font-semibold">{book?.title || "Libro personalizado"}</h3>
                             <p className="text-sm text-gray-600">
-                              {book?.format || "Unknown format"} • Order #{order.id}
+                              {book?.format || "Formato desconocido"} • Pedido #{order.id}
                             </p>
                             <p className="text-sm text-gray-500">
-                              Ordered on {new Date(order.createdAt).toLocaleDateString()}
+                              Pedido el {new Date(order.createdAt).toLocaleDateString()}
                             </p>
                           </div>
                         </div>
@@ -586,15 +586,17 @@ export default function Dashboard() {
                               order.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
                               'bg-gray-100 text-gray-800'
                             }`}>
-                              {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                              {order.status === 'completed' ? 'Completado' : 
+                              order.status === 'pending' ? 'Pendiente' : 
+                              order.status.charAt(0).toUpperCase() + order.status.slice(1)}
                             </span>
                           </div>
                           <div className="flex gap-2 mt-2">
                             <Button variant="outline" size="sm">
-                              Track Order
+                              Seguir pedido
                             </Button>
                             <Button variant="ghost" size="sm">
-                              Details
+                              Detalles
                             </Button>
                           </div>
                         </div>
@@ -636,7 +638,7 @@ export default function Dashboard() {
                   {avatarPreview ? (
                     <img 
                       src={avatarPreview} 
-                      alt="Avatar preview" 
+                      alt="Vista previa del avatar" 
                       className="w-full h-full object-cover"
                     />
                   ) : (
