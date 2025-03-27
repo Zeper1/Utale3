@@ -33,12 +33,18 @@ import {
   Camera
 } from "lucide-react";
 
-// Form schema for child profile creation
+// Form schema for character creation
 const profileSchema = z.object({
   name: z.string().min(2, "El nombre debe tener al menos 2 caracteres"),
+  type: z.string().default('child'),
   age: z.string()
-    .transform(val => parseInt(val, 10))
-    .refine(val => !isNaN(val) && val > 0 && val <= 18, "La edad debe estar entre 1 y 18 años"),
+    .transform(val => {
+      if (!val) return null;
+      const num = parseInt(val, 10);
+      return isNaN(num) ? null : num;
+    })
+    .nullable()
+    .optional(),
   gender: z.string().optional(),
   physicalDescription: z.string().optional(),
   personality: z.string().optional(),
@@ -201,12 +207,13 @@ export default function Dashboard() {
       // First create the profile
       const profileResponse = await apiRequest('POST', '/api/profiles', { 
         name: values.name,
-        age: parseInt(values.age.toString(), 10),
+        type: values.type || 'child',
+        age: values.age ? parseInt(values.age.toString(), 10) : null,
         gender: values.gender,
         userId: user?.id,
         interests: [],
         favorites: {},
-        friends: [],
+        relationships: { friends: [] },
         traits: [],
         physicalDescription: values.physicalDescription || null,
         personality: values.personality || null,
@@ -284,7 +291,7 @@ export default function Dashboard() {
           </Button>
           <Button onClick={() => setIsNewProfileOpen(true)} variant="outline" className="flex items-center gap-2">
             <User className="h-4 w-4" />
-            Añadir perfil infantil
+            Añadir personaje
           </Button>
         </div>
       </div>
@@ -293,15 +300,15 @@ export default function Dashboard() {
         <TabsList className="mb-8">
           <TabsTrigger value="profiles" className="flex items-center gap-2">
             <User className="h-4 w-4" />
-            Child Profiles
+            Mis Personajes
           </TabsTrigger>
           <TabsTrigger value="books" className="flex items-center gap-2">
             <BookOpen className="h-4 w-4" />
-            My Books
+            Mis Libros
           </TabsTrigger>
           <TabsTrigger value="orders" className="flex items-center gap-2">
             <Package className="h-4 w-4" />
-            Orders
+            Pedidos
           </TabsTrigger>
         </TabsList>
 
@@ -323,12 +330,12 @@ export default function Dashboard() {
                 <div className="bg-primary-50 p-4 rounded-full mb-4">
                   <User className="h-8 w-8 text-primary" />
                 </div>
-                <h3 className="text-xl font-semibold mb-2">No Child Profiles Yet</h3>
+                <h3 className="text-xl font-semibold mb-2">Aún no hay personajes</h3>
                 <p className="text-gray-600 mb-6 max-w-md">
-                  Start by creating a profile for your child. This information will be used to personalize their stories.
+                  Comienza creando un personaje para tus historias. Esta información se usará para personalizar los libros.
                 </p>
                 <Button onClick={() => setIsNewProfileOpen(true)}>
-                  <Plus className="h-4 w-4 mr-2" /> Create First Profile
+                  <Plus className="h-4 w-4 mr-2" /> Crear primer personaje
                 </Button>
               </CardContent>
             </Card>
@@ -459,12 +466,12 @@ export default function Dashboard() {
                 <div className="bg-gray-100 p-4 rounded-full mb-4">
                   <Plus className="h-6 w-6 text-gray-400" />
                 </div>
-                <h3 className="text-lg font-medium mb-2">Añadir otro perfil</h3>
+                <h3 className="text-lg font-medium mb-2">Añadir otro personaje</h3>
                 <p className="text-gray-500 text-sm mb-4 text-center">
-                  Crea perfiles para más niños y personaliza libros para ellos
+                  Crea personajes para tus libros y personalízalos a tu gusto
                 </p>
                 <Button onClick={() => setIsNewProfileOpen(true)} variant="outline">
-                  Añadir perfil
+                  Añadir personaje
                 </Button>
               </Card>
             </div>
@@ -489,21 +496,21 @@ export default function Dashboard() {
                 <div className="bg-primary-50 p-4 rounded-full mb-4">
                   <BookOpen className="h-8 w-8 text-primary" />
                 </div>
-                <h3 className="text-xl font-semibold mb-2">No Books Created Yet</h3>
+                <h3 className="text-xl font-semibold mb-2">Aún no hay libros creados</h3>
                 <p className="text-gray-600 mb-6 max-w-md">
-                  Create your first personalized book for a child. Select a profile and theme to get started.
+                  Crea tu primer libro personalizado. Selecciona un personaje y un tema para empezar.
                 </p>
                 <Button onClick={goToCreateBook}>
-                  <Plus className="h-4 w-4 mr-2" /> Create First Book
+                  <Plus className="h-4 w-4 mr-2" /> Crear primer libro
                 </Button>
               </CardContent>
             </Card>
           ) : (
             <>
               <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold">Your Book Library</h2>
+                <h2 className="text-2xl font-bold">Tu biblioteca de libros</h2>
                 <Button onClick={goToCreateBook} variant="outline" className="flex items-center gap-2">
-                  <Plus className="h-4 w-4" /> Create New Book
+                  <Plus className="h-4 w-4" /> Crear nuevo libro
                 </Button>
               </div>
               
@@ -612,9 +619,9 @@ export default function Dashboard() {
       }}>
         <DialogContent className="sm:max-w-[550px]">
           <DialogHeader>
-            <DialogTitle>Crear perfil infantil</DialogTitle>
+            <DialogTitle>Crear personaje</DialogTitle>
             <DialogDescription>
-              Añade detalles sobre el niño para personalizar sus historias. Podrás actualizar esta información más adelante.
+              Crea un personaje para tu historia. Puede ser un niño, mascota, juguete o cualquier otro protagonista.
             </DialogDescription>
           </DialogHeader>
           
@@ -654,7 +661,7 @@ export default function Dashboard() {
                   Subir foto
                 </Button>
                 <p className="text-xs text-gray-500 text-center">
-                  Opcional: Sube una foto del niño para personalizar su avatar en los libros
+                  Opcional: Sube una foto del personaje para personalizar su avatar en los libros
                 </p>
               </div>
 
@@ -665,8 +672,39 @@ export default function Dashboard() {
                   <FormItem>
                     <FormLabel>Nombre</FormLabel>
                     <FormControl>
-                      <Input placeholder="Nombre del niño" {...field} />
+                      <Input placeholder="Nombre del personaje" {...field} />
                     </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="type"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Tipo de personaje</FormLabel>
+                    <Select 
+                      onValueChange={field.onChange} 
+                      defaultValue={field.value || "child"}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecciona el tipo" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="child">Niño/a</SelectItem>
+                        <SelectItem value="toy">Juguete/Peluche</SelectItem>
+                        <SelectItem value="pet">Mascota</SelectItem>
+                        <SelectItem value="fantasy">Personaje fantástico</SelectItem>
+                        <SelectItem value="other">Otro</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormDescription>
+                      El tipo de protagonista para la historia
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -676,18 +714,23 @@ export default function Dashboard() {
                 <FormField
                   control={form.control}
                   name="age"
-                  render={({ field }) => (
+                  render={({ field: { value, onChange, ...rest } }) => (
                     <FormItem>
-                      <FormLabel>Edad</FormLabel>
+                      <FormLabel>Edad (Opcional)</FormLabel>
                       <FormControl>
                         <Input 
                           type="number" 
                           min="1" 
                           max="18" 
                           placeholder="Edad" 
-                          {...field} 
+                          value={value === null ? '' : value}
+                          onChange={e => onChange(e.target.value === '' ? null : Number(e.target.value))}
+                          {...rest} 
                         />
                       </FormControl>
+                      <FormDescription>
+                        Solo relevante para personajes tipo niño/a
+                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -730,7 +773,7 @@ export default function Dashboard() {
                     <FormLabel>Descripción física (Opcional)</FormLabel>
                     <FormControl>
                       <Textarea 
-                        placeholder="Describe el aspecto físico del niño: color de pelo, ojos, altura, etc." 
+                        placeholder="Describe el aspecto físico del personaje: color, tamaño, forma, etc." 
                         className="resize-none" 
                         {...field} 
                       />
@@ -748,7 +791,7 @@ export default function Dashboard() {
                     <FormLabel>Personalidad (Opcional)</FormLabel>
                     <FormControl>
                       <Textarea 
-                        placeholder="Describe la personalidad del niño: tímido, aventurero, curioso, etc." 
+                        placeholder="Describe la personalidad del personaje: tímido, aventurero, curioso, etc." 
                         className="resize-none" 
                         {...field} 
                       />
@@ -767,7 +810,7 @@ export default function Dashboard() {
                       <FormLabel>Le gusta (Opcional)</FormLabel>
                       <FormControl>
                         <Textarea 
-                          placeholder="¿Qué le gusta al niño? Juguetes, actividades, comidas favoritas..." 
+                          placeholder="¿Qué le gusta al personaje? Actividades, objetos, lugares..." 
                           className="resize-none h-24" 
                           {...field} 
                         />
@@ -785,7 +828,7 @@ export default function Dashboard() {
                       <FormLabel>No le gusta (Opcional)</FormLabel>
                       <FormControl>
                         <Textarea 
-                          placeholder="¿Qué no le gusta al niño? Comidas, situaciones, miedos..." 
+                          placeholder="¿Qué no le gusta al personaje? Situaciones, eventos, objetos..." 
                           className="resize-none h-24" 
                           {...field} 
                         />
@@ -832,7 +875,7 @@ export default function Dashboard() {
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       Creando...
                     </>
-                  ) : 'Crear perfil'}
+                  ) : 'Crear personaje'}
                 </Button>
               </DialogFooter>
             </form>
