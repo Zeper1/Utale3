@@ -190,37 +190,51 @@ const Header = () => {
                       </DropdownMenuLabel>
                       <DropdownMenuSeparator className="my-2" />
                       <DropdownMenuGroup>
-                        <DropdownMenuItem className="rounded-lg cursor-pointer flex items-center p-2 hover:bg-primary-50 transition-colors">
-                          <User className="mr-2 h-5 w-5 text-accent" />
-                          <span>Mi perfil</span>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem className="rounded-lg cursor-pointer flex items-center p-2 hover:bg-primary-50 transition-colors">
-                          <LayoutDashboard className="mr-2 h-5 w-5 text-secondary" />
-                          <Link href="/dashboard">Panel de control</Link>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem className="rounded-lg cursor-pointer flex items-center p-2 hover:bg-primary-50 transition-colors">
-                          <BellRing className="mr-2 h-5 w-5 text-blue-400" />
-                          <span>Notificaciones</span>
-                          <Badge className="ml-auto bg-primary text-white text-xs py-1">2</Badge>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem className="rounded-lg cursor-pointer flex items-center p-2 hover:bg-primary-50 transition-colors">
-                          <CreditCard className="mr-2 h-5 w-5 text-indigo-500" />
-                          <span>Suscripción</span>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem className="rounded-lg cursor-pointer flex items-center p-2 hover:bg-primary-50 transition-colors">
-                          <BookMarked className="mr-2 h-5 w-5 text-lime-500" />
-                          <span>Mis libros</span>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem className="rounded-lg cursor-pointer flex items-center p-2 hover:bg-primary-50 transition-colors">
-                          <Baby className="mr-2 h-5 w-5 text-primary" />
-                          <span>Perfiles infantiles</span>
-                        </DropdownMenuItem>
+                        <Link href="/profile">
+                          <DropdownMenuItem className="rounded-lg cursor-pointer flex items-center p-2 hover:bg-primary-50 transition-colors">
+                            <User className="mr-2 h-5 w-5 text-accent" />
+                            <span>Mi perfil</span>
+                          </DropdownMenuItem>
+                        </Link>
+                        <Link href="/dashboard">
+                          <DropdownMenuItem className="rounded-lg cursor-pointer flex items-center p-2 hover:bg-primary-50 transition-colors">
+                            <LayoutDashboard className="mr-2 h-5 w-5 text-secondary" />
+                            <span>Panel de control</span>
+                          </DropdownMenuItem>
+                        </Link>
+                        <Link href="/notifications">
+                          <DropdownMenuItem className="rounded-lg cursor-pointer flex items-center p-2 hover:bg-primary-50 transition-colors">
+                            <BellRing className="mr-2 h-5 w-5 text-blue-400" />
+                            <span>Notificaciones</span>
+                            <Badge className="ml-auto bg-primary text-white text-xs py-1">2</Badge>
+                          </DropdownMenuItem>
+                        </Link>
+                        <Link href="/subscription">
+                          <DropdownMenuItem className="rounded-lg cursor-pointer flex items-center p-2 hover:bg-primary-50 transition-colors">
+                            <CreditCard className="mr-2 h-5 w-5 text-indigo-500" />
+                            <span>Suscripción</span>
+                          </DropdownMenuItem>
+                        </Link>
+                        <Link href="/dashboard?tab=books">
+                          <DropdownMenuItem className="rounded-lg cursor-pointer flex items-center p-2 hover:bg-primary-50 transition-colors">
+                            <BookMarked className="mr-2 h-5 w-5 text-lime-500" />
+                            <span>Mis libros</span>
+                          </DropdownMenuItem>
+                        </Link>
+                        <Link href="/dashboard?tab=profiles">
+                          <DropdownMenuItem className="rounded-lg cursor-pointer flex items-center p-2 hover:bg-primary-50 transition-colors">
+                            <Baby className="mr-2 h-5 w-5 text-primary" />
+                            <span>Perfiles infantiles</span>
+                          </DropdownMenuItem>
+                        </Link>
                       </DropdownMenuGroup>
                       <DropdownMenuSeparator className="my-2" />
-                      <DropdownMenuItem className="rounded-lg cursor-pointer flex items-center p-2 hover:bg-primary-50 transition-colors">
-                        <Settings className="mr-2 h-5 w-5 text-gray-500" />
-                        <span>Configuración</span>
-                      </DropdownMenuItem>
+                      <Link href="/settings">
+                        <DropdownMenuItem className="rounded-lg cursor-pointer flex items-center p-2 hover:bg-primary-50 transition-colors">
+                          <Settings className="mr-2 h-5 w-5 text-gray-500" />
+                          <span>Configuración</span>
+                        </DropdownMenuItem>
+                      </Link>
                       <DropdownMenuSeparator className="my-2" />
                       <DropdownMenuItem 
                         onClick={signOut} 
