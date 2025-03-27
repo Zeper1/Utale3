@@ -64,6 +64,7 @@ export default function Dashboard() {
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [characterType, setCharacterType] = useState<string>("child");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Redirect if not logged in
@@ -688,7 +689,15 @@ export default function Dashboard() {
                   <FormItem>
                     <FormLabel>Tipo de personaje</FormLabel>
                     <Select 
-                      onValueChange={field.onChange} 
+                      onValueChange={(value) => {
+                        field.onChange(value);
+                        setCharacterType(value);
+                        
+                        // Resetear los campos específicos de otros tipos de personajes
+                        if (value !== 'child') {
+                          form.setValue('gender', '');
+                        }
+                      }}
                       defaultValue={field.value || "child"}
                     >
                       <FormControl>
@@ -712,7 +721,63 @@ export default function Dashboard() {
                 )}
               />
               
-              <div className="grid grid-cols-2 gap-4">
+              {characterType === 'child' && (
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="age"
+                    render={({ field: { value, onChange, ...rest } }) => (
+                      <FormItem>
+                        <FormLabel>Edad (Opcional)</FormLabel>
+                        <FormControl>
+                          <Input 
+                            type="number" 
+                            min="1" 
+                            max="18" 
+                            placeholder="Edad" 
+                            value={value === null ? '' : value}
+                            onChange={e => onChange(e.target.value === '' ? null : Number(e.target.value))}
+                            {...rest} 
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          Edad del niño/a
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="gender"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Género (Opcional)</FormLabel>
+                        <Select 
+                          onValueChange={field.onChange} 
+                          defaultValue={field.value}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecciona género" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="boy">Niño</SelectItem>
+                            <SelectItem value="girl">Niña</SelectItem>
+                            <SelectItem value="non-binary">No binario</SelectItem>
+                            <SelectItem value="prefer-not-to-say">Prefiero no decirlo</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              )}
+              
+              {characterType === 'pet' && (
                 <FormField
                   control={form.control}
                   name="age"
@@ -723,7 +788,7 @@ export default function Dashboard() {
                         <Input 
                           type="number" 
                           min="1" 
-                          max="18" 
+                          max="30" 
                           placeholder="Edad" 
                           value={value === null ? '' : value}
                           onChange={e => onChange(e.target.value === '' ? null : Number(e.target.value))}
@@ -731,40 +796,13 @@ export default function Dashboard() {
                         />
                       </FormControl>
                       <FormDescription>
-                        Solo relevante para personajes tipo niño/a
+                        Edad aproximada de la mascota
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-                
-                <FormField
-                  control={form.control}
-                  name="gender"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Género (Opcional)</FormLabel>
-                      <Select 
-                        onValueChange={field.onChange} 
-                        defaultValue={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecciona género" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="boy">Niño</SelectItem>
-                          <SelectItem value="girl">Niña</SelectItem>
-                          <SelectItem value="non-binary">No binario</SelectItem>
-                          <SelectItem value="prefer-not-to-say">Prefiero no decirlo</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
+              )}
 
               {/* Additional description fields */}
               <FormField
@@ -775,7 +813,13 @@ export default function Dashboard() {
                     <FormLabel>Descripción física (Opcional)</FormLabel>
                     <FormControl>
                       <Textarea 
-                        placeholder="Describe el aspecto físico del personaje: color, tamaño, forma, etc." 
+                        placeholder={
+                          characterType === 'child' ? "Describe su apariencia: cabello, ojos, altura, etc." : 
+                          characterType === 'toy' ? "Describe cómo es el juguete/peluche: color, material, forma, etc." : 
+                          characterType === 'pet' ? "Describe cómo es la mascota: especie, raza, color, tamaño, etc." : 
+                          characterType === 'fantasy' ? "Describe cómo es este personaje fantástico: apariencia, rasgos especiales, etc." :
+                          "Describe la apariencia física del personaje"
+                        }
                         className="resize-none" 
                         {...field} 
                       />
@@ -793,7 +837,13 @@ export default function Dashboard() {
                     <FormLabel>Personalidad (Opcional)</FormLabel>
                     <FormControl>
                       <Textarea 
-                        placeholder="Describe la personalidad del personaje: tímido, aventurero, curioso, etc." 
+                        placeholder={
+                          characterType === 'child' ? "Describe su personalidad: tímido, aventurero, curioso, etc." : 
+                          characterType === 'toy' ? "Describe cómo se comporta el juguete/peluche: amigable, protector, divertido, etc." : 
+                          characterType === 'pet' ? "Describe el comportamiento de la mascota: juguetón, tranquilo, cariñoso, etc." : 
+                          characterType === 'fantasy' ? "Describe cómo es su actitud: valiente, misterioso, sabio, etc." :
+                          "Describe la personalidad del personaje"
+                        }
                         className="resize-none" 
                         {...field} 
                       />
@@ -812,7 +862,13 @@ export default function Dashboard() {
                       <FormLabel>Le gusta (Opcional)</FormLabel>
                       <FormControl>
                         <Textarea 
-                          placeholder="¿Qué le gusta al personaje? Actividades, objetos, lugares..." 
+                          placeholder={
+                            characterType === 'child' ? "¿Qué le gusta? Juegos, comidas, actividades..." : 
+                            characterType === 'toy' ? "¿Qué le gusta a este juguete/peluche? Momentos, lugares, situaciones..." : 
+                            characterType === 'pet' ? "¿Qué le gusta a esta mascota? Juguetes, actividades, comidas..." : 
+                            characterType === 'fantasy' ? "¿Qué le gusta a este personaje fantástico? Magia, aventuras, objetos..." :
+                            "¿Qué le gusta al personaje? Actividades, objetos, lugares..."
+                          }
                           className="resize-none h-24" 
                           {...field} 
                         />
@@ -830,7 +886,13 @@ export default function Dashboard() {
                       <FormLabel>No le gusta (Opcional)</FormLabel>
                       <FormControl>
                         <Textarea 
-                          placeholder="¿Qué no le gusta al personaje? Situaciones, eventos, objetos..." 
+                          placeholder={
+                            characterType === 'child' ? "¿Qué no le gusta? Miedos, situaciones, comidas..." : 
+                            characterType === 'toy' ? "¿Qué no le gusta a este juguete/peluche? Situaciones, lugares..." : 
+                            characterType === 'pet' ? "¿Qué no le gusta a esta mascota? Sonidos, objetos, situaciones..." : 
+                            characterType === 'fantasy' ? "¿Qué no le gusta a este personaje fantástico? Enemigos, situaciones, lugares..." :
+                            "¿Qué no le gusta al personaje? Situaciones, eventos, objetos..."
+                          }
                           className="resize-none h-24" 
                           {...field} 
                         />
@@ -849,7 +911,13 @@ export default function Dashboard() {
                     <FormLabel>Información adicional (Opcional)</FormLabel>
                     <FormControl>
                       <Textarea 
-                        placeholder="Cualquier otra información relevante que quieras compartir para personalizar mejor los libros" 
+                        placeholder={
+                          characterType === 'child' ? "Cualquier otra información sobre el niño/a que quieras incluir en sus historias..." : 
+                          characterType === 'toy' ? "Historia del juguete/peluche, quién es su dueño, cómo llegó a la familia..." : 
+                          characterType === 'pet' ? "Historial de la mascota, anécdotas especiales, relación con la familia..." : 
+                          characterType === 'fantasy' ? "Poderes, habilidades especiales, origen, historia, mundo del que proviene..." :
+                          "Cualquier otra información relevante que quieras compartir para personalizar mejor los libros"
+                        }
                         className="resize-none" 
                         {...field} 
                       />
