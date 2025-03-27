@@ -37,9 +37,12 @@ import {
 const profileSchema = z.object({
   name: z.string().min(2, "El nombre debe tener al menos 2 caracteres"),
   type: z.string().default('child'),
-  age: z.string()
+  age: z.union([z.string(), z.number()])
     .transform(val => {
-      if (!val) return null;
+      if (val === '' || val === null || val === undefined) return null;
+      // Si ya es un número, devolverlo
+      if (typeof val === 'number') return val;
+      // Si es string, intentar convertirlo
       const num = parseInt(val, 10);
       return isNaN(num) ? null : num;
     })
@@ -192,7 +195,8 @@ export default function Dashboard() {
     resolver: zodResolver(profileSchema),
     defaultValues: {
       name: "",
-      age: "",
+      type: "child",
+      age: null,  // Usamos null como valor inicial
       gender: "",
       physicalDescription: "",
       personality: "",
