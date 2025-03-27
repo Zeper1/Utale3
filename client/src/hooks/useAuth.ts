@@ -19,6 +19,8 @@ interface User {
   username: string;
   displayName: string | null;
   firebaseUid: string;
+  stripeCustomerId?: string;
+  stripeSubscriptionId?: string;
 }
 
 interface AuthContextType {

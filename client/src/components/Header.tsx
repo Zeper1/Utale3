@@ -196,12 +196,6 @@ const Header = () => {
                             <span>Mi perfil</span>
                           </DropdownMenuItem>
                         </Link>
-                        <Link href="/dashboard">
-                          <DropdownMenuItem className="rounded-lg cursor-pointer flex items-center p-2 hover:bg-primary-50 transition-colors">
-                            <LayoutDashboard className="mr-2 h-5 w-5 text-secondary" />
-                            <span>Panel de control</span>
-                          </DropdownMenuItem>
-                        </Link>
                         <Link href="/notifications">
                           <DropdownMenuItem className="rounded-lg cursor-pointer flex items-center p-2 hover:bg-primary-50 transition-colors">
                             <BellRing className="mr-2 h-5 w-5 text-blue-400" />
@@ -213,18 +207,6 @@ const Header = () => {
                           <DropdownMenuItem className="rounded-lg cursor-pointer flex items-center p-2 hover:bg-primary-50 transition-colors">
                             <CreditCard className="mr-2 h-5 w-5 text-indigo-500" />
                             <span>Suscripción</span>
-                          </DropdownMenuItem>
-                        </Link>
-                        <Link href="/dashboard?tab=books">
-                          <DropdownMenuItem className="rounded-lg cursor-pointer flex items-center p-2 hover:bg-primary-50 transition-colors">
-                            <BookMarked className="mr-2 h-5 w-5 text-lime-500" />
-                            <span>Mis libros</span>
-                          </DropdownMenuItem>
-                        </Link>
-                        <Link href="/dashboard?tab=profiles">
-                          <DropdownMenuItem className="rounded-lg cursor-pointer flex items-center p-2 hover:bg-primary-50 transition-colors">
-                            <Baby className="mr-2 h-5 w-5 text-primary" />
-                            <span>Perfiles infantiles</span>
                           </DropdownMenuItem>
                         </Link>
                       </DropdownMenuGroup>

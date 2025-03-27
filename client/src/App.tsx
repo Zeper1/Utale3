@@ -12,6 +12,10 @@ import Checkout from "@/pages/Checkout";
 import Subscribe from "@/pages/Subscribe";
 import SubscriptionSuccess from "@/pages/SubscriptionSuccess";
 import SubscriptionCancel from "@/pages/SubscriptionCancel";
+import Profile from "@/pages/Profile";
+import Notifications from "@/pages/Notifications";
+import Settings from "@/pages/Settings";
+import Subscription from "@/pages/Subscription";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { AuthProvider } from "@/hooks/useAuth";
@@ -28,9 +32,14 @@ function Router() {
           <Route path="/profile-chat/:id" component={ProfileChat} />
           <Route path="/book-preview/:id" component={BookPreview} />
           <Route path="/checkout/:id" component={Checkout} />
+          <Route path="/checkout" component={Checkout} />
           <Route path="/subscribe" component={Subscribe} />
+          <Route path="/subscription" component={Subscription} />
           <Route path="/subscription/success" component={SubscriptionSuccess} />
           <Route path="/subscription/cancel" component={SubscriptionCancel} />
+          <Route path="/profile" component={Profile} />
+          <Route path="/notifications" component={Notifications} />
+          <Route path="/settings" component={Settings} />
           <Route component={NotFound} />
         </Switch>
       </main>
