@@ -35,10 +35,10 @@ import {
   Users
 } from "lucide-react";
 
-// Form schema for book creation
+// Esquema para la creación de libros
 const bookFormSchema = z.object({
   characterIds: z.array(z.string()).min(1, "Por favor selecciona al menos un personaje").max(5, "Máximo 5 personajes por libro"),
-  themeOption: z.enum(["predefined", "custom"]), // predefined or custom theme
+  themeOption: z.enum(["predeterminado", "personalizado"]), // tema predeterminado o personalizado
   themeId: z.string().optional(),
   customTheme: z.object({
     title: z.string().optional(),
@@ -62,13 +62,13 @@ export default function CreateBook() {
   const [generationComplete, setGenerationComplete] = useState(false);
   const [bookId, setBookId] = useState<number | null>(null);
 
-  // Redirect if not logged in
+  // Redirigir si no ha iniciado sesión
   useEffect(() => {
     if (!user) {
       setLocation("/");
       toast({
-        title: "Authentication required",
-        description: "Please log in to create a book",
+        title: "Autenticación requerida",
+        description: "Por favor inicia sesión para crear un libro",
         variant: "destructive",
       });
     }
@@ -95,10 +95,10 @@ export default function CreateBook() {
     queryFn: () => apiRequest('GET', '/api/book-themes').then(res => res.json()),
   });
 
-  // Book generation and creation mutation
+  // Mutación para la generación y creación del libro
   const generateBook = useMutation({
     mutationFn: async (values: { characterId: number, themeId: number }) => {
-      // Step 1: Generate book content with OpenAI
+      // Paso 1: Generar el contenido del libro con OpenAI
       const generateContentResponse = await apiRequest('POST', '/api/books/generate-content', {
         characterId: values.characterId,
         themeId: values.themeId,
@@ -112,7 +112,7 @@ export default function CreateBook() {
       
       const bookContent = await generateContentResponse.json();
       
-      // Step 2: Create initial book entry in the database
+      // Paso 2: Crear la entrada inicial del libro en la base de datos
       const createBookResponse = await apiRequest('POST', '/api/books', {
         userId: user?.id,
         characterId: values.characterId, // Personaje principal
@@ -129,7 +129,7 @@ export default function CreateBook() {
       
       const book = await createBookResponse.json();
       
-      // Step 3: Generate images for each page
+      // Paso 3: Generar imágenes para cada página
       const generateImagesResponse = await apiRequest('POST', '/api/books/generate-images', {
         bookContent
       });
@@ -143,13 +143,13 @@ export default function CreateBook() {
       
       const contentWithImages = await generateImagesResponse.json();
       
-      // Step 4: Update book with images
+      // Paso 4: Actualizar el libro con las imágenes
       const updateBookResponse = await apiRequest('PUT', `/api/books/${book.id}`, {
         content: contentWithImages,
         status: 'completed'
       });
       
-      // Step 5: Create book preview
+      // Paso 5: Crear la vista previa del libro
       await apiRequest('POST', `/api/books/${book.id}/preview`, {});
       
       return book;
@@ -162,19 +162,19 @@ export default function CreateBook() {
     onError: (error) => {
       setIsCreatingBook(false);
       toast({
-        title: "Error creating book",
-        description: "There was an error generating your book. Please try again.",
+        title: "Error al crear el libro",
+        description: "Ha ocurrido un error al generar tu libro. Por favor, inténtalo de nuevo.",
         variant: "destructive",
       });
     }
   });
 
-  // Configure book creation form
+  // Configuración del formulario de creación de libros
   const form = useForm<BookFormValues>({
     resolver: zodResolver(bookFormSchema),
     defaultValues: {
       characterIds: [],
-      themeOption: "predefined",
+      themeOption: "predeterminado",
       themeId: "",
       customTheme: {
         title: "",
@@ -188,7 +188,7 @@ export default function CreateBook() {
     },
   });
 
-  // Handle form submission
+  // Manejar el envío del formulario
   const onSubmit = (values: BookFormValues) => {
     setIsCreatingBook(true);
     
@@ -207,11 +207,11 @@ export default function CreateBook() {
     const additionalCharacterIds = values.characterIds.slice(1).map(id => parseInt(id));
     
     let themeData;
-    if (values.themeOption === "predefined" && values.themeId) {
+    if (values.themeOption === "predeterminado" && values.themeId) {
       themeData = parseInt(values.themeId);
     } else {
       // Si es un tema personalizado, enviar los datos del tema personalizado
-      // Para esta demo, usaremos un tema predefinido si no se seleccionó ninguno
+      // Para esta demo, usaremos un tema predeterminado si no se seleccionó ninguno
       themeData = values.themeId ? parseInt(values.themeId) : 1;
     }
     
@@ -224,25 +224,25 @@ export default function CreateBook() {
     });
   };
 
-  // Navigate to profile chat
+  // Navegar al chat de perfil
   const goToProfileChat = (profileId: string) => {
     setLocation(`/profile-chat/${profileId}`);
   };
 
-  // Navigate to book preview
+  // Navegar a la vista previa del libro
   const goToBookPreview = () => {
     if (bookId) {
       setLocation(`/book-preview/${bookId}`);
     }
   };
 
-  // Go back to dashboard
+  // Volver al tablero principal
   const goToDashboard = () => {
     setLocation('/dashboard');
   };
 
   if (!user) {
-    return null; // Will redirect due to useEffect
+    return null; // Redirigirá debido al useEffect
   }
 
   const isLoading = profilesLoading || themesLoading;
@@ -285,10 +285,10 @@ export default function CreateBook() {
         ) : (
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-              {/* Select Characters */}
+              {/* Seleccionar Personajes */}
               <Card>
                 <CardHeader>
-                  <CardTitle>Step 1: Selecciona Personajes</CardTitle>
+                  <CardTitle>Paso 1: Selecciona Personajes</CardTitle>
                   <CardDescription>
                     Elige hasta 5 personajes para tu historia
                   </CardDescription>
@@ -373,7 +373,7 @@ export default function CreateBook() {
                 </CardContent>
               </Card>
 
-              {/* Select Book Theme */}
+              {/* Seleccionar Tema del Libro */}
               <Card>
                 <CardHeader>
                   <CardTitle>Paso 2: Elige un Tema para el Libro</CardTitle>
@@ -456,7 +456,7 @@ export default function CreateBook() {
         )}
       </div>
 
-      {/* Book Creation Dialog */}
+      {/* Diálogo de Creación de Libro */}
       <Dialog open={isCreatingBook} onOpenChange={(open) => {
         if (!open && generationComplete) {
           goToBookPreview();

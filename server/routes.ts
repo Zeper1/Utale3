@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { 
   insertUserSchema, 
-  insertChildProfileSchema, 
+  insertCharacterSchema, 
   insertBookSchema, 
   insertChatMessageSchema, 
   insertOrderSchema,
@@ -122,70 +122,70 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/users/:userId/profiles", async (req, res) => {
     try {
       const userId = parseInt(req.params.userId);
-      const profiles = await storage.getChildProfiles(userId);
+      const profiles = await storage.getCharacters(userId);
       res.status(200).json(profiles);
     } catch (error) {
-      res.status(500).json({ message: "Failed to retrieve child profiles" });
+      res.status(500).json({ message: "Failed to retrieve character profiles" });
     }
   });
 
   app.get("/api/profiles/:id", async (req, res) => {
     try {
-      const profileId = parseInt(req.params.id);
-      const profile = await storage.getChildProfile(profileId);
+      const characterId = parseInt(req.params.id);
+      const character = await storage.getCharacter(characterId);
       
-      if (!profile) {
-        return res.status(404).json({ message: "Child profile not found" });
+      if (!character) {
+        return res.status(404).json({ message: "Character profile not found" });
       }
       
-      res.status(200).json(profile);
+      res.status(200).json(character);
     } catch (error) {
-      res.status(500).json({ message: "Failed to retrieve child profile" });
+      res.status(500).json({ message: "Failed to retrieve character profile" });
     }
   });
 
   app.post("/api/profiles", async (req, res) => {
     try {
-      const profileData = insertChildProfileSchema.parse(req.body);
-      const newProfile = await storage.createChildProfile(profileData);
-      res.status(201).json(newProfile);
+      const characterData = insertCharacterSchema.parse(req.body);
+      const newCharacter = await storage.createCharacter(characterData);
+      res.status(201).json(newCharacter);
     } catch (error) {
       if (error instanceof z.ZodError) {
-        return res.status(400).json({ message: "Invalid profile data", errors: error.errors });
+        return res.status(400).json({ message: "Invalid character data", errors: error.errors });
       }
-      res.status(500).json({ message: "Failed to create child profile" });
+      res.status(500).json({ message: "Failed to create character profile" });
     }
   });
 
   app.put("/api/profiles/:id", async (req, res) => {
     try {
-      const profileId = parseInt(req.params.id);
-      const profileData = req.body;
+      const characterId = parseInt(req.params.id);
+      const characterData = req.body;
       
-      const updatedProfile = await storage.updateChildProfile(profileId, profileData);
+      const updatedCharacter = await storage.updateCharacter(characterId, characterData);
       
-      if (!updatedProfile) {
-        return res.status(404).json({ message: "Child profile not found" });
+      if (!updatedCharacter) {
+        return res.status(404).json({ message: "Character profile not found" });
       }
       
-      res.status(200).json(updatedProfile);
+      res.status(200).json(updatedCharacter);
     } catch (error) {
-      res.status(500).json({ message: "Failed to update child profile" });
+      res.status(500).json({ message: "Failed to update character profile" });
     }
   });
 
   app.delete("/api/profiles/:id", async (req, res) => {
     try {
-      const profileId = parseInt(req.params.id);
-      const success = await storage.deleteChildProfile(profileId);
+      const characterId = parseInt(req.params.id);
+      const success = await storage.deleteCharacter(characterId);
       
       if (!success) {
-        return res.status(404).json({ message: "Child profile not found" });
+        return res.status(404).json({ message: "Character profile not found" });
       }
       
       res.status(204).send();
     } catch (error) {
-      res.status(500).json({ message: "Failed to delete child profile" });
+      res.status(500).json({ message: "Failed to delete character profile" });
     }
   });
 
@@ -227,8 +227,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/profiles/:profileId/books", async (req, res) => {
     try {
-      const profileId = parseInt(req.params.profileId);
-      const books = await storage.getBooksByChildProfile(profileId);
+      const characterId = parseInt(req.params.profileId);
+      const books = await storage.getBooksByCharacter(characterId);
       res.status(200).json(books);
     } catch (error) {
       res.status(500).json({ message: "Failed to retrieve books" });
@@ -313,11 +313,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // If this is a user message, generate a system response
       if (messageData.sender === 'user') {
-        const profile = await storage.getChildProfile(messageData.childProfileId);
+        const character = await storage.getCharacter(messageData.characterId);
         
-        if (profile) {
+        if (character) {
           // Get previous chat messages for context
-          const previousMessages = await storage.getChatMessages(messageData.childProfileId);
+          const previousMessages = await storage.getChatMessages(messageData.characterId);
           
           // Format messages for OpenAI
           const formattedMessages = previousMessages.map(msg => ({
@@ -328,7 +328,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Add system instruction
           formattedMessages.unshift({
             role: "system" as const,
-            content: "You are a friendly assistant helping to gather information about a child for creating a personalized storybook. Ask follow-up questions to learn more about the child's interests, friends, family, pets, favorite activities, and personality traits. Be conversational, warm, and engaging."
+            content: `Eres un asistente amigable que ayuda a recopilar información sobre un personaje llamado ${character.name} (${character.type}) para crear un libro de cuentos personalizado. Haz preguntas de seguimiento para aprender más sobre los intereses, amigos, familia, mascotas, actividades favoritas y rasgos de personalidad. Sé conversacional, cálido y atractivo.`
           });
           
           try {
@@ -344,7 +344,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             if (aiResponse) {
               await storage.createChatMessage({
                 userId: messageData.userId,
-                childProfileId: messageData.childProfileId,
+                characterId: messageData.characterId,
                 message: aiResponse,
                 sender: 'system'
               });
@@ -355,12 +355,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 messages: [
                   {
                     role: "system" as const,
-                    content: "Based on this conversation, extract any new information about the child that should be saved to their profile. Return a JSON object with any of these fields if information is available: interests (array of strings), favorites (object with keys like color, food, animal, etc.), friends (array of names), traits (array of personality traits)."
+                    content: `Basado en esta conversación, extrae cualquier información nueva sobre ${character.name} que debería guardarse en su perfil. Devuelve un objeto JSON con cualquiera de estos campos si hay información disponible: interests (array de strings), favorites (objeto con claves como color, food, animal, etc.), friends (array de nombres), traits (array de rasgos de personalidad).`
                   },
                   ...formattedMessages,
                   {
                     role: "user" as const,
-                    content: "Extract profile information from our conversation."
+                    content: "Extrae información del perfil de nuestra conversación."
                   }
                 ],
                 response_format: { type: "json_object" }
@@ -370,15 +370,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
               
               // Update profile with extracted information
               if (Object.keys(extractedInfo).length > 0) {
-                const updatedProfile = {
-                  ...profile,
-                  interests: [...(profile.interests || []), ...(extractedInfo.interests || [])].filter((v, i, a) => a.indexOf(v) === i),
-                  favorites: { ...(profile.favorites || {}), ...(extractedInfo.favorites || {}) },
-                  friends: [...(profile.friends || []), ...(extractedInfo.friends || [])].filter((v, i, a) => a.indexOf(v) === i),
-                  traits: [...(profile.traits || []), ...(extractedInfo.traits || [])].filter((v, i, a) => a.indexOf(v) === i),
+                const updatedCharacter = {
+                  ...character,
+                  interests: [...(character.interests || []), ...(extractedInfo.interests || [])].filter((v, i, a) => a.indexOf(v) === i),
+                  favorites: { ...(character.favorites || {}), ...(extractedInfo.favorites || {}) },
+                  friends: [...(character.relationships?.friends || []), ...(extractedInfo.friends || [])].filter((v, i, a) => a.indexOf(v) === i),
+                  traits: [...(character.traits || []), ...(extractedInfo.traits || [])].filter((v, i, a) => a.indexOf(v) === i),
                 };
                 
-                await storage.updateChildProfile(profile.id, updatedProfile);
+                await storage.updateCharacter(character.id, updatedCharacter);
               }
             }
             
@@ -408,17 +408,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // --- Book Generation with OpenAI ---
   app.post("/api/generate-book", async (req, res) => {
     try {
-      const { profileId, themeId } = req.body;
+      const { characterId, themeId } = req.body;
       
-      if (!profileId || !themeId) {
-        return res.status(400).json({ message: "Profile ID and theme ID are required" });
+      if (!characterId || !themeId) {
+        return res.status(400).json({ message: "Character ID and theme ID are required" });
       }
       
-      const profile = await storage.getChildProfile(parseInt(profileId));
+      const character = await storage.getCharacter(parseInt(characterId));
       const theme = await storage.getBookTheme(parseInt(themeId));
       
-      if (!profile) {
-        return res.status(404).json({ message: "Child profile not found" });
+      if (!character) {
+        return res.status(404).json({ message: "Character profile not found" });
       }
       
       if (!theme) {
@@ -431,27 +431,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         messages: [
           {
             role: "system",
-            content: `Create a personalized children's storybook with the theme: ${theme.name}. 
-                     The story should be appropriate for children aged ${theme.ageRange}.
-                     Create a JSON object with the following structure:
+            content: `Crea un libro infantil personalizado con el tema: ${theme.name}. 
+                     La historia debe ser apropiada para niños de ${theme.ageRange || '5-10'} años.
+                     Crea un objeto JSON con la siguiente estructura:
                      {
-                       "title": "Story title including the child's name",
+                       "title": "Título de la historia incluyendo el nombre del personaje",
                        "pages": [
                          {
-                          "text": "Page text with the story narrative",
-                          "illustration_prompt": "Detailed description for illustrating this page"
+                          "text": "Texto de la página con narración de la historia",
+                          "illustration_prompt": "Descripción detallada para ilustrar esta página"
                          }
-                         // 10 pages total
+                         // 10 páginas en total
                        ]
                      }`
           },
           {
             role: "user",
-            content: `Create a story for ${profile.name}, age ${profile.age || 'unknown'}.
-                     Child's interests: ${profile.interests ? profile.interests.join(', ') : 'unknown'}
-                     Child's favorite things: ${profile.favorites ? JSON.stringify(profile.favorites) : 'unknown'}
-                     Child's friends: ${profile.friends ? profile.friends.join(', ') : 'unknown'}
-                     Child's personality traits: ${profile.traits ? profile.traits.join(', ') : 'unknown'}`
+            content: `Crea una historia para ${character.name}, tipo: ${character.type || 'niño'}, edad: ${character.age || 'escolar'}.
+                     Intereses: ${character.interests ? character.interests.join(', ') : 'juegos, aventuras, descubrimientos'}
+                     Cosas favoritas: ${character.favorites ? JSON.stringify(character.favorites) : '{"color": "azul", "animal": "perro"}'}
+                     Amigos: ${character.relationships?.friends ? character.relationships.friends.join(', ') : 'amigos imaginarios'}
+                     Rasgos de personalidad: ${character.traits ? character.traits.join(', ') : 'curioso, amigable, creativo'}`
           }
         ],
         response_format: { type: "json_object" }
@@ -572,17 +572,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Generate book content with AI
   app.post("/api/books/generate-content", async (req: Request, res: Response) => {
     try {
-      const { childProfileId, themeId } = req.body;
+      const { characterId, themeId } = req.body;
       
-      if (!childProfileId || !themeId) {
-        return res.status(400).json({ message: "Child profile ID and theme ID are required" });
+      if (!characterId || !themeId) {
+        return res.status(400).json({ message: "Character ID and theme ID are required" });
       }
       
-      const profile = await storage.getChildProfile(parseInt(childProfileId.toString()));
+      const character = await storage.getCharacter(parseInt(characterId.toString()));
       const theme = await storage.getBookTheme(parseInt(themeId.toString()));
       
-      if (!profile) {
-        return res.status(404).json({ message: "Child profile not found" });
+      if (!character) {
+        return res.status(404).json({ message: "Character profile not found" });
       }
       
       if (!theme) {
@@ -590,11 +590,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Get chat history for additional context
-      const chatHistory = await storage.getChatMessages(childProfileId);
+      const chatHistory = await storage.getChatMessages(characterId);
       
-      // Preparar el contexto del chat para una comprensión más profunda del niño
+      // Preparar el contexto del chat para una comprensión más profunda del personaje
       const chatContext = chatHistory.length > 0 
-        ? `Basado en conversaciones previas con ${profile.name}, se ha aprendido que: 
+        ? `Basado en conversaciones previas con ${character.name}, se ha aprendido que: 
           ${chatHistory.filter(m => m.sender === 'user').slice(-5).map(m => `- ${m.message}`).join('\n')}`
         : '';
       
@@ -604,20 +604,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         messages: [
           {
             role: "system",
-            content: `Eres un experto narrador de cuentos infantiles que crea historias mágicas y educativas perfectamente adaptadas a cada niño.
+            content: `Eres un experto narrador de cuentos infantiles que crea historias mágicas y educativas perfectamente adaptadas a cada personaje.
                      
                      INSTRUCCIONES PARA LA CREACIÓN DE HISTORIAS:
                      - Crea un libro infantil personalizado con el tema: "${theme.name}"
-                     - La historia debe ser apropiada para un niño de ${profile.age || '5-8'} años
-                     - La narrativa debe incorporar los intereses, cosas favoritas y rasgos de personalidad del niño
-                     - Utiliza un lenguaje sencillo pero enriquecedor, adaptado a la edad del niño
+                     - La historia debe ser apropiada para niños de ${theme.ageRange || '5-10'} años
+                     - La narrativa debe incorporar los intereses, cosas favoritas y rasgos de personalidad del personaje
+                     - Utiliza un lenguaje sencillo pero enriquecedor, adaptado a la edad objetivo
                      - Incluye enseñanzas sutiles o valores positivos (amistad, valentía, respeto, etc.)
                      - Asegúrate de que la historia tenga un arco narrativo claro: introducción, desarrollo, clímax y resolución
-                     - Las ilustraciones deben ser coherentes con la edad del niño y el estilo ilustrativo infantil
+                     - Las ilustraciones deben ser coherentes con el personaje y el estilo ilustrativo infantil
                      - Evita cualquier contenido inapropiado, terrorífico o angustiante
                      
                      ESTRUCTURA DE LA HISTORIA:
-                     - Página 1: Portada con título e introducción del personaje principal (basado en ${profile.name})
+                     - Página 1: Portada con título e introducción del personaje principal (basado en ${character.name})
                      - Página 2-3: Establecimiento del escenario y situación inicial
                      - Página 4-6: Desarrollo de la aventura o reto
                      - Página 7-9: Clímax o momento crucial
@@ -625,7 +625,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                      
                      Debes generar un objeto JSON con la siguiente estructura exacta:
                      {
-                       "title": "Título de la historia incluyendo el nombre del niño",
+                       "title": "Título de la historia incluyendo el nombre del personaje",
                        "pages": [
                          {
                           "pageNumber": 1,
@@ -637,7 +637,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                        "summary": "Breve resumen de la historia",
                        "targetAge": "Rango de edad apropiado para la historia",
                        "theme": "${theme.name}",
-                       "mainCharacter": "${profile.name}"
+                       "mainCharacter": "${character.name}"
                      }
                      
                      REQUISITOS TÉCNICOS:
@@ -649,15 +649,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
           },
           {
             role: "user",
-            content: `Crea una historia mágica y personalizada para ${profile.name}, de ${profile.age || 'edad escolar'} años.
+            content: `Crea una historia mágica y personalizada para ${character.name}, un/a ${character.type || 'personaje'} de ${character.age || 'edad indeterminada'} años.
                      
-                     PERFIL DETALLADO DEL NIÑO:
-                     - Nombre: ${profile.name}
-                     - Edad: ${profile.age || 'escolar'}
-                     - Intereses: ${profile.interests ? profile.interests.join(', ') : 'juegos, aventuras, animales y descubrimientos'}
-                     - Cosas favoritas: ${profile.favorites ? JSON.stringify(profile.favorites, null, 2) : '(color favorito, animal favorito, etc. - usar lo que se deduzca del perfil)'}
-                     - Amigos y familia: ${profile.friends ? profile.friends.join(', ') : 'amigos, familia y posibles mascotas'}
-                     - Rasgos de personalidad: ${profile.traits ? profile.traits.join(', ') : 'amigable, curioso y valiente'}
+                     PERFIL DETALLADO DEL PERSONAJE:
+                     - Nombre: ${character.name}
+                     - Tipo: ${character.type || 'niño/a'}
+                     - Edad: ${character.age || 'escolar'}
+                     - Intereses: ${character.interests ? character.interests.join(', ') : 'juegos, aventuras, animales y descubrimientos'}
+                     - Cosas favoritas: ${character.favorites ? JSON.stringify(character.favorites, null, 2) : '(color favorito, animal favorito, etc. - usar lo que se deduzca del perfil)'}
+                     - Amigos y familia: ${character.relationships?.friends ? character.relationships.friends.join(', ') : 'amigos, familia y posibles mascotas'}
+                     - Rasgos de personalidad: ${character.traits ? character.traits.join(', ') : 'amigable, curioso y valiente'}
                      
                      TEMA DEL LIBRO:
                      - Tema: ${theme.name}
@@ -665,7 +666,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                      
                      ${chatContext ? `CONTEXTO ADICIONAL DE CONVERSACIONES:\n${chatContext}` : ''}
                      
-                     Crea una historia única y encantadora que realmente se sienta como si fuera escrita específicamente para ${profile.name}, 
+                     Crea una historia única y encantadora que realmente se sienta como si fuera escrita específicamente para ${character.name}, 
                      incorporando sus intereses y personalidad de manera natural en la narrativa.
                      
                      Asegúrate de que la historia sea apropiada para la edad, educativa, divertida y con un mensaje positivo.
