@@ -1,8 +1,10 @@
 import { 
   users, type User, type InsertUser,
-  childProfiles, type ChildProfile, type InsertChildProfile,
+  characters, type Character, type InsertCharacter,
   bookThemes, type BookTheme, type InsertBookTheme,
+  customBookThemes, type CustomBookTheme, type InsertCustomBookTheme,
   books, type Book, type InsertBook,
+  bookCharacters, type BookCharacter, type InsertBookCharacter,
   chatMessages, type ChatMessage, type InsertChatMessage,
   orders, type Order, type InsertOrder,
   subscriptions, type Subscription, type InsertSubscription,
@@ -18,27 +20,39 @@ export interface IStorage {
   createUser(user: InsertUser): Promise<User>;
   updateUser(id: number, userData: Partial<User>): Promise<User | undefined>;
   
-  // Child profile operations
-  getChildProfiles(userId: number): Promise<ChildProfile[]>;
-  getChildProfile(id: number): Promise<ChildProfile | undefined>;
-  createChildProfile(profile: InsertChildProfile): Promise<ChildProfile>;
-  updateChildProfile(id: number, profileData: Partial<ChildProfile>): Promise<ChildProfile | undefined>;
-  deleteChildProfile(id: number): Promise<boolean>;
+  // Character operations (antes Child profile)
+  getCharacters(userId: number): Promise<Character[]>;
+  getCharacter(id: number): Promise<Character | undefined>;
+  createCharacter(character: InsertCharacter): Promise<Character>;
+  updateCharacter(id: number, characterData: Partial<Character>): Promise<Character | undefined>;
+  deleteCharacter(id: number): Promise<boolean>;
   
   // Book theme operations
   getBookThemes(): Promise<BookTheme[]>;
   getBookTheme(id: number): Promise<BookTheme | undefined>;
   
+  // Custom theme operations
+  getCustomBookThemes(userId: number): Promise<CustomBookTheme[]>;
+  getCustomBookTheme(id: number): Promise<CustomBookTheme | undefined>;
+  createCustomBookTheme(theme: InsertCustomBookTheme): Promise<CustomBookTheme>;
+  updateCustomBookTheme(id: number, themeData: Partial<CustomBookTheme>): Promise<CustomBookTheme | undefined>;
+  deleteCustomBookTheme(id: number): Promise<boolean>;
+  
   // Book operations
   getBooks(userId: number): Promise<Book[]>;
-  getBooksByChildProfile(childProfileId: number): Promise<Book[]>;
+  getBooksByCharacter(characterId: number): Promise<Book[]>;
   getBook(id: number): Promise<Book | undefined>;
   createBook(book: InsertBook): Promise<Book>;
   updateBook(id: number, bookData: Partial<Book>): Promise<Book | undefined>;
   deleteBook(id: number): Promise<boolean>;
   
+  // Book character relations
+  getBookCharacters(bookId: number): Promise<BookCharacter[]>;
+  addCharacterToBook(bookCharacter: InsertBookCharacter): Promise<BookCharacter>;
+  removeCharacterFromBook(bookId: number, characterId: number): Promise<boolean>;
+  
   // Chat operations
-  getChatMessages(childProfileId: number): Promise<ChatMessage[]>;
+  getChatMessages(characterId: number): Promise<ChatMessage[]>;
   createChatMessage(message: InsertChatMessage): Promise<ChatMessage>;
   
   // Order operations
@@ -75,9 +89,11 @@ export interface IStorage {
 
 export class MemStorage implements IStorage {
   private users: Map<number, User>;
-  private childProfiles: Map<number, ChildProfile>;
+  private characters: Map<number, Character>;
   private bookThemes: Map<number, BookTheme>;
+  private customBookThemes: Map<number, CustomBookTheme>;
   private books: Map<number, Book>;
+  private bookCharacters: Map<number, BookCharacter>;
   private chatMessages: Map<number, ChatMessage>;
   private orders: Map<number, Order>;
   private subscriptionTiers: Map<number, SubscriptionTier>;
@@ -85,9 +101,11 @@ export class MemStorage implements IStorage {
   private bookDeliveries: Map<number, BookDelivery>;
   
   private userId = 1;
-  private childProfileId = 1;
+  private characterId = 1;
   private bookThemeId = 1;
+  private customThemeId = 1;
   private bookId = 1;
+  private bookCharacterId = 1;
   private chatMessageId = 1;
   private orderId = 1;
   private subscriptionTierId = 1;
@@ -96,9 +114,11 @@ export class MemStorage implements IStorage {
 
   constructor() {
     this.users = new Map();
-    this.childProfiles = new Map();
+    this.characters = new Map();
     this.bookThemes = new Map();
+    this.customBookThemes = new Map();
     this.books = new Map();
+    this.bookCharacters = new Map();
     this.chatMessages = new Map();
     this.orders = new Map();
     this.subscriptionTiers = new Map();
@@ -233,44 +253,44 @@ export class MemStorage implements IStorage {
     return updatedUser;
   }
 
-  // Child profile operations
-  async getChildProfiles(userId: number): Promise<ChildProfile[]> {
-    return Array.from(this.childProfiles.values())
-      .filter(profile => profile.userId === userId);
+  // Character operations
+  async getCharacters(userId: number): Promise<Character[]> {
+    return Array.from(this.characters.values())
+      .filter(character => character.userId === userId);
   }
 
-  async getChildProfile(id: number): Promise<ChildProfile | undefined> {
-    return this.childProfiles.get(id);
+  async getCharacter(id: number): Promise<Character | undefined> {
+    return this.characters.get(id);
   }
 
-  async createChildProfile(profileData: InsertChildProfile): Promise<ChildProfile> {
-    const id = this.childProfileId++;
+  async createCharacter(characterData: InsertCharacter): Promise<Character> {
+    const id = this.characterId++;
     const now = new Date();
-    const profile: ChildProfile = { 
-      ...profileData, 
+    const character: Character = { 
+      ...characterData, 
       id,
       createdAt: now,
       updatedAt: now
     };
-    this.childProfiles.set(id, profile);
-    return profile;
+    this.characters.set(id, character);
+    return character;
   }
 
-  async updateChildProfile(id: number, profileData: Partial<ChildProfile>): Promise<ChildProfile | undefined> {
-    const profile = this.childProfiles.get(id);
-    if (!profile) return undefined;
+  async updateCharacter(id: number, characterData: Partial<Character>): Promise<Character | undefined> {
+    const character = this.characters.get(id);
+    if (!character) return undefined;
     
-    const updatedProfile = { 
-      ...profile, 
-      ...profileData,
+    const updatedCharacter = { 
+      ...character, 
+      ...characterData,
       updatedAt: new Date()
     };
-    this.childProfiles.set(id, updatedProfile);
-    return updatedProfile;
+    this.characters.set(id, updatedCharacter);
+    return updatedCharacter;
   }
 
-  async deleteChildProfile(id: number): Promise<boolean> {
-    return this.childProfiles.delete(id);
+  async deleteCharacter(id: number): Promise<boolean> {
+    return this.characters.delete(id);
   }
 
   // Book theme operations
@@ -282,6 +302,46 @@ export class MemStorage implements IStorage {
   async getBookTheme(id: number): Promise<BookTheme | undefined> {
     return this.bookThemes.get(id);
   }
+  
+  // Custom theme operations
+  async getCustomBookThemes(userId: number): Promise<CustomBookTheme[]> {
+    return Array.from(this.customBookThemes.values())
+      .filter(theme => theme.userId === userId);
+  }
+
+  async getCustomBookTheme(id: number): Promise<CustomBookTheme | undefined> {
+    return this.customBookThemes.get(id);
+  }
+
+  async createCustomBookTheme(themeData: InsertCustomBookTheme): Promise<CustomBookTheme> {
+    const id = this.customThemeId++;
+    const now = new Date();
+    const theme: CustomBookTheme = { 
+      ...themeData, 
+      id,
+      createdAt: now,
+      updatedAt: now
+    };
+    this.customBookThemes.set(id, theme);
+    return theme;
+  }
+
+  async updateCustomBookTheme(id: number, themeData: Partial<CustomBookTheme>): Promise<CustomBookTheme | undefined> {
+    const theme = this.customBookThemes.get(id);
+    if (!theme) return undefined;
+    
+    const updatedTheme = { 
+      ...theme, 
+      ...themeData,
+      updatedAt: new Date()
+    };
+    this.customBookThemes.set(id, updatedTheme);
+    return updatedTheme;
+  }
+
+  async deleteCustomBookTheme(id: number): Promise<boolean> {
+    return this.customBookThemes.delete(id);
+  }
 
   // Book operations
   async getBooks(userId: number): Promise<Book[]> {
@@ -289,9 +349,15 @@ export class MemStorage implements IStorage {
       .filter(book => book.userId === userId);
   }
 
-  async getBooksByChildProfile(childProfileId: number): Promise<Book[]> {
+  async getBooksByCharacter(characterId: number): Promise<Book[]> {
+    // Primero obtenemos todas las relaciones de este personaje
+    const characterRelations = Array.from(this.bookCharacters.values())
+      .filter(relation => relation.characterId === characterId);
+    
+    // Luego obtenemos los libros correspondientes
+    const bookIds = characterRelations.map(relation => relation.bookId);
     return Array.from(this.books.values())
-      .filter(book => book.childProfileId === childProfileId);
+      .filter(book => bookIds.includes(book.id));
   }
 
   async getBook(id: number): Promise<Book | undefined> {
@@ -305,7 +371,8 @@ export class MemStorage implements IStorage {
       ...bookData, 
       id,
       createdAt: now,
-      updatedAt: now
+      updatedAt: now,
+      status: bookData.status || 'draft'
     };
     this.books.set(id, book);
     return book;
@@ -327,11 +394,39 @@ export class MemStorage implements IStorage {
   async deleteBook(id: number): Promise<boolean> {
     return this.books.delete(id);
   }
+  
+  // Book character relations
+  async getBookCharacters(bookId: number): Promise<BookCharacter[]> {
+    return Array.from(this.bookCharacters.values())
+      .filter(relation => relation.bookId === bookId);
+  }
+  
+  async addCharacterToBook(bookCharacterData: InsertBookCharacter): Promise<BookCharacter> {
+    const id = this.bookCharacterId++;
+    const now = new Date();
+    const bookCharacter: BookCharacter = {
+      ...bookCharacterData,
+      id,
+      createdAt: now
+    };
+    this.bookCharacters.set(id, bookCharacter);
+    return bookCharacter;
+  }
+  
+  async removeCharacterFromBook(bookId: number, characterId: number): Promise<boolean> {
+    // Encontrar la relación a eliminar
+    const relationToDelete = Array.from(this.bookCharacters.values())
+      .find(relation => relation.bookId === bookId && relation.characterId === characterId);
+      
+    if (!relationToDelete) return false;
+    
+    return this.bookCharacters.delete(relationToDelete.id);
+  }
 
   // Chat operations
-  async getChatMessages(childProfileId: number): Promise<ChatMessage[]> {
+  async getChatMessages(characterId: number): Promise<ChatMessage[]> {
     return Array.from(this.chatMessages.values())
-      .filter(message => message.childProfileId === childProfileId)
+      .filter(message => message.characterId === characterId)
       .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
   }
 

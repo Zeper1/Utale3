@@ -37,14 +37,14 @@ import {
 
 // Form schema for book creation
 const bookFormSchema = z.object({
-  childProfileIds: z.array(z.string()).min(1, "Por favor selecciona al menos un perfil de niño"),
+  characterIds: z.array(z.string()).min(1, "Por favor selecciona al menos un personaje").max(5, "Máximo 5 personajes por libro"),
   themeOption: z.enum(["predefined", "custom"]), // predefined or custom theme
   themeId: z.string().optional(),
   customTheme: z.object({
     title: z.string().optional(),
     description: z.string().optional(),
     setting: z.string().optional(),
-    characters: z.string().optional(),
+    additionalCharacters: z.string().optional(),
     plotType: z.string().optional(),
     includeMoralLesson: z.boolean().optional(),
     additionalNotes: z.string().optional()
@@ -97,15 +97,17 @@ export default function CreateBook() {
 
   // Book generation and creation mutation
   const generateBook = useMutation({
-    mutationFn: async (values: { profileId: number, themeId: number }) => {
+    mutationFn: async (values: { characterId: number, themeId: number }) => {
       // Step 1: Generate book content with OpenAI
       const generateContentResponse = await apiRequest('POST', '/api/books/generate-content', {
-        childProfileId: values.profileId,
-        themeId: values.themeId
+        characterId: values.characterId,
+        themeId: values.themeId,
+        // Si hubiera una implementación completa, enviaríamos también los personajes adicionales
+        // additionalCharacterIds: values.additionalCharacterIds
       });
       
       if (!generateContentResponse.ok) {
-        throw new Error('Failed to generate book content');
+        throw new Error('Error al generar el contenido del libro');
       }
       
       const bookContent = await generateContentResponse.json();
@@ -113,7 +115,7 @@ export default function CreateBook() {
       // Step 2: Create initial book entry in the database
       const createBookResponse = await apiRequest('POST', '/api/books', {
         userId: user?.id,
-        childProfileId: values.profileId,
+        characterId: values.characterId, // Personaje principal
         themeId: values.themeId,
         title: bookContent.title,
         content: bookContent,
@@ -122,7 +124,7 @@ export default function CreateBook() {
       });
       
       if (!createBookResponse.ok) {
-        throw new Error('Failed to create book record');
+        throw new Error('Error al crear el registro del libro');
       }
       
       const book = await createBookResponse.json();
@@ -133,8 +135,8 @@ export default function CreateBook() {
       });
       
       if (!generateImagesResponse.ok) {
-        // Even if image generation fails, we continue
-        // We'll just have the book without images
+        // Incluso si falla la generación de imágenes, continuamos
+        // Simplemente tendremos el libro sin imágenes
         await apiRequest('PATCH', `/api/books/${book.id}/status`, { status: 'completed' });
         return book;
       }
@@ -171,14 +173,14 @@ export default function CreateBook() {
   const form = useForm<BookFormValues>({
     resolver: zodResolver(bookFormSchema),
     defaultValues: {
-      childProfileIds: [],
+      characterIds: [],
       themeOption: "predefined",
       themeId: "",
       customTheme: {
         title: "",
         description: "",
         setting: "",
-        characters: "",
+        additionalCharacters: "",
         plotType: "",
         includeMoralLesson: true,
         additionalNotes: ""
@@ -190,9 +192,21 @@ export default function CreateBook() {
   const onSubmit = (values: BookFormValues) => {
     setIsCreatingBook(true);
     
-    const mainProfileId = parseInt(values.childProfileIds[0]);
-    let themeData;
+    // Verificar que tenemos al menos un personaje seleccionado
+    if (!values.characterIds || values.characterIds.length === 0) {
+      toast({
+        title: "Error",
+        description: "Debes seleccionar al menos un personaje para tu historia.",
+        variant: "destructive",
+      });
+      setIsCreatingBook(false);
+      return;
+    }
     
+    const mainCharacterId = parseInt(values.characterIds[0]);
+    const additionalCharacterIds = values.characterIds.slice(1).map(id => parseInt(id));
+    
+    let themeData;
     if (values.themeOption === "predefined" && values.themeId) {
       themeData = parseInt(values.themeId);
     } else {
@@ -202,12 +216,11 @@ export default function CreateBook() {
     }
     
     generateBook.mutate({
-      profileId: mainProfileId,
+      characterId: mainCharacterId,
       themeId: themeData,
-      // Enviar los detalles adicionales que no procesaremos en esta demo pero que
-      // deberían ser procesados en una implementación completa
+      // En una implementación completa, enviaríamos también:
       // customTheme: values.customTheme,
-      // additionalProfiles: values.childProfileIds.slice(1).map(id => parseInt(id))
+      // additionalCharacters: additionalCharacterIds
     });
   };
 
@@ -239,8 +252,8 @@ export default function CreateBook() {
     <div className="container mx-auto px-4 py-12">
       <div className="max-w-3xl mx-auto">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">Create a Personalized Book</h1>
-          <p className="text-gray-600">Select a child profile and book theme to create a personalized storybook</p>
+          <h1 className="text-3xl font-bold mb-2">Crea un Libro Personalizado</h1>
+          <p className="text-gray-600">Selecciona personajes y un tema para crear un libro de cuentos personalizado</p>
         </div>
 
         {isLoading ? (
@@ -250,8 +263,8 @@ export default function CreateBook() {
         ) : hasError ? (
           <Card>
             <CardContent className="pt-6">
-              <p className="text-red-500">Error loading data. Please try again later.</p>
-              <Button onClick={goToDashboard} className="mt-4">Back to Dashboard</Button>
+              <p className="text-red-500">Error al cargar los datos. Por favor intenta más tarde.</p>
+              <Button onClick={goToDashboard} className="mt-4">Volver al Tablero</Button>
             </CardContent>
           </Card>
         ) : childProfiles.length === 0 ? (
@@ -260,84 +273,99 @@ export default function CreateBook() {
               <div className="bg-primary-50 p-4 rounded-full mb-4">
                 <BookOpen className="h-8 w-8 text-primary" />
               </div>
-              <h3 className="text-xl font-semibold mb-2">No Child Profiles Yet</h3>
+              <h3 className="text-xl font-semibold mb-2">Aún no tienes personajes</h3>
               <p className="text-gray-600 mb-6 max-w-md">
-                Before creating a book, you need to create a profile for your child to personalize their story.
+                Antes de crear un libro, necesitas crear al menos un personaje para tu historia. Puedes crear personajes de diferentes tipos: niños, mascotas, juguetes u otros.
               </p>
               <Button onClick={goToDashboard}>
-                Create a Profile First
+                Crear un Personaje Primero
               </Button>
             </CardContent>
           </Card>
         ) : (
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-              {/* Select Child Profile */}
+              {/* Select Characters */}
               <Card>
                 <CardHeader>
-                  <CardTitle>Step 1: Select Child Profile</CardTitle>
+                  <CardTitle>Step 1: Selecciona Personajes</CardTitle>
                   <CardDescription>
-                    Choose which child you're creating this book for
+                    Elige hasta 5 personajes para tu historia
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <FormField
                     control={form.control}
-                    name="childProfileId"
+                    name="characterIds"
                     render={({ field }) => (
                       <FormItem>
                         <FormControl>
-                          <RadioGroup
-                            onValueChange={field.onChange}
-                            defaultValue={field.value}
-                            className="grid grid-cols-1 md:grid-cols-2 gap-4"
-                          >
-                            {childProfiles.map((profile: any) => (
-                              <div key={profile.id} className="relative">
-                                <RadioGroupItem
-                                  value={profile.id.toString()}
-                                  id={`profile-${profile.id}`}
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {childProfiles.map((character: any) => (
+                              <div key={character.id} className="relative">
+                                <Checkbox
+                                  id={`character-${character.id}`}
+                                  checked={field.value?.includes(character.id.toString())}
+                                  onCheckedChange={(checked) => {
+                                    const value = character.id.toString();
+                                    return checked
+                                      ? field.onChange([...(field.value || []), value].slice(0, 5))
+                                      : field.onChange((field.value || []).filter((v: string) => v !== value));
+                                  }}
                                   className="peer sr-only"
                                 />
                                 <label
-                                  htmlFor={`profile-${profile.id}`}
+                                  htmlFor={`character-${character.id}`}
                                   className="flex items-start p-4 border rounded-lg cursor-pointer hover:border-primary peer-checked:border-primary peer-checked:bg-primary-50"
                                 >
                                   <div className="flex-1">
-                                    <div className="font-medium">{profile.name}</div>
-                                    <div className="text-sm text-gray-500">{profile.age} years old</div>
-                                    {profile.interests && profile.interests.length > 0 && (
+                                    <div className="font-medium">{character.name}</div>
+                                    <div className="text-sm text-gray-500">
+                                      {character.type === 'child' 
+                                        ? `${character.age} años` 
+                                        : character.type === 'pet' 
+                                          ? 'Mascota' 
+                                          : character.type === 'toy' 
+                                            ? 'Juguete' 
+                                            : 'Otro'}
+                                    </div>
+                                    {character.interests && character.interests.length > 0 && (
                                       <div className="mt-2 flex flex-wrap gap-1">
-                                        {profile.interests.slice(0, 3).map((interest: string, idx: number) => (
+                                        {character.interests.slice(0, 3).map((interest: string, idx: number) => (
                                           <span key={idx} className="bg-gray-100 px-2 py-0.5 rounded-full text-xs">
                                             {interest}
                                           </span>
                                         ))}
-                                        {profile.interests.length > 3 && (
-                                          <span className="text-xs text-gray-500">+{profile.interests.length - 3} more</span>
+                                        {character.interests.length > 3 && (
+                                          <span className="text-xs text-gray-500">+{character.interests.length - 3} más</span>
                                         )}
                                       </div>
                                     )}
                                   </div>
-                                  <Check className="invisible peer-checked:visible h-5 w-5 text-primary" />
+                                  <div className="w-5 h-5 border rounded flex items-center justify-center peer-checked:bg-primary peer-checked:text-white peer-checked:border-primary">
+                                    {field.value?.includes(character.id.toString()) && <Check className="h-4 w-4" />}
+                                  </div>
                                 </label>
-                                {(!profile.interests || profile.interests.length === 0) && (
+                                {(!character.interests || character.interests.length === 0) && (
                                   <div className="mt-1 ml-4">
                                     <Button
                                       type="button"
                                       variant="link"
                                       size="sm"
                                       className="text-primary p-0 h-auto"
-                                      onClick={() => goToProfileChat(profile.id.toString())}
+                                      onClick={() => goToProfileChat(character.id.toString())}
                                     >
-                                      Add more details through chat
+                                      Añadir más detalles mediante chat
                                     </Button>
                                   </div>
                                 )}
                               </div>
                             ))}
-                          </RadioGroup>
+                          </div>
                         </FormControl>
+                        <div className="mt-2 text-sm text-gray-500">
+                          Seleccionados: {field.value?.length || 0}/5 personajes
+                        </div>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -348,9 +376,9 @@ export default function CreateBook() {
               {/* Select Book Theme */}
               <Card>
                 <CardHeader>
-                  <CardTitle>Step 2: Choose a Book Theme</CardTitle>
+                  <CardTitle>Paso 2: Elige un Tema para el Libro</CardTitle>
                   <CardDescription>
-                    Select a theme for your personalized storybook
+                    Selecciona un tema para tu libro de cuentos personalizado
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -391,7 +419,7 @@ export default function CreateBook() {
                                     <div className="flex justify-between items-start">
                                       <div>
                                         <div className="font-medium">{theme.name}</div>
-                                        <div className="text-xs text-gray-500">Ages {theme.ageRange}</div>
+                                        <div className="text-xs text-gray-500">Edades {theme.ageRange}</div>
                                       </div>
                                       <Check className="invisible peer-checked:visible h-5 w-5 text-primary" />
                                     </div>
@@ -409,16 +437,16 @@ export default function CreateBook() {
                 </CardContent>
                 <CardFooter className="flex justify-between border-t pt-6">
                   <Button type="button" variant="outline" onClick={goToDashboard}>
-                    Cancel
+                    Cancelar
                   </Button>
                   <Button type="submit" disabled={generateBook.isPending}>
                     {generateBook.isPending ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Generating...
+                        Generando...
                       </>
                     ) : (
-                      <>Create Book</>
+                      <>Crear Libro</>
                     )}
                   </Button>
                 </CardFooter>
@@ -438,12 +466,12 @@ export default function CreateBook() {
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
             <DialogTitle>
-              {generationComplete ? "Book Created Successfully!" : "Creating Your Book"}
+              {generationComplete ? "¡Libro Creado Exitosamente!" : "Creando Tu Libro"}
             </DialogTitle>
             <DialogDescription>
               {generationComplete 
-                ? "Your personalized book has been created and is ready to preview." 
-                : "Please wait while we generate your personalized book..."}
+                ? "Tu libro personalizado ha sido creado y está listo para visualizar." 
+                : "Por favor espera mientras generamos tu libro personalizado..."}
             </DialogDescription>
           </DialogHeader>
           
@@ -453,12 +481,12 @@ export default function CreateBook() {
                 <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
                   <Check className="h-8 w-8 text-green-600" />
                 </div>
-                <p className="text-lg font-medium mb-2">Book Generation Complete</p>
+                <p className="text-lg font-medium mb-2">Generación de Libro Completada</p>
                 <p className="text-gray-600 mb-6">
-                  Your personalized book is ready to preview. You can now customize it further or proceed to checkout.
+                  Tu libro personalizado está listo para visualizar. Ahora puedes personalizarlo más o proceder al pago.
                 </p>
                 <Button onClick={goToBookPreview} className="mt-4">
-                  Preview Book <ArrowRight className="ml-2 h-4 w-4" />
+                  Ver Libro <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               </div>
             ) : (
@@ -466,9 +494,9 @@ export default function CreateBook() {
                 <div className="w-16 h-16 bg-primary-50 rounded-full flex items-center justify-center mx-auto mb-4">
                   <Loader2 className="h-8 w-8 text-primary animate-spin" />
                 </div>
-                <p className="text-lg font-medium mb-2">Generating Your Book</p>
+                <p className="text-lg font-medium mb-2">Generando Tu Libro</p>
                 <p className="text-gray-600">
-                  We're creating a personalized story based on the child's profile and your selected theme. This may take a minute...
+                  Estamos creando una historia personalizada basada en los perfiles de los personajes y el tema seleccionado. Esto puede tardar un minuto...
                 </p>
               </div>
             )}
@@ -477,7 +505,7 @@ export default function CreateBook() {
           <DialogFooter>
             {generationComplete && (
               <Button variant="outline" onClick={goToDashboard}>
-                Back to Dashboard
+                Volver al Tablero
               </Button>
             )}
           </DialogFooter>
