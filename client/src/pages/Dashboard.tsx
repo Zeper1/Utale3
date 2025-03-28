@@ -209,12 +209,16 @@ export default function Dashboard() {
     setUploadingAvatar(true);
     
     try {
+      // Vamos a usar directamente la ruta de la API del servidor en lugar de fetch
+      // Crear un FormData para la imagen
       const formData = new FormData();
       formData.append('avatar', avatarFile);
       
-      const response = await fetch(`/api/profiles/${profileId}/avatar`, {
-        method: 'POST',
-        body: formData,
+      // Usamos apiRequest con el objeto FormData
+      const response = await apiRequest('POST', `/api/profiles/${profileId}/avatar`, formData, {
+        // No establecer Content-Type para permitir que el navegador configure el boundary
+        // para el FormData automáticamente
+        headers: {}
       });
       
       if (!response.ok) {
@@ -1053,6 +1057,353 @@ export default function Dashboard() {
                       Creando...
                     </>
                   ) : 'Crear personaje'}
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Edit Profile Dialog */}
+      <Dialog open={isEditProfileOpen} onOpenChange={(open) => {
+        if (!open) {
+          setSelectedProfile(null);
+          setAvatarFile(null);
+          setAvatarPreview(null);
+        }
+      }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Editar personaje</DialogTitle>
+            <DialogDescription>
+              Modifica la información del personaje para personalizar las historias
+            </DialogDescription>
+          </DialogHeader>
+          <Form {...form}>
+            <form 
+              onSubmit={form.handleSubmit((values) => {
+                if (!selectedProfile) return;
+                
+                const updatedProfile = {
+                  id: selectedProfile.id,
+                  name: values.name,
+                  type: values.type || 'child',
+                  age: values.age ? parseInt(values.age.toString(), 10) : null,
+                  gender: values.gender || null,
+                  physicalDescription: values.physicalDescription || null,
+                  personality: values.personality || null,
+                  likes: values.likes || null,
+                  dislikes: values.dislikes || null,
+                  additionalInfo: values.additionalInfo || null,
+                };
+                
+                updateProfile.mutate(updatedProfile);
+                
+                // Si hay un nuevo avatar, súbelo
+                if (avatarFile && selectedProfile.id) {
+                  uploadAvatar(selectedProfile.id);
+                }
+              })} 
+              className="space-y-6 mt-4"
+            >
+              <input
+                type="file"
+                ref={fileInputRef}
+                className="hidden"
+                accept="image/*"
+                onChange={handleFileChange}
+              />
+              
+              <div className="flex justify-center mb-6">
+                <div 
+                  className="relative h-24 w-24 rounded-full overflow-hidden bg-gray-100 cursor-pointer hover:opacity-90 transition-opacity"
+                  onClick={handleUploadClick}
+                >
+                  {avatarPreview ? (
+                    <img 
+                      src={avatarPreview} 
+                      alt="Avatar preview" 
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <Camera className="h-8 w-8 text-gray-400" />
+                    </div>
+                  )}
+                  <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-40 opacity-0 hover:opacity-100 transition-opacity">
+                    <Upload className="h-6 w-6 text-white" />
+                  </div>
+                </div>
+              </div>
+              
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Nombre del personaje</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Nombre" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="type"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Tipo de personaje</FormLabel>
+                    <Select
+                      onValueChange={(value) => {
+                        field.onChange(value);
+                        setCharacterType(value);
+                      }}
+                      value={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecciona tipo" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="child">Niño/a</SelectItem>
+                        <SelectItem value="toy">Juguete/Peluche</SelectItem>
+                        <SelectItem value="pet">Mascota</SelectItem>
+                        <SelectItem value="fantasy">Personaje de fantasía</SelectItem>
+                        <SelectItem value="other">Otro</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              {characterType === 'child' && (
+                <>
+                  <FormField
+                    control={form.control}
+                    name="age"
+                    render={({ field: { value, onChange, ...rest } }) => (
+                      <FormItem>
+                        <FormLabel>Edad (Opcional)</FormLabel>
+                        <FormControl>
+                          <Input 
+                            type="number" 
+                            min="1" 
+                            max="18" 
+                            placeholder="Edad" 
+                            value={value === null ? '' : value}
+                            onChange={e => onChange(e.target.value === '' ? null : Number(e.target.value))}
+                            {...rest} 
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          Edad del niño/a
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+              
+                  <FormField
+                    control={form.control}
+                    name="gender"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Género (Opcional)</FormLabel>
+                        <Select
+                          onValueChange={field.onChange}
+                          value={field.value || ""}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecciona género" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="boy">Niño</SelectItem>
+                            <SelectItem value="girl">Niña</SelectItem>
+                            <SelectItem value="non-binary">No binario</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </>
+              )}
+              
+              {characterType === 'pet' && (
+                <FormField
+                  control={form.control}
+                  name="age"
+                  render={({ field: { value, onChange, ...rest } }) => (
+                    <FormItem>
+                      <FormLabel>Edad (Opcional)</FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="number" 
+                          min="1" 
+                          max="30" 
+                          placeholder="Edad" 
+                          value={value === null ? '' : value}
+                          onChange={e => onChange(e.target.value === '' ? null : Number(e.target.value))}
+                          {...rest} 
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        Edad aproximada de la mascota
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
+              
+              <FormField
+                control={form.control}
+                name="physicalDescription"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Descripción física (Opcional)</FormLabel>
+                    <FormControl>
+                      <Textarea 
+                        placeholder={
+                          characterType === 'child' ? "Cómo es físicamente (altura, complexión, ojos, pelo...)" : 
+                          characterType === 'toy' ? "Cómo es físicamente el juguete o peluche (tamaño, material, color...)" : 
+                          characterType === 'pet' ? "Cómo es físicamente la mascota (raza, tamaño, color...)" : 
+                          characterType === 'fantasy' ? "Cómo es físicamente el personaje de fantasía (apariencia, rasgos especiales...)" :
+                          "Descripción física del personaje"
+                        }
+                        className="resize-none" 
+                        {...field} 
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="personality"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Personalidad (Opcional)</FormLabel>
+                    <FormControl>
+                      <Textarea 
+                        placeholder={
+                          characterType === 'child' ? "Carácter, cómo se comporta, qué le hace especial..." : 
+                          characterType === 'toy' ? "Cómo se comporta, qué personalidad tiene el juguete/peluche..." : 
+                          characterType === 'pet' ? "Carácter y comportamiento de la mascota..." : 
+                          characterType === 'fantasy' ? "Personalidad y carácter del personaje de fantasía..." :
+                          "Personalidad y carácter del personaje"
+                        } 
+                        className="resize-none" 
+                        {...field} 
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="likes"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Le gusta (Opcional)</FormLabel>
+                      <FormControl>
+                        <Textarea 
+                          placeholder={
+                            characterType === 'child' ? "Comidas, actividades, juegos favoritos..." : 
+                            characterType === 'toy' ? "Actividades, lugares o cosas que le gustan..." : 
+                            characterType === 'pet' ? "Comidas, juguetes, actividades favoritas..." : 
+                            characterType === 'fantasy' ? "Cosas que le gustan al personaje..." :
+                            "Lo que le gusta al personaje"
+                          } 
+                          className="resize-none h-32" 
+                          {...field} 
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="dislikes"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>No le gusta (Opcional)</FormLabel>
+                      <FormControl>
+                        <Textarea 
+                          placeholder={
+                            characterType === 'child' ? "Miedos, comidas que no le gustan..." : 
+                            characterType === 'toy' ? "Cosas que no le gustan o le dan miedo..." : 
+                            characterType === 'pet' ? "Cosas que no le gustan a la mascota..." : 
+                            characterType === 'fantasy' ? "Cosas que no le gustan al personaje..." :
+                            "Lo que no le gusta al personaje"
+                          } 
+                          className="resize-none h-32" 
+                          {...field} 
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              
+              <FormField
+                control={form.control}
+                name="additionalInfo"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Información adicional (Opcional)</FormLabel>
+                    <FormControl>
+                      <Textarea 
+                        placeholder={
+                          characterType === 'child' ? "Cualquier otra información sobre el niño/a que quieras incluir en sus historias..." : 
+                          characterType === 'toy' ? "Historia del juguete/peluche, quién es su dueño, cómo llegó a la familia..." : 
+                          characterType === 'pet' ? "Historial de la mascota, anécdotas especiales, relación con la familia..." : 
+                          characterType === 'fantasy' ? "Poderes, habilidades especiales, origen, historia, mundo del que proviene..." :
+                          "Cualquier otra información relevante que quieras compartir para personalizar mejor los libros"
+                        }
+                        className="resize-none" 
+                        {...field} 
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <DialogFooter>
+                <Button variant="outline" type="button" onClick={() => {
+                  setIsEditProfileOpen(false);
+                  setSelectedProfile(null);
+                  setAvatarFile(null);
+                  setAvatarPreview(null);
+                }}>
+                  Cancelar
+                </Button>
+                <Button 
+                  type="submit" 
+                  disabled={updateProfile.isPending || uploadingAvatar}
+                >
+                  {updateProfile.isPending || uploadingAvatar ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Actualizando...
+                    </>
+                  ) : 'Guardar cambios'}
                 </Button>
               </DialogFooter>
             </form>
