@@ -422,9 +422,13 @@ export default function Dashboard() {
                               size="icon" 
                               className="h-8 w-8"
                               onClick={() => {
+                                console.log("Edit button clicked", profile);
                                 setSelectedProfile(profile);
                                 setCharacterType(profile.type || 'child');
-                                setIsEditProfileOpen(true);
+                                setIsEditProfileOpen(true); // Abre el diálogo de edición
+                                console.log("isEditProfileOpen set to true");
+                                
+                                // Restablecer el formulario con los datos del perfil
                                 form.reset({
                                   name: profile.name,
                                   type: profile.type || 'child',
@@ -436,9 +440,15 @@ export default function Dashboard() {
                                   dislikes: profile.dislikes || '',
                                   additionalInfo: profile.additionalInfo || ''
                                 });
+                                
                                 if (profile.avatarUrl) {
                                   setAvatarPreview(profile.avatarUrl);
                                 }
+                                
+                                // Usamos un pequeño retraso para asegurarnos de que el estado se actualiza
+                                setTimeout(() => {
+                                  console.log("isEditProfileOpen after timeout:", isEditProfileOpen);
+                                }, 100);
                               }}
                             >
                               <Pencil className="h-4 w-4" />
