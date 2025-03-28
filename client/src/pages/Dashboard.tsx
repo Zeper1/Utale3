@@ -144,16 +144,8 @@ export default function Dashboard() {
   const updateProfile = useMutation({
     mutationFn: (profileData: any) => 
       apiRequest('PATCH', `/api/profiles/${profileData.id}`, profileData),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/users', user?.id, 'characters'] });
-      setIsEditProfileOpen(false);
-      setSelectedProfile(null);
-      toast({
-        title: "Perfil actualizado",
-        description: "El perfil ha sido actualizado exitosamente.",
-      });
-    },
     onError: (error) => {
+      console.error("Mutation error:", error);
       toast({
         title: "Error al actualizar perfil",
         description: "Hubo un error al actualizar el perfil. Por favor, inténtalo de nuevo.",
@@ -209,12 +201,14 @@ export default function Dashboard() {
     setUploadingAvatar(true);
     
     try {
-      // Vamos a usar fetch directamente ya que apiRequest está teniendo problemas con FormData
+      // El endpoint correcto es /api/characters/:id/avatar (no /api/profiles/:id/avatar)
       const formData = new FormData();
       formData.append('avatar', avatarFile);
       
+      console.log("Uploading avatar to character ID:", profileId);
+      
       // Usar fetch nativo en lugar de apiRequest para formularios
-      const response = await fetch(`/api/profiles/${profileId}/avatar`, {
+      const response = await fetch(`/api/characters/${profileId}/avatar`, {
         method: 'POST',
         body: formData,
         credentials: 'include'
@@ -255,10 +249,10 @@ export default function Dashboard() {
     },
   });
 
-  // Handle form submission
+  // Handle form submission for new character creation
   const onSubmit = async (values: ProfileFormValues) => {
     try {
-      // First create the profile
+      // First create the profile - note the endpoint is /api/profiles (no /api/characters)
       const profileResponse = await apiRequest('POST', '/api/profiles', { 
         name: values.name,
         type: values.type || 'child',
@@ -282,7 +276,7 @@ export default function Dashboard() {
       
       const profile = await profileResponse.json();
       
-      // If we have an avatar file, upload it
+      // If we have an avatar file, upload it to /api/characters/:id/avatar
       if (avatarFile) {
         await uploadAvatar(profile.id);
       }
@@ -298,7 +292,7 @@ export default function Dashboard() {
       
       toast({
         title: "Perfil creado",
-        description: "El perfil del niño ha sido creado exitosamente.",
+        description: "El perfil del personaje ha sido creado exitosamente.",
       });
     } catch (error) {
       toast({
@@ -1103,27 +1097,53 @@ export default function Dashboard() {
           </DialogHeader>
           <Form {...form}>
             <form 
-              onSubmit={form.handleSubmit((values) => {
-                if (!selectedProfile) return;
+              onSubmit={form.handleSubmit(async (values) => {
+                if (!selectedProfile) {
+                  console.error("No selected profile");
+                  return;
+                }
                 
-                const updatedProfile = {
-                  id: selectedProfile.id,
-                  name: values.name,
-                  type: values.type || 'child',
-                  age: values.age ? parseInt(values.age.toString(), 10) : null,
-                  gender: values.gender || null,
-                  physicalDescription: values.physicalDescription || null,
-                  personality: values.personality || null,
-                  likes: values.likes || null,
-                  dislikes: values.dislikes || null,
-                  additionalInfo: values.additionalInfo || null,
-                };
-                
-                updateProfile.mutate(updatedProfile);
-                
-                // Si hay un nuevo avatar, súbelo
-                if (avatarFile && selectedProfile.id) {
-                  uploadAvatar(selectedProfile.id);
+                try {
+                  console.log("Updating profile:", selectedProfile.id);
+                  
+                  const updatedProfile = {
+                    id: selectedProfile.id,
+                    name: values.name,
+                    type: values.type || 'child',
+                    age: values.age ? parseInt(values.age.toString(), 10) : null,
+                    gender: values.gender || null,
+                    physicalDescription: values.physicalDescription || null,
+                    personality: values.personality || null,
+                    likes: values.likes || null,
+                    dislikes: values.dislikes || null,
+                    additionalInfo: values.additionalInfo || null,
+                  };
+                  
+                  // Actualizar datos del personaje (usa PATCH en /profiles/:id, no en /characters/:id)
+                  await updateProfile.mutateAsync(updatedProfile);
+                  
+                  // Si hay un nuevo avatar, súbelo a /api/characters/:id/avatar
+                  if (avatarFile && selectedProfile.id) {
+                    const avatarUrl = await uploadAvatar(selectedProfile.id);
+                    console.log("Uploaded avatar:", avatarUrl);
+                  }
+                  
+                  // Cerrar el diálogo y limpiar el estado
+                  setIsEditProfileOpen(false);
+                  queryClient.invalidateQueries({ queryKey: ['/api/users', user?.id, 'characters'] });
+                  
+                  toast({
+                    title: "Personaje actualizado",
+                    description: "Los cambios han sido guardados correctamente",
+                  });
+                  
+                } catch (error) {
+                  console.error("Error updating profile:", error);
+                  toast({
+                    title: "Error al actualizar",
+                    description: "Hubo un problema al guardar los cambios. Inténtalo de nuevo.",
+                    variant: "destructive"
+                  });
                 }
               })} 
               className="space-y-6 mt-4"
