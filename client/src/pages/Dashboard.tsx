@@ -209,16 +209,15 @@ export default function Dashboard() {
     setUploadingAvatar(true);
     
     try {
-      // Vamos a usar directamente la ruta de la API del servidor en lugar de fetch
-      // Crear un FormData para la imagen
+      // Vamos a usar fetch directamente ya que apiRequest está teniendo problemas con FormData
       const formData = new FormData();
       formData.append('avatar', avatarFile);
       
-      // Usamos apiRequest con el objeto FormData
-      const response = await apiRequest('POST', `/api/profiles/${profileId}/avatar`, formData, {
-        // No establecer Content-Type para permitir que el navegador configure el boundary
-        // para el FormData automáticamente
-        headers: {}
+      // Usar fetch nativo en lugar de apiRequest para formularios
+      const response = await fetch(`/api/profiles/${profileId}/avatar`, {
+        method: 'POST',
+        body: formData,
+        credentials: 'include'
       });
       
       if (!response.ok) {
@@ -423,12 +422,8 @@ export default function Dashboard() {
                               className="h-8 w-8"
                               onClick={() => {
                                 console.log("Edit button clicked", profile);
-                                setSelectedProfile(profile);
-                                setCharacterType(profile.type || 'child');
-                                setIsEditProfileOpen(true); // Abre el diálogo de edición
-                                console.log("isEditProfileOpen set to true");
                                 
-                                // Restablecer el formulario con los datos del perfil
+                                // Primero restablecer el formulario con los datos del perfil
                                 form.reset({
                                   name: profile.name,
                                   type: profile.type || 'child',
@@ -445,9 +440,22 @@ export default function Dashboard() {
                                   setAvatarPreview(profile.avatarUrl);
                                 }
                                 
-                                // Usamos un pequeño retraso para asegurarnos de que el estado se actualiza
+                                // Luego establecer el tipo de personaje
+                                setCharacterType(profile.type || 'child');
+                                
+                                // Establecer el perfil seleccionado
+                                setSelectedProfile(profile);
+                                
+                                // Finalmente, abrir el diálogo
+                                setIsEditProfileOpen(true);
+                                console.log("isEditProfileOpen set to true");
+                                
+                                // Para debug
                                 setTimeout(() => {
-                                  console.log("isEditProfileOpen after timeout:", isEditProfileOpen);
+                                  console.log("States after timeout:", {
+                                    isEditProfileOpen, 
+                                    hasSelectedProfile: !!selectedProfile
+                                  });
                                 }, 100);
                               }}
                             >
@@ -1075,13 +1083,17 @@ export default function Dashboard() {
       </Dialog>
       
       {/* Edit Profile Dialog */}
-      <Dialog open={isEditProfileOpen} onOpenChange={(open) => {
-        if (!open) {
-          setSelectedProfile(null);
-          setAvatarFile(null);
-          setAvatarPreview(null);
-        }
-      }}>
+      <Dialog 
+        open={isEditProfileOpen} 
+        onOpenChange={(open) => {
+          // Si se abre, no hacemos nada, pero si se cierra, limpiamos el estado
+          if (!open) {
+            setIsEditProfileOpen(false);
+            setSelectedProfile(null);
+            setAvatarFile(null);
+            setAvatarPreview(null);
+          }
+        }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Editar personaje</DialogTitle>
