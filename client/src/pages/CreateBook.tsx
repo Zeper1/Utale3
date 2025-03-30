@@ -12,6 +12,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Slider } from "@/components/ui/slider";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -38,20 +40,153 @@ import {
 // Esquema para la creación de libros
 const bookFormSchema = z.object({
   characterIds: z.array(z.string()).min(1, "Por favor selecciona al menos un personaje").max(5, "Máximo 5 personajes por libro"),
-  themeOption: z.enum(["predeterminado", "personalizado"]), // tema predeterminado o personalizado
-  themeId: z.string().optional(),
-  customTheme: z.object({
+  creationMethod: z.enum(["plantilla", "personalizado"]).default("personalizado"),
+  templateId: z.string().optional(),
+  storyDetails: z.object({
     title: z.string().optional(),
-    description: z.string().optional(),
-    setting: z.string().optional(),
+    scenario: z.string().optional(),
+    era: z.string().optional(),
+    adventureType: z.string().optional(),
     additionalCharacters: z.string().optional(),
-    plotType: z.string().optional(),
-    includeMoralLesson: z.boolean().optional(),
-    additionalNotes: z.string().optional()
+    tone: z.array(z.string()).optional(),
+    moralValue: z.string().optional(),
+    fantasyLevel: z.number().default(5),
+    pageCount: z.number().default(12),
+    specialInstructions: z.string().optional(),
+    storyStructure: z.string().optional(),
+    genre: z.array(z.string()).optional(),
+    artStyle: z.string().optional()
   }).optional(),
 });
 
 type BookFormValues = z.infer<typeof bookFormSchema>;
+
+// Definir plantillas de historia
+const storyTemplates = [
+  {
+    id: "1",
+    name: "Aventura Espacial",
+    description: "Una emocionante aventura en el espacio exterior con planetas, naves espaciales y descubrimientos",
+    image: "/templates/space.jpg",
+    details: {
+      scenario: "Espacio exterior, planetas inexplorados",
+      era: "Futuro",
+      adventureType: "Exploración y descubrimiento",
+      tone: ["Emocionante", "Educativo"],
+      moralValue: "Curiosidad y valentía",
+      fantasyLevel: 8,
+      genre: ["Ciencia ficción", "Aventura"],
+      artStyle: "Digital colorido con estrellas y galaxias",
+    }
+  },
+  {
+    id: "2",
+    name: "Mundo Submarino",
+    description: "Aventuras bajo el mar con criaturas marinas, tesoros ocultos y misterios oceánicos",
+    image: "/templates/ocean.jpg",
+    details: {
+      scenario: "Océano, arrecifes de coral, ciudades submarinas",
+      era: "Presente",
+      adventureType: "Exploración y rescate",
+      tone: ["Divertido", "Educativo"],
+      moralValue: "Cuidado del medio ambiente",
+      fantasyLevel: 7,
+      genre: ["Aventura", "Ecológico"],
+      artStyle: "Acuarela con tonos azules y turquesa",
+    }
+  },
+  {
+    id: "3",
+    name: "Bosque Encantado",
+    description: "Magia y misterio en un bosque lleno de criaturas fantásticas, hadas y secretos ancestrales",
+    image: "/templates/forest.jpg",
+    details: {
+      scenario: "Bosque mágico con árboles milenarios",
+      era: "Fantasía atemporal",
+      adventureType: "Búsqueda y misterio",
+      tone: ["Mágico", "Maravilloso"],
+      moralValue: "Amistad y colaboración",
+      fantasyLevel: 9,
+      genre: ["Fantasía", "Mágico"],
+      artStyle: "Ilustración con colores vibrantes y detalles mágicos",
+    }
+  },
+  {
+    id: "4",
+    name: "Piratas y Tesoros",
+    description: "Una aventura en alta mar con piratas, mapas del tesoro, islas misteriosas y desafíos emocionantes",
+    image: "/templates/pirates.jpg",
+    details: {
+      scenario: "Mares desconocidos, islas tropicales",
+      era: "Época dorada de la piratería",
+      adventureType: "Búsqueda del tesoro",
+      tone: ["Emocionante", "Divertido"],
+      moralValue: "Trabajo en equipo",
+      fantasyLevel: 6,
+      genre: ["Aventura", "Histórico"],
+      artStyle: "Ilustración estilo mapa antiguo con detalles náuticos",
+    }
+  },
+  {
+    id: "5",
+    name: "Superhéroes",
+    description: "Los personajes descubren sus superpoderes y aprenden a usarlos para ayudar a los demás",
+    image: "/templates/superhero.jpg",
+    details: {
+      scenario: "Ciudad moderna con toques futuristas",
+      era: "Presente",
+      adventureType: "Descubrimiento de poderes y misión heroica",
+      tone: ["Inspirador", "Emocionante"],
+      moralValue: "Responsabilidad y ayudar a los demás",
+      fantasyLevel: 8,
+      genre: ["Superhéroes", "Acción"],
+      artStyle: "Estilo cómic vibrante con efectos especiales",
+    }
+  },
+  {
+    id: "6",
+    name: "Viaje al Pasado",
+    description: "Una aventura en el tiempo donde los personajes visitan una época histórica fascinante",
+    image: "/templates/time-travel.jpg",
+    details: {
+      scenario: "Diferentes épocas históricas",
+      era: "Variable (viaje en el tiempo)",
+      adventureType: "Viaje temporal y misión",
+      tone: ["Educativo", "Emocionante"],
+      moralValue: "Apreciar la historia y el conocimiento",
+      fantasyLevel: 7,
+      genre: ["Histórico", "Aventura"],
+      artStyle: "Ilustraciones detalladas con precisión histórica",
+    }
+  },
+];
+
+// Géneros de historias
+const storyGenres = [
+  "Aventura", "Fantasía", "Educativo", "Misterio", "Ciencia ficción", 
+  "Amistad", "Humor", "Naturaleza", "Superhéroes", "Vida cotidiana",
+  "Histórico", "Mágico", "Deportes", "Viaje", "Musical"
+];
+
+// Tonos emocionales para la historia
+const storyTones = [
+  "Divertido", "Emocionante", "Educativo", "Inspirador", "Tranquilo", 
+  "Misterioso", "Aventurero", "Mágico", "Reflexivo", "Humorístico"
+];
+
+// Valores y enseñanzas
+const moralValues = [
+  "Amistad", "Valentía", "Honestidad", "Respeto", "Perseverancia", 
+  "Generosidad", "Responsabilidad", "Empatía", "Trabajo en equipo", 
+  "Inclusión", "Creatividad", "Curiosidad", "Gratitud", "Paciencia"
+];
+
+// Estilos artísticos
+const artStyles = [
+  "Acuarela infantil", "Digital colorido", "Lápiz de colores", "Estilo manga/anime suave", 
+  "Pintura pastel", "Collage colorido", "Ilustración clásica de cuentos", 
+  "Minimalista y moderno", "Estilo libro pop-up", "Dibujos como hechos por niños"
+];
 
 export default function CreateBook() {
   const [_, setLocation] = useLocation();
@@ -99,18 +234,18 @@ export default function CreateBook() {
   const generateBook = useMutation({
     mutationFn: async (values: { 
       characterIds: number[], 
-      themeId: number 
+      storyDetails: any
     }) => {
       // Mostrar mensaje de generación en proceso
       toast({
-        title: "Generando libro",
+        title: "Generando historia",
         description: "Estamos creando tu historia personalizada. Este proceso puede tomar unos minutos...",
       });
       
       // Paso 1: Generar el contenido del libro con OpenAI
       const generateContentResponse = await apiRequest('POST', '/api/books/generate-content', {
         characterIds: values.characterIds,
-        themeId: values.themeId
+        storyDetails: values.storyDetails
       });
       
       if (!generateContentResponse.ok) {
@@ -122,8 +257,7 @@ export default function CreateBook() {
       // Paso 2: Crear la entrada inicial del libro en la base de datos
       const createBookResponse = await apiRequest('POST', '/api/books', {
         userId: user?.id,
-        themeId: values.themeId,
-        title: bookContent.title,
+        title: bookContent.title || values.storyDetails.title || "Historia personalizada",
         content: bookContent,
         format: 'digital',
         status: 'generating'
@@ -147,7 +281,8 @@ export default function CreateBook() {
       
       // Paso 3: Generar imágenes para cada página
       const generateImagesResponse = await apiRequest('POST', '/api/books/generate-images', {
-        bookContent
+        bookContent,
+        artStyle: values.storyDetails.artStyle
       });
       
       if (!generateImagesResponse.ok) {
@@ -190,24 +325,66 @@ export default function CreateBook() {
     }
   });
 
+  // Estado para el método de creación (plantilla o personalizado)
+  const [activeTab, setActiveTab] = useState("personalizado");
+  
   // Configuración del formulario de creación de libros
   const form = useForm<BookFormValues>({
     resolver: zodResolver(bookFormSchema),
     defaultValues: {
       characterIds: [],
-      themeOption: "predeterminado",
-      themeId: "",
-      customTheme: {
+      creationMethod: "personalizado",
+      templateId: "",
+      storyDetails: {
         title: "",
-        description: "",
-        setting: "",
+        scenario: "",
+        era: "",
+        adventureType: "",
         additionalCharacters: "",
-        plotType: "",
-        includeMoralLesson: true,
-        additionalNotes: ""
+        tone: [],
+        moralValue: "",
+        fantasyLevel: 5,
+        pageCount: 12,
+        specialInstructions: "",
+        storyStructure: "",
+        genre: [],
+        artStyle: "Acuarela infantil",
       }
     },
   });
+
+  // Efecto para actualizar el método de creación cuando cambia la pestaña
+  useEffect(() => {
+    form.setValue("creationMethod", activeTab as "plantilla" | "personalizado");
+  }, [activeTab, form]);
+
+  // Efecto para actualizar los detalles de la historia cuando se selecciona una plantilla
+  useEffect(() => {
+    const templateId = form.watch("templateId");
+    if (templateId) {
+      const template = storyTemplates.find(t => t.id === templateId);
+      if (template) {
+        // Asegurarnos de que storyDetails no sea undefined y tenga pageCount
+        const currentDetails = form.getValues("storyDetails") || {
+          fantasyLevel: 5,
+          pageCount: 12
+        };
+        
+        form.setValue("storyDetails", {
+          ...currentDetails,
+          scenario: template.details.scenario,
+          era: template.details.era,
+          adventureType: template.details.adventureType,
+          tone: template.details.tone,
+          moralValue: template.details.moralValue,
+          fantasyLevel: template.details.fantasyLevel,
+          genre: template.details.genre,
+          artStyle: template.details.artStyle,
+          pageCount: 12 // Valor por defecto
+        });
+      }
+    }
+  }, [form.watch("templateId"), form]);
 
   // Manejar el envío del formulario
   const onSubmit = (values: BookFormValues) => {
@@ -227,17 +404,38 @@ export default function CreateBook() {
     // Convertir los IDs de string a number
     const characterIds = values.characterIds.map(id => parseInt(id));
     
-    // Determinar el tema
-    let themeId;
-    if (values.themeOption === "predeterminado" && values.themeId) {
-      themeId = parseInt(values.themeId);
-    } else if (values.themeOption === "personalizado" && values.customTheme?.title) {
-      // Si se implementara completamente, aquí crearíamos un tema personalizado
-      // En esta versión, usamos un tema predeterminado
-      themeId = values.themeId ? parseInt(values.themeId) : 1;
-    } else {
-      // Si no se seleccionó ninguno, usar el primer tema disponible
-      themeId = bookThemes.length > 0 ? bookThemes[0].id : 1;
+    // Determinar los detalles de la historia
+    let storyDetails = values.storyDetails;
+    
+    // Si se está usando una plantilla, obtener los detalles de la plantilla
+    if (values.creationMethod === "plantilla" && values.templateId) {
+      const template = storyTemplates.find(t => t.id === values.templateId);
+      if (template) {
+        // Asegurarnos de tener los campos requeridos
+        const baseDetails = storyDetails || {
+          fantasyLevel: 5,
+          pageCount: 12
+        };
+        
+        storyDetails = {
+          ...baseDetails,
+          ...template.details,
+          // Aseguramos que pageCount siempre tenga un valor
+          pageCount: template.details.pageCount || 12,
+          // Aseguramos que fantasyLevel siempre tenga un valor
+          fantasyLevel: template.details.fantasyLevel || 5,
+          // Para el título, usar el proporcionado o el nombre de la plantilla
+          title: values.storyDetails?.title || template.name
+        };
+      }
+    }
+    
+    // Asegurarnos que storyDetails nunca sea undefined
+    if (!storyDetails) {
+      storyDetails = {
+        fantasyLevel: 5,
+        pageCount: 12
+      };
     }
     
     // Mostrar mensaje informativo sobre los personajes seleccionados
@@ -245,14 +443,14 @@ export default function CreateBook() {
     const numSecondaryCharacters = values.characterIds.length - 1;
     
     toast({
-      title: "Creando libro personalizado",
+      title: "Creando historia personalizada",
       description: `Protagonista: ${protagonistName}${numSecondaryCharacters > 0 ? ` y ${numSecondaryCharacters} personaje${numSecondaryCharacters > 1 ? 's' : ''} secundario${numSecondaryCharacters > 1 ? 's' : ''}` : ''}`,
     });
     
     // Generar el libro con todos los personajes seleccionados
     generateBook.mutate({
       characterIds: characterIds,
-      themeId: themeId
+      storyDetails: storyDetails
     });
   };
 
@@ -405,67 +603,335 @@ export default function CreateBook() {
                 </CardContent>
               </Card>
 
-              {/* Seleccionar Tema del Libro */}
+              {/* Definir Detalles de la Historia */}
               <Card>
                 <CardHeader>
-                  <CardTitle>Paso 2: Elige un Tema para el Libro</CardTitle>
+                  <CardTitle>Paso 2: Define tu Historia</CardTitle>
                   <CardDescription>
-                    Selecciona un tema para tu libro de cuentos personalizado
+                    Elige cómo quieres crear tu historia
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <FormField
-                    control={form.control}
-                    name="themeId"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormControl>
-                          <RadioGroup
-                            onValueChange={field.onChange}
-                            defaultValue={field.value}
-                            className="grid grid-cols-1 md:grid-cols-2 gap-4"
-                          >
-                            {bookThemes.map((theme: any) => (
-                              <div key={theme.id} className="relative">
-                                <RadioGroupItem
-                                  value={theme.id.toString()}
-                                  id={`theme-${theme.id}`}
-                                  className="peer sr-only"
-                                />
-                                <label
-                                  htmlFor={`theme-${theme.id}`}
-                                  className="flex flex-col h-full border rounded-lg overflow-hidden cursor-pointer hover:border-primary peer-checked:border-primary"
+                  <div className="space-y-6">
+                    <Tabs value={activeTab} onValueChange={setActiveTab as any} className="w-full">
+                      <TabsList className="w-full mb-4">
+                        <TabsTrigger value="plantilla" className="flex-1">Usar Plantilla</TabsTrigger>
+                        <TabsTrigger value="personalizado" className="flex-1">Personalizar Historia</TabsTrigger>
+                      </TabsList>
+                      
+                      <TabsContent value="plantilla">
+                        <FormField
+                          control={form.control}
+                          name="templateId"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Elige una plantilla</FormLabel>
+                              <FormControl>
+                                <RadioGroup
+                                  onValueChange={field.onChange}
+                                  value={field.value}
+                                  className="grid grid-cols-1 gap-4"
                                 >
-                                  <div className="h-32 bg-primary-50 flex items-center justify-center">
-                                    {theme.coverImage ? (
-                                      <img
-                                        src={theme.coverImage}
-                                        alt={theme.name}
-                                        className="w-full h-full object-cover"
+                                  {storyTemplates.map((template) => (
+                                    <div key={template.id} className="relative">
+                                      <RadioGroupItem
+                                        value={template.id}
+                                        id={`template-${template.id}`}
+                                        className="peer sr-only"
                                       />
-                                    ) : (
-                                      <BookOpen className="h-12 w-12 text-primary/30" />
-                                    )}
-                                  </div>
-                                  <div className="p-4 flex-1 flex flex-col">
-                                    <div className="flex justify-between items-start">
-                                      <div>
-                                        <div className="font-medium">{theme.name}</div>
-                                        <div className="text-xs text-gray-500">Edades {theme.ageRange}</div>
-                                      </div>
-                                      <Check className="invisible peer-checked:visible h-5 w-5 text-primary" />
+                                      <label
+                                        htmlFor={`template-${template.id}`}
+                                        className="flex p-4 border rounded-lg cursor-pointer hover:border-primary peer-checked:border-primary peer-checked:bg-primary-50"
+                                      >
+                                        <div className="flex-1">
+                                          <div className="font-medium">{template.name}</div>
+                                          <div className="text-sm text-gray-600 mt-1">{template.description}</div>
+                                        </div>
+                                        <Check className="invisible peer-checked:visible h-5 w-5 text-primary" />
+                                      </label>
                                     </div>
-                                    <p className="mt-2 text-sm text-gray-600">{theme.description}</p>
+                                  ))}
+                                </RadioGroup>
+                              </FormControl>
+                              <FormDescription>
+                                Las plantillas son sólo puntos de partida. Puedes personalizarlas después.
+                              </FormDescription>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </TabsContent>
+                      
+                      <TabsContent value="personalizado">
+                        <div className="space-y-6">
+                          <FormField
+                            control={form.control}
+                            name="storyDetails.title"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Título de la historia</FormLabel>
+                                <FormControl>
+                                  <Input placeholder="Título de tu historia (opcional)" {...field} />
+                                </FormControl>
+                                <FormDescription>
+                                  Puede generarse automáticamente si lo dejas en blanco
+                                </FormDescription>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          
+                          <FormField
+                            control={form.control}
+                            name="storyDetails.scenario"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Escenario</FormLabel>
+                                <FormControl>
+                                  <Textarea 
+                                    placeholder="¿Dónde sucede la historia? Ej: Bosque encantado, Nave espacial, Escuela..." 
+                                    {...field} 
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <FormField
+                              control={form.control}
+                              name="storyDetails.era"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Época</FormLabel>
+                                  <FormControl>
+                                    <Input 
+                                      placeholder="Época actual, medieval, futurista..." 
+                                      {...field} 
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            
+                            <FormField
+                              control={form.control}
+                              name="storyDetails.adventureType"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Tipo de aventura</FormLabel>
+                                  <FormControl>
+                                    <Input 
+                                      placeholder="Rescate, búsqueda, exploración..." 
+                                      {...field} 
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          </div>
+                          
+                          <FormField
+                            control={form.control}
+                            name="storyDetails.additionalCharacters"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Personajes adicionales</FormLabel>
+                                <FormControl>
+                                  <Textarea 
+                                    placeholder="Describe otros personajes que quieras incluir en la historia" 
+                                    {...field} 
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <FormField
+                              control={form.control}
+                              name="storyDetails.tone"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Tono de la historia</FormLabel>
+                                  <FormControl>
+                                    <Select 
+                                      value={field.value?.join(",")} 
+                                      onValueChange={(value) => field.onChange(value ? value.split(",") : [])}
+                                    >
+                                      <SelectTrigger>
+                                        <SelectValue placeholder="Selecciona uno o varios" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="divertido">Divertido</SelectItem>
+                                        <SelectItem value="emocionante">Emocionante</SelectItem>
+                                        <SelectItem value="educativo">Educativo</SelectItem>
+                                        <SelectItem value="inspirador">Inspirador</SelectItem>
+                                        <SelectItem value="misterioso">Misterioso</SelectItem>
+                                        <SelectItem value="aventurero">Aventurero</SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            
+                            <FormField
+                              control={form.control}
+                              name="storyDetails.moralValue"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Enseñanza o valor</FormLabel>
+                                  <FormControl>
+                                    <Input 
+                                      placeholder="Amistad, perseverancia, respeto..." 
+                                      {...field} 
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          </div>
+                          
+                          <FormField
+                            control={form.control}
+                            name="storyDetails.genre"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Género</FormLabel>
+                                <FormControl>
+                                  <Select 
+                                    value={field.value?.join(",")} 
+                                    onValueChange={(value) => field.onChange(value ? value.split(",") : [])}
+                                  >
+                                    <SelectTrigger>
+                                      <SelectValue placeholder="Selecciona uno o varios" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="aventura">Aventura</SelectItem>
+                                      <SelectItem value="fantasia">Fantasía</SelectItem>
+                                      <SelectItem value="ciencia-ficcion">Ciencia Ficción</SelectItem>
+                                      <SelectItem value="misterio">Misterio</SelectItem>
+                                      <SelectItem value="educativo">Educativo</SelectItem>
+                                      <SelectItem value="cotidiano">Vida cotidiana</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <FormField
+                              control={form.control}
+                              name="storyDetails.fantasyLevel"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Nivel de fantasía (1-10)</FormLabel>
+                                  <FormControl>
+                                    <Slider
+                                      min={1}
+                                      max={10}
+                                      step={1}
+                                      value={[field.value]}
+                                      onValueChange={(values) => field.onChange(values[0])}
+                                      className="py-4"
+                                    />
+                                  </FormControl>
+                                  <div className="flex justify-between text-xs text-gray-500">
+                                    <span>Realista</span>
+                                    <span>Muy fantástico</span>
                                   </div>
-                                </label>
-                              </div>
-                            ))}
-                          </RadioGroup>
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            
+                            <FormField
+                              control={form.control}
+                              name="storyDetails.pageCount"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Número de páginas</FormLabel>
+                                  <FormControl>
+                                    <Select 
+                                      value={field.value.toString()} 
+                                      onValueChange={(value) => field.onChange(parseInt(value))}
+                                    >
+                                      <SelectTrigger>
+                                        <SelectValue placeholder="Selecciona el número de páginas" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="10">10 páginas</SelectItem>
+                                        <SelectItem value="12">12 páginas</SelectItem>
+                                        <SelectItem value="15">15 páginas</SelectItem>
+                                        <SelectItem value="20">20 páginas</SelectItem>
+                                        <SelectItem value="25">25 páginas</SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          </div>
+                          
+                          <FormField
+                            control={form.control}
+                            name="storyDetails.artStyle"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Estilo de ilustración</FormLabel>
+                                <FormControl>
+                                  <Select 
+                                    value={field.value} 
+                                    onValueChange={field.onChange}
+                                  >
+                                    <SelectTrigger>
+                                      <SelectValue placeholder="Selecciona un estilo" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="Acuarela infantil">Acuarela infantil</SelectItem>
+                                      <SelectItem value="Comic para niños">Comic para niños</SelectItem>
+                                      <SelectItem value="Dibujos animados 3D">Dibujos animados 3D</SelectItem>
+                                      <SelectItem value="Estilo Pixar">Estilo Pixar</SelectItem>
+                                      <SelectItem value="Ilustración clásica">Ilustración clásica</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          
+                          <FormField
+                            control={form.control}
+                            name="storyDetails.specialInstructions"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Instrucciones especiales</FormLabel>
+                                <FormControl>
+                                  <Textarea 
+                                    placeholder="Cualquier detalle adicional que te gustaría incluir en la historia..." 
+                                    {...field} 
+                                    className="min-h-[100px]"
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                      </TabsContent>
+                    </Tabs>
+                  </div>
                 </CardContent>
                 <CardFooter className="flex justify-between border-t pt-6">
                   <Button type="button" variant="outline" onClick={goToDashboard}>
@@ -478,7 +944,7 @@ export default function CreateBook() {
                         Generando...
                       </>
                     ) : (
-                      <>Crear Libro</>
+                      <>Crear Historia</>
                     )}
                   </Button>
                 </CardFooter>
