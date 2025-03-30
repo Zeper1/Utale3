@@ -61,6 +61,21 @@ const bookFormSchema = z.object({
 
 type BookFormValues = z.infer<typeof bookFormSchema>;
 
+// Definir tipo para los detalles de las plantillas
+interface TemplateDetails {
+  scenario: string;
+  era: string;
+  adventureType: string;
+  tone: string[];
+  moralValue: string;
+  fantasyLevel: number;
+  genre: string[];
+  artStyle: string;
+  pageCount?: number;
+  additionalCharacters?: string;
+  specialInstructions?: string;
+}
+
 // Definir plantillas de historia
 const storyTemplates = [
   {
@@ -77,7 +92,10 @@ const storyTemplates = [
       fantasyLevel: 8,
       genre: ["Ciencia ficción", "Aventura"],
       artStyle: "Digital colorido con estrellas y galaxias",
-    }
+      pageCount: 12,
+      additionalCharacters: "Un robot ayudante, alienígenas amistosos",
+      specialInstructions: "Incluir planetas con formas divertidas y naves espaciales coloridas"
+    } as TemplateDetails
   },
   {
     id: "2",
@@ -93,7 +111,10 @@ const storyTemplates = [
       fantasyLevel: 7,
       genre: ["Aventura", "Ecológico"],
       artStyle: "Acuarela con tonos azules y turquesa",
-    }
+      pageCount: 15,
+      additionalCharacters: "Sirenas, peces de colores, una tortuga sabia",
+      specialInstructions: "Incluir escenas con vida marina colorida y una ciudad de coral"
+    } as TemplateDetails
   },
   {
     id: "3",
@@ -109,7 +130,10 @@ const storyTemplates = [
       fantasyLevel: 9,
       genre: ["Fantasía", "Mágico"],
       artStyle: "Ilustración con colores vibrantes y detalles mágicos",
-    }
+      pageCount: 12,
+      additionalCharacters: "Hadas, duendes, un búho sabio, árboles parlantes",
+      specialInstructions: "Incluir elementos mágicos como luces brillantes y polvo de hadas"
+    } as TemplateDetails
   },
   {
     id: "4",
@@ -125,7 +149,10 @@ const storyTemplates = [
       fantasyLevel: 6,
       genre: ["Aventura", "Histórico"],
       artStyle: "Ilustración estilo mapa antiguo con detalles náuticos",
-    }
+      pageCount: 15,
+      additionalCharacters: "Un loro parlante, piratas amigables, un capitán rival",
+      specialInstructions: "Incluir un mapa del tesoro y elementos náuticos coloridos"
+    } as TemplateDetails
   },
   {
     id: "5",
@@ -141,7 +168,10 @@ const storyTemplates = [
       fantasyLevel: 8,
       genre: ["Superhéroes", "Acción"],
       artStyle: "Estilo cómic vibrante con efectos especiales",
-    }
+      pageCount: 15,
+      additionalCharacters: "Un mentor sabio, ciudadanos en apuros, un villano divertido",
+      specialInstructions: "Incluir escenas de acción coloridas y efectos de poderes especiales"
+    } as TemplateDetails
   },
   {
     id: "6",
@@ -157,7 +187,10 @@ const storyTemplates = [
       fantasyLevel: 7,
       genre: ["Histórico", "Aventura"],
       artStyle: "Ilustraciones detalladas con precisión histórica",
-    }
+      pageCount: 20,
+      additionalCharacters: "Un guía del tiempo, personajes históricos famosos",
+      specialInstructions: "Incluir datos históricos interesantes adaptados para niños"
+    } as TemplateDetails
   },
 ];
 
@@ -370,6 +403,7 @@ export default function CreateBook() {
           pageCount: 12
         };
         
+        // Preparamos datos completos para asegurarnos de que se incluyen todos los campos necesarios
         form.setValue("storyDetails", {
           ...currentDetails,
           scenario: template.details.scenario,
@@ -380,8 +414,15 @@ export default function CreateBook() {
           fantasyLevel: template.details.fantasyLevel,
           genre: template.details.genre,
           artStyle: template.details.artStyle,
-          pageCount: 12 // Valor por defecto
+          // Aseguramos que pageCount siempre tenga un valor correcto
+          pageCount: template.details.pageCount || currentDetails.pageCount || 12,
+          // Aseguramos que se incluyen campos adicionales si existen en la plantilla
+          additionalCharacters: template.details.additionalCharacters || currentDetails.additionalCharacters || "",
+          specialInstructions: template.details.specialInstructions || currentDetails.specialInstructions || ""
         });
+        
+        // Cambiamos a la pestaña de personalización para mostrar los detalles aplicados
+        setActiveTab("personalizado");
       }
     }
   }, [form.watch("templateId"), form]);
