@@ -97,13 +97,20 @@ export default function CreateBook() {
 
   // Mutación para la generación y creación del libro
   const generateBook = useMutation({
-    mutationFn: async (values: { characterId: number, themeId: number }) => {
+    mutationFn: async (values: { 
+      characterIds: number[], 
+      themeId: number 
+    }) => {
+      // Mostrar mensaje de generación en proceso
+      toast({
+        title: "Generando libro",
+        description: "Estamos creando tu historia personalizada. Este proceso puede tomar unos minutos...",
+      });
+      
       // Paso 1: Generar el contenido del libro con OpenAI
       const generateContentResponse = await apiRequest('POST', '/api/books/generate-content', {
-        characterId: values.characterId,
-        themeId: values.themeId,
-        // Si hubiera una implementación completa, enviaríamos también los personajes adicionales
-        // additionalCharacterIds: values.additionalCharacterIds
+        characterIds: values.characterIds,
+        themeId: values.themeId
       });
       
       if (!generateContentResponse.ok) {
@@ -115,7 +122,6 @@ export default function CreateBook() {
       // Paso 2: Crear la entrada inicial del libro en la base de datos
       const createBookResponse = await apiRequest('POST', '/api/books', {
         userId: user?.id,
-        characterId: values.characterId, // Personaje principal
         themeId: values.themeId,
         title: bookContent.title,
         content: bookContent,
@@ -128,6 +134,16 @@ export default function CreateBook() {
       }
       
       const book = await createBookResponse.json();
+      
+      // Paso 2.5: Crear las relaciones libro-personajes
+      for (const characterId of values.characterIds) {
+        const role = characterId === values.characterIds[0] ? 'protagonist' : 'secondary';
+        await apiRequest('POST', '/api/book-characters', {
+          bookId: book.id,
+          characterId,
+          role
+        });
+      }
       
       // Paso 3: Generar imágenes para cada página
       const generateImagesResponse = await apiRequest('POST', '/api/books/generate-images', {
@@ -158,8 +174,13 @@ export default function CreateBook() {
       queryClient.invalidateQueries({ queryKey: ['/api/users', user?.id, 'books'] });
       setBookId(data.id);
       setGenerationComplete(true);
+      toast({
+        title: "¡Libro creado con éxito!",
+        description: "Tu libro personalizado está listo para ser visualizado.",
+      });
     },
     onError: (error) => {
+      console.error("Error creating book:", error);
       setIsCreatingBook(false);
       toast({
         title: "Error al crear el libro",
@@ -203,24 +224,35 @@ export default function CreateBook() {
       return;
     }
     
-    const mainCharacterId = parseInt(values.characterIds[0]);
-    const additionalCharacterIds = values.characterIds.slice(1).map(id => parseInt(id));
+    // Convertir los IDs de string a number
+    const characterIds = values.characterIds.map(id => parseInt(id));
     
-    let themeData;
+    // Determinar el tema
+    let themeId;
     if (values.themeOption === "predeterminado" && values.themeId) {
-      themeData = parseInt(values.themeId);
+      themeId = parseInt(values.themeId);
+    } else if (values.themeOption === "personalizado" && values.customTheme?.title) {
+      // Si se implementara completamente, aquí crearíamos un tema personalizado
+      // En esta versión, usamos un tema predeterminado
+      themeId = values.themeId ? parseInt(values.themeId) : 1;
     } else {
-      // Si es un tema personalizado, enviar los datos del tema personalizado
-      // Para esta demo, usaremos un tema predeterminado si no se seleccionó ninguno
-      themeData = values.themeId ? parseInt(values.themeId) : 1;
+      // Si no se seleccionó ninguno, usar el primer tema disponible
+      themeId = bookThemes.length > 0 ? bookThemes[0].id : 1;
     }
     
+    // Mostrar mensaje informativo sobre los personajes seleccionados
+    const protagonistName = childProfiles.find((p: any) => p.id.toString() === values.characterIds[0])?.name;
+    const numSecondaryCharacters = values.characterIds.length - 1;
+    
+    toast({
+      title: "Creando libro personalizado",
+      description: `Protagonista: ${protagonistName}${numSecondaryCharacters > 0 ? ` y ${numSecondaryCharacters} personaje${numSecondaryCharacters > 1 ? 's' : ''} secundario${numSecondaryCharacters > 1 ? 's' : ''}` : ''}`,
+    });
+    
+    // Generar el libro con todos los personajes seleccionados
     generateBook.mutate({
-      characterId: mainCharacterId,
-      themeId: themeData,
-      // En una implementación completa, enviaríamos también:
-      // customTheme: values.customTheme,
-      // additionalCharacters: additionalCharacterIds
+      characterIds: characterIds,
+      themeId: themeId
     });
   };
 

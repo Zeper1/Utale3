@@ -255,8 +255,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Book not found" });
       }
       
-      res.status(200).json(book);
+      // Obtener los personajes asociados con este libro
+      const bookCharacters = await storage.getBookCharacters(bookId);
+      
+      // Crear un objeto de respuesta con el libro y sus personajes
+      const response = {
+        ...book,
+        characters: bookCharacters
+      };
+      
+      res.status(200).json(response);
     } catch (error) {
+      console.error("Error fetching book:", error);
       res.status(500).json({ message: "Failed to retrieve book" });
     }
   });
@@ -583,30 +593,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Generate book content with AI
   app.post("/api/books/generate-content", async (req: Request, res: Response) => {
     try {
-      const { characterId, themeId } = req.body;
+      const { characterIds, themeId } = req.body;
       
-      if (!characterId || !themeId) {
-        return res.status(400).json({ message: "Character ID and theme ID are required" });
+      if (!characterIds || !themeId || !Array.isArray(characterIds) || characterIds.length === 0) {
+        return res.status(400).json({ message: "Al menos un ID de personaje y un ID de tema son requeridos" });
       }
       
-      const character = await storage.getCharacter(parseInt(characterId.toString()));
+      // Obtener todos los personajes
+      const characters = [];
+      for (const id of characterIds) {
+        const character = await storage.getCharacter(parseInt(id.toString()));
+        if (!character) {
+          return res.status(404).json({ message: `Personaje con ID ${id} no encontrado` });
+        }
+        characters.push(character);
+      }
+      
+      // Obtener el tema
       const theme = await storage.getBookTheme(parseInt(themeId.toString()));
-      
-      if (!character) {
-        return res.status(404).json({ message: "Character profile not found" });
-      }
-      
       if (!theme) {
         return res.status(404).json({ message: "Book theme not found" });
       }
 
-      // Get chat history for additional context
-      const chatHistory = await storage.getChatMessages(characterId);
+      // Personaje principal (el primero de la lista)
+      const mainCharacter = characters[0];
       
-      // Preparar el contexto del chat para una comprensión más profunda del personaje
+      // Personajes secundarios (resto de la lista)
+      const supportingCharacters = characters.slice(1);
+      
+      // Get chat history for additional context for the main character
+      const chatHistory = await storage.getChatMessages(mainCharacter.id);
+      
+      // Preparar el contexto del chat para una comprensión más profunda del personaje principal
       const chatContext = chatHistory.length > 0 
-        ? `Basado en conversaciones previas con ${character.name}, se ha aprendido que: 
+        ? `Basado en conversaciones previas con ${mainCharacter.name}, se ha aprendido que: 
           ${chatHistory.filter(m => m.sender === 'user').slice(-5).map(m => `- ${m.message}`).join('\n')}`
+        : '';
+      
+      // Crear descripciones de los personajes secundarios para el prompt
+      const supportingCharactersText = supportingCharacters.length > 0 
+        ? `PERSONAJES SECUNDARIOS:
+          ${supportingCharacters.map(char => `
+            - Nombre: ${char.name}
+            - Tipo: ${char.type || 'personaje'}
+            - Edad: ${char.age || 'no especificada'}
+            - Descripción: ${char.physicalDescription || 'No disponible'}
+            - Personalidad: ${char.personality || 'No disponible'}
+            - Intereses: ${char.interests ? char.interests.join(', ') : 'No disponibles'}
+          `).join('\n')}`
         : '';
       
       // Generate book content with OpenAI
@@ -615,61 +649,71 @@ export async function registerRoutes(app: Express): Promise<Server> {
         messages: [
           {
             role: "system",
-            content: `Eres un experto narrador de cuentos infantiles que crea historias mágicas y educativas perfectamente adaptadas a cada personaje.
+            content: `Eres un experto narrador de cuentos infantiles que crea historias mágicas con múltiples personajes.
                      
                      INSTRUCCIONES PARA LA CREACIÓN DE HISTORIAS:
                      - Crea un libro infantil personalizado con el tema: "${theme.name}"
+                     - La historia debe incluir ${characters.length} personaje(s), con ${mainCharacter.name} como protagonista principal
+                     ${supportingCharacters.length > 0 ? `- Incluye a los personajes secundarios como parte importante de la trama: ${supportingCharacters.map(c => c.name).join(', ')}` : ''}
                      - La historia debe ser apropiada para niños de ${theme.ageRange || '5-10'} años
-                     - La narrativa debe incorporar los intereses, cosas favoritas y rasgos de personalidad del personaje
+                     - La narrativa debe incorporar los intereses y personalidad de todos los personajes
+                     - Incorpora interacciones significativas entre los personajes que reflejen sus personalidades
                      - Utiliza un lenguaje sencillo pero enriquecedor, adaptado a la edad objetivo
                      - Incluye enseñanzas sutiles o valores positivos (amistad, valentía, respeto, etc.)
                      - Asegúrate de que la historia tenga un arco narrativo claro: introducción, desarrollo, clímax y resolución
-                     - Las ilustraciones deben ser coherentes con el personaje y el estilo ilustrativo infantil
+                     - Las ilustraciones deben incluir a todos los personajes que participan en cada escena
                      - Evita cualquier contenido inapropiado, terrorífico o angustiante
                      
                      ESTRUCTURA DE LA HISTORIA:
-                     - Página 1: Portada con título e introducción del personaje principal (basado en ${character.name})
-                     - Página 2-3: Establecimiento del escenario y situación inicial
-                     - Página 4-6: Desarrollo de la aventura o reto
-                     - Página 7-9: Clímax o momento crucial
-                     - Página 10-12: Resolución y final feliz con mensaje positivo
+                     - Página 1: Portada con título e introducción de los personajes principales
+                     - Página 2-3: Establecimiento del escenario y situación inicial con todos los personajes
+                     - Página 4-6: Desarrollo de la aventura o reto que involucre a todos los personajes
+                     - Página 7-9: Clímax o momento crucial donde los personajes colaboran
+                     - Página 10-12: Resolución y final feliz con mensaje positivo para todos
                      
                      Debes generar un objeto JSON con la siguiente estructura exacta:
                      {
-                       "title": "Título de la historia incluyendo el nombre del personaje",
+                       "title": "Título de la historia incluyendo los nombres de los personajes principales",
                        "pages": [
                          {
                           "pageNumber": 1,
                           "text": "Texto de la página con narración de la historia (2-3 frases)",
-                          "imagePrompt": "Descripción detallada para ilustrar esta página en estilo de libro infantil"
+                          "imagePrompt": "Descripción detallada para ilustrar esta página con todos los personajes participantes"
                          },
                          ...
                        ],
                        "summary": "Breve resumen de la historia",
                        "targetAge": "Rango de edad apropiado para la historia",
                        "theme": "${theme.name}",
-                       "mainCharacter": "${character.name}"
+                       "characters": ${JSON.stringify(characters.map(c => c.name))}
                      }
                      
                      REQUISITOS TÉCNICOS:
                      - El libro debe tener 10-12 páginas incluyendo portada
                      - Cada página debe tener texto atractivo y apropiado para la edad que haga avanzar la historia
-                     - Los prompts de imagen deben ser detallados para crear ilustraciones consistentes y amigables para niños
+                     - Los prompts de imagen deben ser detallados para crear ilustraciones que incluyan a todos los personajes relevantes
                      - Usa el estilo ilustrativo "acuarela infantil" o "ilustración infantil digital colorida" para consistencia
-                     - Menciona colores específicos y elementos de la escena en cada prompt de imagen`
+                     - Menciona colores específicos y elementos de la escena en cada prompt de imagen
+                     - Proporciona descripciones físicas de los personajes en los prompts de imagen basadas en los perfiles`
           },
           {
             role: "user",
-            content: `Crea una historia mágica y personalizada para ${character.name}, un/a ${character.type || 'personaje'} de ${character.age || 'edad indeterminada'} años.
+            content: `Crea una historia mágica y personalizada con ${mainCharacter.name} como protagonista principal${supportingCharacters.length > 0 ? ` y con ${supportingCharacters.map(c => c.name).join(', ')} como personaje(s) secundario(s)` : ''}.
                      
-                     PERFIL DETALLADO DEL PERSONAJE:
-                     - Nombre: ${character.name}
-                     - Tipo: ${character.type || 'niño/a'}
-                     - Edad: ${character.age || 'escolar'}
-                     - Intereses: ${character.interests ? character.interests.join(', ') : 'juegos, aventuras, animales y descubrimientos'}
-                     - Cosas favoritas: ${character.favorites ? JSON.stringify(character.favorites, null, 2) : '(color favorito, animal favorito, etc. - usar lo que se deduzca del perfil)'}
-                     - Amigos y familia: ${character.relationships?.friends ? character.relationships.friends.join(', ') : 'amigos, familia y posibles mascotas'}
-                     - Rasgos de personalidad: ${character.traits ? character.traits.join(', ') : 'amigable, curioso y valiente'}
+                     PERFIL DEL PERSONAJE PRINCIPAL:
+                     - Nombre: ${mainCharacter.name}
+                     - Tipo: ${mainCharacter.type || 'niño/a'}
+                     - Edad: ${mainCharacter.age || 'escolar'}
+                     - Descripción física: ${mainCharacter.physicalDescription || 'No disponible'}
+                     - Personalidad: ${mainCharacter.personality || 'amigable, curioso y valiente'}
+                     - Intereses: ${mainCharacter.interests ? mainCharacter.interests.join(', ') : 'juegos, aventuras, animales y descubrimientos'}
+                     - Le gusta: ${mainCharacter.likes || 'No especificado'}
+                     - No le gusta: ${mainCharacter.dislikes || 'No especificado'}
+                     - Cosas favoritas: ${mainCharacter.favorites ? JSON.stringify(mainCharacter.favorites, null, 2) : '(color favorito, animal favorito, etc. - usar lo que se deduzca del perfil)'}
+                     - Amigos y familia: ${mainCharacter.relationships?.friends ? mainCharacter.relationships.friends.join(', ') : 'amigos, familia y posibles mascotas'}
+                     - Rasgos de personalidad: ${mainCharacter.traits ? mainCharacter.traits.join(', ') : 'amigable, curioso y valiente'}
+                     
+                     ${supportingCharactersText}
                      
                      TEMA DEL LIBRO:
                      - Tema: ${theme.name}
@@ -677,8 +721,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
                      
                      ${chatContext ? `CONTEXTO ADICIONAL DE CONVERSACIONES:\n${chatContext}` : ''}
                      
-                     Crea una historia única y encantadora que realmente se sienta como si fuera escrita específicamente para ${character.name}, 
-                     incorporando sus intereses y personalidad de manera natural en la narrativa.
+                     INSTRUCCIONES ESPECÍFICAS PARA MÚLTIPLES PERSONAJES:
+                     - Asegúrate de que todos los personajes tengan un papel significativo en la historia
+                     - Involucra a todos los personajes en la resolución del conflicto o aventura
+                     - Refleja las personalidades y características únicas de cada personaje en sus diálogos y acciones
+                     - Crea interacciones entre los personajes que muestren amistad, cooperación y apoyo mutuo
+                     - Los personajes secundarios deben tener momentos destacados donde brillen por sus habilidades o cualidades
+                     - El protagonista debe aprender algo importante con la ayuda de los demás personajes
+                     - Todas las ilustraciones deben incluir representaciones visuales adecuadas de todos los personajes relevantes en cada escena
+                     
+                     Crea una historia única y encantadora que realmente se sienta como si fuera escrita específicamente para estos personajes,
+                     incorporando sus intereses y personalidades de manera natural en la narrativa.
                      
                      Asegúrate de que la historia sea apropiada para la edad, educativa, divertida y con un mensaje positivo.
                      Las ilustraciones deben ser coherentes con la historia y apropiadas para niños.
@@ -687,7 +740,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ],
         response_format: { type: "json_object" },
         temperature: 0.7,
-        max_tokens: 2000
+        max_tokens: 2500
       });
       
       const bookContent = JSON.parse(completion.choices[0].message.content || "{}");
@@ -1378,6 +1431,71 @@ Esta imagen es para un libro infantil que será leído por niños.
     }
     
     res.status(200).json({ received: true });
+  });
+  
+  // --- Book Characters routes ---
+  app.get("/api/books/:bookId/characters", async (req: Request, res: Response) => {
+    try {
+      const bookId = parseInt(req.params.bookId);
+      const bookCharacters = await storage.getBookCharacters(bookId);
+      res.status(200).json(bookCharacters);
+    } catch (error) {
+      console.error("Error fetching book characters:", error);
+      res.status(500).json({ message: "Failed to fetch book characters" });
+    }
+  });
+  
+  app.post("/api/book-characters", async (req: Request, res: Response) => {
+    try {
+      const { bookId, characterId, role } = req.body;
+      
+      if (!bookId || !characterId) {
+        return res.status(400).json({ message: "Book ID and Character ID are required" });
+      }
+      
+      // Verificar que existan el libro y el personaje
+      const book = await storage.getBook(parseInt(bookId.toString()));
+      const character = await storage.getCharacter(parseInt(characterId.toString()));
+      
+      if (!book) {
+        return res.status(404).json({ message: "Book not found" });
+      }
+      
+      if (!character) {
+        return res.status(404).json({ message: "Character not found" });
+      }
+      
+      // Crear la relación entre libro y personaje
+      const bookCharacter = await storage.addCharacterToBook({
+        bookId: parseInt(bookId.toString()),
+        characterId: parseInt(characterId.toString()),
+        role: role || 'secondary'
+      });
+      
+      res.status(201).json(bookCharacter);
+    } catch (error) {
+      console.error("Error adding character to book:", error);
+      res.status(500).json({ message: "Failed to add character to book" });
+    }
+  });
+  
+  app.delete("/api/books/:bookId/characters/:characterId", async (req: Request, res: Response) => {
+    try {
+      const bookId = parseInt(req.params.bookId);
+      const characterId = parseInt(req.params.characterId);
+      
+      // Eliminar la relación entre libro y personaje
+      const success = await storage.removeCharacterFromBook(bookId, characterId);
+      
+      if (!success) {
+        return res.status(404).json({ message: "Book character relationship not found" });
+      }
+      
+      res.status(204).end();
+    } catch (error) {
+      console.error("Error removing character from book:", error);
+      res.status(500).json({ message: "Failed to remove character from book" });
+    }
   });
 
   return httpServer;
