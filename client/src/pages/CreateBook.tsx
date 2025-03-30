@@ -515,87 +515,210 @@ export default function CreateBook() {
         ) : (
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-              {/* Seleccionar Personajes */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Paso 1: Selecciona Personajes</CardTitle>
-                  <CardDescription>
-                    Elige hasta 5 personajes para tu historia
+              {/* Seleccionar Personajes - Nuevo diseño */}
+              <Card className="border-2 border-primary/20 shadow-lg">
+                <CardHeader className="bg-gradient-to-r from-primary/10 to-primary/5">
+                  <CardTitle className="flex items-center text-2xl font-bold text-primary-700">
+                    <Users className="mr-2 h-6 w-6 text-primary" />
+                    Paso 1: Elige los protagonistas
+                  </CardTitle>
+                  <CardDescription className="text-base">
+                    Selecciona hasta 5 personajes que aparecerán en tu historia
                   </CardDescription>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="pt-6">
                   <FormField
                     control={form.control}
                     name="characterIds"
                     render={({ field }) => (
                       <FormItem>
+                        <div className="bg-primary/5 py-3 px-4 rounded-md mb-6 flex items-center">
+                          <div className="mr-3 p-2 bg-primary text-white rounded-full">
+                            <Star className="h-5 w-5" />
+                          </div>
+                          <div>
+                            <p className="font-medium text-primary-700">El primer personaje que selecciones será el protagonista principal</p>
+                            <p className="text-sm text-gray-600">Los demás serán personajes secundarios en la historia</p>
+                          </div>
+                        </div>
+                        
+                        <FormLabel className="text-lg font-bold text-primary-700 mb-3 block">
+                          Tus personajes ({field.value?.length || 0}/5 seleccionados)
+                        </FormLabel>
+                        
                         <FormControl>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {childProfiles.map((character: any) => (
-                              <div key={character.id} className="relative">
-                                <Checkbox
-                                  id={`character-${character.id}`}
-                                  checked={field.value?.includes(character.id.toString())}
-                                  onCheckedChange={(checked) => {
-                                    const value = character.id.toString();
-                                    return checked
-                                      ? field.onChange([...(field.value || []), value].slice(0, 5))
-                                      : field.onChange((field.value || []).filter((v: string) => v !== value));
-                                  }}
-                                  className="peer sr-only"
-                                />
-                                <label
-                                  htmlFor={`character-${character.id}`}
-                                  className="flex items-start p-4 border rounded-lg cursor-pointer hover:border-primary peer-checked:border-primary peer-checked:bg-primary-50"
-                                >
-                                  <div className="flex-1">
-                                    <div className="font-medium">{character.name}</div>
-                                    <div className="text-sm text-gray-500">
-                                      {character.type === 'child' 
-                                        ? `${character.age} años` 
-                                        : character.type === 'pet' 
-                                          ? 'Mascota' 
-                                          : character.type === 'toy' 
-                                            ? 'Juguete' 
-                                            : 'Otro'}
+                          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                            {childProfiles.map((character: any, index: number) => {
+                              const isSelected = field.value?.includes(character.id.toString());
+                              const isMainCharacter = isSelected && field.value?.[0] === character.id.toString();
+                              
+                              return (
+                                <div key={character.id} className="relative">
+                                  <input 
+                                    type="checkbox"
+                                    id={`character-${character.id}`}
+                                    checked={isSelected}
+                                    onChange={(e) => {
+                                      const value = character.id.toString();
+                                      const isChecked = e.target.checked;
+                                      
+                                      if (isChecked) {
+                                        // Añadir personaje (máximo 5)
+                                        if ((field.value || []).length < 5) {
+                                          field.onChange([...(field.value || []), value]);
+                                        } else {
+                                          toast({
+                                            title: "Máximo alcanzado",
+                                            description: "Solo puedes seleccionar hasta 5 personajes para una historia",
+                                            variant: "default",
+                                          });
+                                        }
+                                      } else {
+                                        // Quitar personaje
+                                        field.onChange((field.value || []).filter((v: string) => v !== value));
+                                      }
+                                    }}
+                                    className="sr-only peer"
+                                  />
+                                  <label 
+                                    htmlFor={`character-${character.id}`}
+                                    className={`block cursor-pointer transition-all duration-200 border-2 rounded-xl overflow-hidden ${
+                                      isSelected 
+                                        ? "border-primary shadow-md transform scale-[1.02]" 
+                                        : "border-primary/10 hover:border-primary/30"
+                                    }`}
+                                  >
+                                    {/* Imagen o avatar */}
+                                    <div className={`h-32 flex items-center justify-center ${
+                                      isSelected 
+                                        ? "bg-gradient-to-r from-primary/20 to-primary/10" 
+                                        : "bg-gradient-to-r from-gray-100 to-gray-50"
+                                    }`}>
+                                      {character.avatarUrl ? (
+                                        <img 
+                                          src={character.avatarUrl} 
+                                          alt={character.name} 
+                                          className="h-24 w-24 object-cover rounded-full border-4 border-white"
+                                        />
+                                      ) : (
+                                        <div className={`h-24 w-24 rounded-full border-4 border-white flex items-center justify-center bg-primary/10 ${
+                                          isSelected ? "bg-primary/20" : ""
+                                        }`}>
+                                          <UserCircle className={`h-16 w-16 ${isSelected ? "text-primary" : "text-gray-400"}`} />
+                                        </div>
+                                      )}
                                     </div>
-                                    {character.interests && character.interests.length > 0 && (
-                                      <div className="mt-2 flex flex-wrap gap-1">
-                                        {character.interests.slice(0, 3).map((interest: string, idx: number) => (
-                                          <span key={idx} className="bg-gray-100 px-2 py-0.5 rounded-full text-xs">
-                                            {interest}
-                                          </span>
-                                        ))}
-                                        {character.interests.length > 3 && (
-                                          <span className="text-xs text-gray-500">+{character.interests.length - 3} más</span>
-                                        )}
-                                      </div>
+                                    
+                                    {/* Info del personaje */}
+                                    <div className="p-3 text-center">
+                                      <h3 className="font-bold text-base truncate">{character.name}</h3>
+                                      <p className="text-xs text-gray-500">
+                                        {character.type === 'child' 
+                                          ? `${character.age} años` 
+                                          : character.type === 'pet' 
+                                            ? 'Mascota' 
+                                            : character.type === 'toy' 
+                                              ? 'Juguete' 
+                                              : 'Otro'}
+                                      </p>
+                                      
+                                      {/* Intereses (como tags) */}
+                                      {character.interests && character.interests.length > 0 && (
+                                        <div className="mt-2 flex flex-wrap gap-1 justify-center">
+                                          {character.interests.slice(0, 2).map((interest: string, idx: number) => (
+                                            <span key={idx} className={`px-2 py-0.5 rounded-full text-xs ${
+                                              isSelected ? "bg-primary/10 text-primary-700" : "bg-gray-100 text-gray-600"
+                                            }`}>
+                                              {interest}
+                                            </span>
+                                          ))}
+                                          {character.interests.length > 2 && (
+                                            <span className="text-xs text-gray-500">+{character.interests.length - 2}</span>
+                                          )}
+                                        </div>
+                                      )}
+                                    </div>
+                                    
+                                    {/* Botón para añadir detalles */}
+                                    {(!character.interests || character.interests.length === 0) && (
+                                      <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        className="text-xs w-full rounded-none border-t text-primary"
+                                        onClick={(e) => {
+                                          e.preventDefault();
+                                          e.stopPropagation();
+                                          goToProfileChat(character.id.toString());
+                                        }}
+                                      >
+                                        <PlusCircle className="h-3 w-3 mr-1" />
+                                        Añadir detalles
+                                      </Button>
                                     )}
-                                  </div>
-                                  <div className="w-5 h-5 border rounded flex items-center justify-center peer-checked:bg-primary peer-checked:text-white peer-checked:border-primary">
-                                    {field.value?.includes(character.id.toString()) && <Check className="h-4 w-4" />}
-                                  </div>
-                                </label>
-                                {(!character.interests || character.interests.length === 0) && (
-                                  <div className="mt-1 ml-4">
-                                    <Button
-                                      type="button"
-                                      variant="link"
-                                      size="sm"
-                                      className="text-primary p-0 h-auto"
-                                      onClick={() => goToProfileChat(character.id.toString())}
-                                    >
-                                      Añadir más detalles mediante chat
-                                    </Button>
-                                  </div>
-                                )}
-                              </div>
-                            ))}
+                                  </label>
+                                  
+                                  {/* Indicador de protagonista */}
+                                  {isMainCharacter && (
+                                    <div className="absolute -top-2 -right-2 bg-primary text-white rounded-full p-1 shadow-md z-10">
+                                      <Star className="h-4 w-4 fill-current" />
+                                    </div>
+                                  )}
+                                  
+                                  {/* Indicador de orden */}
+                                  {isSelected && !isMainCharacter && (
+                                    <div className="absolute -top-2 -right-2 bg-primary text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold shadow-md z-10">
+                                      {field.value?.indexOf(character.id.toString()) + 1}
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
                           </div>
                         </FormControl>
-                        <div className="mt-2 text-sm text-gray-500">
-                          Seleccionados: {field.value?.length || 0}/5 personajes
+                        
+                        {/* Contador y mensaje */}
+                        <div className="flex justify-between mt-4">
+                          <div className="text-sm text-gray-600">
+                            {field.value?.length === 0 ? (
+                              <span className="text-amber-600 font-medium">Selecciona al menos 1 personaje</span>
+                            ) : field.value?.length === 5 ? (
+                              <span className="text-green-600 font-medium">Máximo de personajes seleccionado</span>
+                            ) : (
+                              <span>Puedes añadir {5 - (field.value?.length || 0)} más</span>
+                            )}
+                          </div>
+                          
+                          <div className="flex items-center">
+                            <div className="flex -space-x-3 mr-2">
+                              {field.value?.slice(0, 3).map((id, idx) => {
+                                const char = childProfiles.find((c: any) => c.id.toString() === id);
+                                return (
+                                  <div 
+                                    key={id} 
+                                    className="w-8 h-8 rounded-full border-2 border-white overflow-hidden bg-primary/20"
+                                    title={char?.name}
+                                  >
+                                    {char?.avatarUrl ? (
+                                      <img src={char.avatarUrl} alt={char.name} className="w-full h-full object-cover" />
+                                    ) : (
+                                      <UserCircle className="w-full h-full text-primary/50" />
+                                    )}
+                                  </div>
+                                );
+                              })}
+                              {field.value && field.value.length > 3 && (
+                                <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white text-xs font-bold border-2 border-white">
+                                  +{field.value.length - 3}
+                                </div>
+                              )}
+                            </div>
+                            <span className="text-sm font-medium">
+                              {field.value?.length || 0}/5
+                            </span>
+                          </div>
                         </div>
+                        
                         <FormMessage />
                       </FormItem>
                     )}
@@ -603,132 +726,253 @@ export default function CreateBook() {
                 </CardContent>
               </Card>
 
-              {/* Definir Detalles de la Historia */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Paso 2: Define tu Historia</CardTitle>
-                  <CardDescription>
-                    Elige cómo quieres crear tu historia
+              {/* Definir Detalles de la Historia - Nuevo diseño */}
+              <Card className="border-2 border-primary/20 shadow-lg">
+                <CardHeader className="bg-gradient-to-r from-primary/10 to-primary/5">
+                  <CardTitle className="flex items-center text-2xl font-bold text-primary-700">
+                    <Wand2 className="mr-2 h-6 w-6 text-primary" />
+                    Paso 2: ¡Diseña tu Aventura!
+                  </CardTitle>
+                  <CardDescription className="text-base">
+                    Escoge cómo quieres crear la historia para tus personajes
                   </CardDescription>
                 </CardHeader>
-                <CardContent>
-                  <div className="space-y-6">
-                    <Tabs value={activeTab} onValueChange={setActiveTab as any} className="w-full">
-                      <TabsList className="w-full mb-4">
-                        <TabsTrigger value="plantilla" className="flex-1">Usar Plantilla</TabsTrigger>
-                        <TabsTrigger value="personalizado" className="flex-1">Personalizar Historia</TabsTrigger>
-                      </TabsList>
+                
+                <CardContent className="pt-6">
+                  <div className="space-y-8">
+                    {/* Modo de creación: Selección visual y atractiva */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <Button 
+                        type="button"
+                        variant={activeTab === "plantilla" ? "default" : "outline"}
+                        className={`h-auto py-6 flex flex-col items-center justify-center gap-3 transition-all ${
+                          activeTab === "plantilla" 
+                            ? "border-2 border-primary shadow-md" 
+                            : "hover:bg-primary/5"
+                        }`}
+                        onClick={() => setActiveTab("plantilla")}
+                      >
+                        <Sparkles className={`h-10 w-10 ${activeTab === "plantilla" ? "text-primary-foreground" : "text-primary"}`} />
+                        <div className="text-center">
+                          <h3 className="font-bold text-lg">Usar Plantilla Mágica</h3>
+                          <p className={`text-sm ${activeTab === "plantilla" ? "text-primary-foreground/80" : "text-muted-foreground"}`}>
+                            Elige una aventura ya preparada y personalízala
+                          </p>
+                        </div>
+                      </Button>
                       
-                      <TabsContent value="plantilla">
+                      <Button 
+                        type="button"
+                        variant={activeTab === "personalizado" ? "default" : "outline"}
+                        className={`h-auto py-6 flex flex-col items-center justify-center gap-3 transition-all ${
+                          activeTab === "personalizado" 
+                            ? "border-2 border-primary shadow-md" 
+                            : "hover:bg-primary/5"
+                        }`}
+                        onClick={() => setActiveTab("personalizado")}
+                      >
+                        <PencilLine className={`h-10 w-10 ${activeTab === "personalizado" ? "text-primary-foreground" : "text-primary"}`} />
+                        <div className="text-center">
+                          <h3 className="font-bold text-lg">Crear desde Cero</h3>
+                          <p className={`text-sm ${activeTab === "personalizado" ? "text-primary-foreground/80" : "text-muted-foreground"}`}>
+                            Diseña tu propia historia con total libertad
+                          </p>
+                        </div>
+                      </Button>
+                    </div>
+                    
+                    <div className="relative py-2">
+                      {activeTab === "plantilla" && (
+                        <div className="absolute -top-4 right-0 bg-primary text-white text-xs font-bold px-2 py-1 rounded">
+                          ¡Recomendado para empezar!
+                        </div>
+                      )}
+                      <div className="border-t border-b py-3 px-4 bg-primary/5 rounded-md">
+                        <h4 className="font-medium flex items-center">
+                          <Lightbulb className="h-5 w-5 text-yellow-500 mr-2" />
+                          {activeTab === "plantilla" 
+                            ? "Las plantillas incluyen escenarios, personajes y estructura ya definidos. ¡Perfectas para empezar rápido!"
+                            : "Crea una historia totalmente personalizada con tus propias ideas. ¡Deja volar tu imaginación!"
+                          }
+                        </h4>
+                      </div>
+                    </div>
+                    
+                    {/* Contenido basado en la selección */}
+                    {activeTab === "plantilla" ? (
+                      <div className="space-y-6 animate-in fade-in-50">
                         <FormField
                           control={form.control}
                           name="templateId"
                           render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Elige una plantilla</FormLabel>
+                            <FormItem className="space-y-3">
+                              <FormLabel className="text-lg font-bold text-primary-700">
+                                Elige una aventura
+                              </FormLabel>
                               <FormControl>
-                                <RadioGroup
-                                  onValueChange={field.onChange}
-                                  value={field.value}
-                                  className="grid grid-cols-1 gap-4"
-                                >
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                                   {storyTemplates.map((template) => (
-                                    <div key={template.id} className="relative">
-                                      <RadioGroupItem
-                                        value={template.id}
+                                    <div 
+                                      key={template.id} 
+                                      className={`relative rounded-xl border-2 transition-all overflow-hidden hover:shadow-md ${
+                                        field.value === template.id 
+                                          ? "border-primary shadow-md" 
+                                          : "border-border hover:border-primary/50"
+                                      }`}
+                                    >
+                                      <input 
+                                        type="radio"
                                         id={`template-${template.id}`}
+                                        name="templateId"
+                                        value={template.id}
+                                        checked={field.value === template.id}
+                                        onChange={() => field.onChange(template.id)}
                                         className="peer sr-only"
                                       />
                                       <label
                                         htmlFor={`template-${template.id}`}
-                                        className="flex p-4 border rounded-lg cursor-pointer hover:border-primary peer-checked:border-primary peer-checked:bg-primary-50"
+                                        className="cursor-pointer block"
                                       >
-                                        <div className="flex-1">
-                                          <div className="font-medium">{template.name}</div>
-                                          <div className="text-sm text-gray-600 mt-1">{template.description}</div>
+                                        {/* Header image/icon representation */}
+                                        <div className="h-40 bg-gradient-to-br from-primary/30 to-primary/10 flex flex-col items-center justify-center p-4">
+                                          <div className="text-center">
+                                            {template.id === "1" && <div className="w-24 h-24 bg-indigo-100 rounded-full mb-2 mx-auto flex items-center justify-center"><Sparkles className="h-10 w-10 text-indigo-500" /></div>}
+                                            {template.id === "2" && <div className="w-24 h-24 bg-blue-100 rounded-full mb-2 mx-auto flex items-center justify-center"><div className="text-3xl">🌊</div></div>}
+                                            {template.id === "3" && <div className="w-24 h-24 bg-green-100 rounded-full mb-2 mx-auto flex items-center justify-center"><div className="text-3xl">🌳</div></div>}
+                                            {template.id === "4" && <div className="w-24 h-24 bg-amber-100 rounded-full mb-2 mx-auto flex items-center justify-center"><div className="text-3xl">🏴‍☠️</div></div>}
+                                            {template.id === "5" && <div className="w-24 h-24 bg-red-100 rounded-full mb-2 mx-auto flex items-center justify-center"><div className="text-3xl">🦸</div></div>}
+                                            {template.id === "6" && <div className="w-24 h-24 bg-purple-100 rounded-full mb-2 mx-auto flex items-center justify-center"><div className="text-3xl">⏰</div></div>}
+                                          </div>
                                         </div>
-                                        <Check className="invisible peer-checked:visible h-5 w-5 text-primary" />
+                                        
+                                        {/* Template info */}
+                                        <div className="p-4">
+                                          <div className="font-bold text-lg mb-1">{template.name}</div>
+                                          <p className="text-sm text-gray-600">{template.description}</p>
+                                          
+                                          {/* Template tags */}
+                                          <div className="flex flex-wrap gap-1 mt-3">
+                                            {template.details.genre.map((g: string, i: number) => (
+                                              <span key={i} className="bg-primary/10 text-primary px-2 py-0.5 rounded-full text-xs">
+                                                {g}
+                                              </span>
+                                            ))}
+                                            {template.details.tone.slice(0, 1).map((t: string, i: number) => (
+                                              <span key={i} className="bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full text-xs">
+                                                {t}
+                                              </span>
+                                            ))}
+                                          </div>
+                                        </div>
+                                        
+                                        {/* Selected indicator */}
+                                        {field.value === template.id && (
+                                          <div className="absolute top-2 right-2 bg-primary text-white rounded-full p-1">
+                                            <Check className="h-4 w-4" />
+                                          </div>
+                                        )}
                                       </label>
                                     </div>
                                   ))}
-                                </RadioGroup>
+                                </div>
                               </FormControl>
-                              <FormDescription>
-                                Las plantillas son sólo puntos de partida. Puedes personalizarlas después.
-                              </FormDescription>
                               <FormMessage />
                             </FormItem>
                           )}
                         />
-                      </TabsContent>
-                      
-                      <TabsContent value="personalizado">
-                        <div className="space-y-6">
-                          <FormField
-                            control={form.control}
-                            name="storyDetails.title"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Título de la historia</FormLabel>
-                                <FormControl>
-                                  <Input placeholder="Título de tu historia (opcional)" {...field} />
-                                </FormControl>
-                                <FormDescription>
-                                  Puede generarse automáticamente si lo dejas en blanco
-                                </FormDescription>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                          
-                          <FormField
-                            control={form.control}
-                            name="storyDetails.scenario"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Escenario</FormLabel>
-                                <FormControl>
-                                  <Textarea 
-                                    placeholder="¿Dónde sucede la historia? Ej: Bosque encantado, Nave espacial, Escuela..." 
-                                    {...field} 
-                                  />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                          
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        
+                        {/* Vista previa si hay selección */}
+                        {form.watch("templateId") && (
+                          <div className="mt-8 p-4 bg-primary/5 rounded-xl border border-primary/20">
+                            <h3 className="text-lg font-bold text-primary-700 mb-3 flex items-center">
+                              <BookOpen className="mr-2 h-5 w-5" />
+                              Vista previa de tu aventura
+                            </h3>
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div>
+                                <h4 className="font-medium text-sm text-gray-500 mb-1">Escenario</h4>
+                                <p className="text-sm">{storyTemplates.find(t => t.id === form.watch("templateId"))?.details.scenario}</p>
+                              </div>
+                              <div>
+                                <h4 className="font-medium text-sm text-gray-500 mb-1">Época</h4>
+                                <p className="text-sm">{storyTemplates.find(t => t.id === form.watch("templateId"))?.details.era}</p>
+                              </div>
+                              <div>
+                                <h4 className="font-medium text-sm text-gray-500 mb-1">Tipo de aventura</h4>
+                                <p className="text-sm">{storyTemplates.find(t => t.id === form.watch("templateId"))?.details.adventureType}</p>
+                              </div>
+                              <div>
+                                <h4 className="font-medium text-sm text-gray-500 mb-1">Enseñanza</h4>
+                                <p className="text-sm">{storyTemplates.find(t => t.id === form.watch("templateId"))?.details.moralValue}</p>
+                              </div>
+                            </div>
+                            
+                            <div className="mt-4 text-center">
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setActiveTab("personalizado")}
+                                className="text-xs"
+                              >
+                                <PencilLine className="h-3 w-3 mr-1" /> 
+                                Personalizar más detalles
+                              </Button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="space-y-6 animate-in fade-in-50">
+                        <div className="bg-gradient-to-r from-primary/20 to-transparent p-4 rounded-lg mb-6">
+                          <h3 className="font-bold text-lg mb-2 text-primary-700">Personaliza tu historia</h3>
+                          <p className="text-sm">Dinos cómo quieres que sea tu aventura y crearemos algo único para tus personajes</p>
+                        </div>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+                          <div className="col-span-2">
                             <FormField
                               control={form.control}
-                              name="storyDetails.era"
+                              name="storyDetails.title"
                               render={({ field }) => (
                                 <FormItem>
-                                  <FormLabel>Época</FormLabel>
+                                  <FormLabel className="font-medium flex items-center">
+                                    <BookOpen className="h-4 w-4 mr-2 text-primary" />
+                                    Título de la historia
+                                  </FormLabel>
                                   <FormControl>
                                     <Input 
-                                      placeholder="Época actual, medieval, futurista..." 
-                                      {...field} 
+                                      placeholder="Título de tu historia (opcional)" 
+                                      {...field}
+                                      className="border-primary/20 focus:border-primary"
                                     />
                                   </FormControl>
-                                  <FormMessage />
+                                  <FormDescription>
+                                    Puede generarse automáticamente si lo dejas en blanco
+                                  </FormDescription>
                                 </FormItem>
                               )}
                             />
-                            
+                          </div>
+                          
+                          <div className="col-span-2">
                             <FormField
                               control={form.control}
-                              name="storyDetails.adventureType"
+                              name="storyDetails.scenario"
                               render={({ field }) => (
                                 <FormItem>
-                                  <FormLabel>Tipo de aventura</FormLabel>
+                                  <FormLabel className="font-medium flex items-center">
+                                    <div className="mr-2 text-lg">🏝️</div>
+                                    Escenario
+                                  </FormLabel>
                                   <FormControl>
-                                    <Input 
-                                      placeholder="Rescate, búsqueda, exploración..." 
-                                      {...field} 
+                                    <Textarea 
+                                      placeholder="¿Dónde sucede la historia? Ej: Bosque encantado, Nave espacial, Escuela..." 
+                                      {...field}
+                                      className="min-h-[80px] border-primary/20 focus:border-primary"
                                     />
                                   </FormControl>
-                                  <FormMessage />
                                 </FormItem>
                               )}
                             />
@@ -736,81 +980,132 @@ export default function CreateBook() {
                           
                           <FormField
                             control={form.control}
-                            name="storyDetails.additionalCharacters"
+                            name="storyDetails.era"
                             render={({ field }) => (
                               <FormItem>
-                                <FormLabel>Personajes adicionales</FormLabel>
+                                <FormLabel className="font-medium flex items-center">
+                                  <div className="mr-2 text-lg">⏳</div>
+                                  Época
+                                </FormLabel>
                                 <FormControl>
-                                  <Textarea 
-                                    placeholder="Describe otros personajes que quieras incluir en la historia" 
-                                    {...field} 
+                                  <Input 
+                                    placeholder="Época actual, medieval, futurista..." 
+                                    {...field}
+                                    className="border-primary/20 focus:border-primary"
                                   />
                                 </FormControl>
-                                <FormMessage />
                               </FormItem>
                             )}
                           />
                           
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          <FormField
+                            control={form.control}
+                            name="storyDetails.adventureType"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel className="font-medium flex items-center">
+                                  <div className="mr-2 text-lg">🧩</div>
+                                  Tipo de aventura
+                                </FormLabel>
+                                <FormControl>
+                                  <Input 
+                                    placeholder="Rescate, búsqueda, exploración..." 
+                                    {...field}
+                                    className="border-primary/20 focus:border-primary"
+                                  />
+                                </FormControl>
+                              </FormItem>
+                            )}
+                          />
+                          
+                          <div className="col-span-2">
                             <FormField
                               control={form.control}
-                              name="storyDetails.tone"
+                              name="storyDetails.additionalCharacters"
                               render={({ field }) => (
                                 <FormItem>
-                                  <FormLabel>Tono de la historia</FormLabel>
+                                  <FormLabel className="font-medium flex items-center">
+                                    <Users className="h-4 w-4 mr-2 text-primary" />
+                                    Personajes adicionales
+                                  </FormLabel>
                                   <FormControl>
-                                    <Select 
-                                      value={field.value?.join(",")} 
-                                      onValueChange={(value) => field.onChange(value ? value.split(",") : [])}
-                                    >
-                                      <SelectTrigger>
-                                        <SelectValue placeholder="Selecciona uno o varios" />
-                                      </SelectTrigger>
-                                      <SelectContent>
-                                        <SelectItem value="divertido">Divertido</SelectItem>
-                                        <SelectItem value="emocionante">Emocionante</SelectItem>
-                                        <SelectItem value="educativo">Educativo</SelectItem>
-                                        <SelectItem value="inspirador">Inspirador</SelectItem>
-                                        <SelectItem value="misterioso">Misterioso</SelectItem>
-                                        <SelectItem value="aventurero">Aventurero</SelectItem>
-                                      </SelectContent>
-                                    </Select>
-                                  </FormControl>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
-                            
-                            <FormField
-                              control={form.control}
-                              name="storyDetails.moralValue"
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel>Enseñanza o valor</FormLabel>
-                                  <FormControl>
-                                    <Input 
-                                      placeholder="Amistad, perseverancia, respeto..." 
-                                      {...field} 
+                                    <Textarea 
+                                      placeholder="Describe otros personajes que quieras incluir en la historia" 
+                                      {...field}
+                                      className="min-h-[80px] border-primary/20 focus:border-primary"
                                     />
                                   </FormControl>
-                                  <FormMessage />
                                 </FormItem>
                               )}
                             />
                           </div>
+                          
+                          <FormField
+                            control={form.control}
+                            name="storyDetails.tone"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel className="font-medium flex items-center">
+                                  <div className="mr-2 text-lg">😊</div>
+                                  Tono de la historia
+                                </FormLabel>
+                                <FormControl>
+                                  <Select 
+                                    value={field.value?.join(",")} 
+                                    onValueChange={(value) => field.onChange(value ? value.split(",") : [])}
+                                  >
+                                    <SelectTrigger className="border-primary/20 focus:border-primary">
+                                      <SelectValue placeholder="Selecciona uno o varios" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="divertido">Divertido</SelectItem>
+                                      <SelectItem value="emocionante">Emocionante</SelectItem>
+                                      <SelectItem value="educativo">Educativo</SelectItem>
+                                      <SelectItem value="inspirador">Inspirador</SelectItem>
+                                      <SelectItem value="misterioso">Misterioso</SelectItem>
+                                      <SelectItem value="aventurero">Aventurero</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </FormControl>
+                              </FormItem>
+                            )}
+                          />
+                          
+                          <FormField
+                            control={form.control}
+                            name="storyDetails.moralValue"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel className="font-medium flex items-center">
+                                  <Heart className="h-4 w-4 mr-2 text-red-500" />
+                                  Enseñanza o valor
+                                </FormLabel>
+                                <FormControl>
+                                  <Input 
+                                    placeholder="Amistad, perseverancia, respeto..." 
+                                    {...field}
+                                    className="border-primary/20 focus:border-primary"
+                                  />
+                                </FormControl>
+                              </FormItem>
+                            )}
+                          />
                           
                           <FormField
                             control={form.control}
                             name="storyDetails.genre"
                             render={({ field }) => (
                               <FormItem>
-                                <FormLabel>Género</FormLabel>
+                                <FormLabel className="font-medium flex items-center">
+                                  <BookOpen className="h-4 w-4 mr-2 text-primary" />
+                                  Género
+                                </FormLabel>
                                 <FormControl>
                                   <Select 
                                     value={field.value?.join(",")} 
                                     onValueChange={(value) => field.onChange(value ? value.split(",") : [])}
                                   >
-                                    <SelectTrigger>
+                                    <SelectTrigger className="border-primary/20 focus:border-primary">
                                       <SelectValue placeholder="Selecciona uno o varios" />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -823,78 +1118,25 @@ export default function CreateBook() {
                                     </SelectContent>
                                   </Select>
                                 </FormControl>
-                                <FormMessage />
                               </FormItem>
                             )}
                           />
-                          
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <FormField
-                              control={form.control}
-                              name="storyDetails.fantasyLevel"
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel>Nivel de fantasía (1-10)</FormLabel>
-                                  <FormControl>
-                                    <Slider
-                                      min={1}
-                                      max={10}
-                                      step={1}
-                                      value={[field.value]}
-                                      onValueChange={(values) => field.onChange(values[0])}
-                                      className="py-4"
-                                    />
-                                  </FormControl>
-                                  <div className="flex justify-between text-xs text-gray-500">
-                                    <span>Realista</span>
-                                    <span>Muy fantástico</span>
-                                  </div>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
-                            
-                            <FormField
-                              control={form.control}
-                              name="storyDetails.pageCount"
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel>Número de páginas</FormLabel>
-                                  <FormControl>
-                                    <Select 
-                                      value={field.value.toString()} 
-                                      onValueChange={(value) => field.onChange(parseInt(value))}
-                                    >
-                                      <SelectTrigger>
-                                        <SelectValue placeholder="Selecciona el número de páginas" />
-                                      </SelectTrigger>
-                                      <SelectContent>
-                                        <SelectItem value="10">10 páginas</SelectItem>
-                                        <SelectItem value="12">12 páginas</SelectItem>
-                                        <SelectItem value="15">15 páginas</SelectItem>
-                                        <SelectItem value="20">20 páginas</SelectItem>
-                                        <SelectItem value="25">25 páginas</SelectItem>
-                                      </SelectContent>
-                                    </Select>
-                                  </FormControl>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
-                          </div>
                           
                           <FormField
                             control={form.control}
                             name="storyDetails.artStyle"
                             render={({ field }) => (
                               <FormItem>
-                                <FormLabel>Estilo de ilustración</FormLabel>
+                                <FormLabel className="font-medium flex items-center">
+                                  <Palette className="h-4 w-4 mr-2 text-primary" />
+                                  Estilo de ilustración
+                                </FormLabel>
                                 <FormControl>
                                   <Select 
                                     value={field.value} 
                                     onValueChange={field.onChange}
                                   >
-                                    <SelectTrigger>
+                                    <SelectTrigger className="border-primary/20 focus:border-primary">
                                       <SelectValue placeholder="Selecciona un estilo" />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -906,45 +1148,125 @@ export default function CreateBook() {
                                     </SelectContent>
                                   </Select>
                                 </FormControl>
-                                <FormMessage />
                               </FormItem>
                             )}
                           />
                           
-                          <FormField
-                            control={form.control}
-                            name="storyDetails.specialInstructions"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Instrucciones especiales</FormLabel>
-                                <FormControl>
-                                  <Textarea 
-                                    placeholder="Cualquier detalle adicional que te gustaría incluir en la historia..." 
-                                    {...field} 
-                                    className="min-h-[100px]"
-                                  />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
+                          <div className="flex items-center space-x-4">
+                            <FormField
+                              control={form.control}
+                              name="storyDetails.pageCount"
+                              render={({ field }) => (
+                                <FormItem className="flex-1">
+                                  <FormLabel className="font-medium flex items-center">
+                                    <div className="mr-2 text-lg">📄</div>
+                                    Número de páginas
+                                  </FormLabel>
+                                  <FormControl>
+                                    <Select 
+                                      value={field.value?.toString() || "12"} 
+                                      onValueChange={(value) => field.onChange(parseInt(value))}
+                                    >
+                                      <SelectTrigger className="border-primary/20 focus:border-primary">
+                                        <SelectValue placeholder="Páginas" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="10">10 páginas</SelectItem>
+                                        <SelectItem value="12">12 páginas</SelectItem>
+                                        <SelectItem value="15">15 páginas</SelectItem>
+                                        <SelectItem value="20">20 páginas</SelectItem>
+                                        <SelectItem value="25">25 páginas</SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                  </FormControl>
+                                </FormItem>
+                              )}
+                            />
+                            
+                            <FormField
+                              control={form.control}
+                              name="storyDetails.fantasyLevel"
+                              render={({ field }) => (
+                                <FormItem className="flex-1">
+                                  <FormLabel className="font-medium flex items-center">
+                                    <Sparkles className="h-4 w-4 mr-2 text-primary" />
+                                    Nivel de fantasía
+                                  </FormLabel>
+                                  <div className="flex items-center space-x-2">
+                                    <FormControl>
+                                      <Slider
+                                        min={1}
+                                        max={10}
+                                        step={1}
+                                        value={[field.value]}
+                                        onValueChange={(values) => field.onChange(values[0])}
+                                        className="py-2"
+                                      />
+                                    </FormControl>
+                                    <span className="text-sm font-bold bg-primary/10 text-primary rounded-full w-6 h-6 flex items-center justify-center">
+                                      {field.value}
+                                    </span>
+                                  </div>
+                                  <div className="flex justify-between text-xs text-gray-500">
+                                    <span>Realista</span>
+                                    <span>Mágico</span>
+                                  </div>
+                                </FormItem>
+                              )}
+                            />
+                          </div>
+                          
+                          <div className="col-span-2">
+                            <FormField
+                              control={form.control}
+                              name="storyDetails.specialInstructions"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel className="font-medium flex items-center">
+                                    <Lightbulb className="h-4 w-4 mr-2 text-amber-500" />
+                                    Instrucciones especiales
+                                  </FormLabel>
+                                  <FormControl>
+                                    <Textarea 
+                                      placeholder="¿Tienes alguna idea especial que quieras incluir? Dinos todo lo que se te ocurra..." 
+                                      {...field}
+                                      className="min-h-[100px] border-primary/20 focus:border-primary"
+                                    />
+                                  </FormControl>
+                                </FormItem>
+                              )}
+                            />
+                          </div>
                         </div>
-                      </TabsContent>
-                    </Tabs>
+                      </div>
+                    )}
                   </div>
                 </CardContent>
+                
                 <CardFooter className="flex justify-between border-t pt-6">
-                  <Button type="button" variant="outline" onClick={goToDashboard}>
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={goToDashboard}
+                    className="border-primary/20 hover:border-primary/50"
+                  >
                     Cancelar
                   </Button>
-                  <Button type="submit" disabled={generateBook.isPending}>
+                  <Button 
+                    type="submit" 
+                    disabled={generateBook.isPending}
+                    className="text-base px-8 py-2 h-auto bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary"
+                  >
                     {generateBook.isPending ? (
                       <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Generando...
+                        <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                        Creando tu historia...
                       </>
                     ) : (
-                      <>Crear Historia</>
+                      <>
+                        <Sparkles className="mr-2 h-5 w-5" />
+                        ¡Crear Historia!
+                      </>
                     )}
                   </Button>
                 </CardFooter>
