@@ -355,16 +355,21 @@ export default function Dashboard() {
   };
 
   // Navigate to create book
-  const goToCreateBook = () => {
+  const goToCreateBook = (characterId?: number) => {
     if (childProfiles.length === 0) {
       toast({
-        title: "No profiles yet",
-        description: "Please create a child profile first before creating a book.",
+        title: "No hay personajes",
+        description: "Por favor, crea un personaje primero antes de crear un libro.",
       });
       setIsNewProfileOpen(true);
       return;
     }
-    setLocation('/create-book');
+    // Si se proporciona un ID de personaje, añadirlo como parámetro de URL
+    if (characterId) {
+      setLocation(`/create-book?characterId=${characterId}`);
+    } else {
+      setLocation('/create-book');
+    }
   };
 
   if (!user) {
@@ -379,7 +384,7 @@ export default function Dashboard() {
           <p className="text-gray-600">Gestiona perfiles, libros y pedidos en un solo lugar</p>
         </div>
         <div className="flex gap-4">
-          <Button onClick={goToCreateBook} className="flex items-center gap-2">
+          <Button onClick={() => goToCreateBook()} className="flex items-center gap-2">
             <BookOpen className="h-4 w-4" />
             Crear nuevo libro
           </Button>
@@ -510,7 +515,7 @@ export default function Dashboard() {
                                   <MessageCircle className="h-4 w-4 mr-2" /> Chatear
                                 </DropdownMenuItem>
                                 <DropdownMenuItem 
-                                  onClick={() => goToCreateBook()}
+                                  onClick={() => goToCreateBook(profile.id)}
                                   className="cursor-pointer"
                                 >
                                   <BookOpen className="h-4 w-4 mr-2" /> Crear libro
@@ -569,7 +574,7 @@ export default function Dashboard() {
                     <Button 
                       className="w-full ml-2"
                       size="sm"
-                      onClick={() => goToCreateBook()}
+                      onClick={() => goToCreateBook(profile.id)}
                     >
                       <BookOpen className="h-4 w-4 mr-2" /> Crear libro
                     </Button>
@@ -602,7 +607,7 @@ export default function Dashboard() {
                 <p className="text-gray-600 mb-6 max-w-md">
                   Los libros que crees aparecerán aquí. Puedes personalizar historias para tus personajes.
                 </p>
-                <Button onClick={goToCreateBook}>
+                <Button onClick={() => goToCreateBook()}>
                   <Plus className="h-4 w-4 mr-2" /> Crear mi primer libro
                 </Button>
               </CardContent>
