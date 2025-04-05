@@ -288,6 +288,8 @@ export default function CreateBook() {
     }
   }, [user, setLocation, toast]);
 
+
+
   // Fetch child profiles
   const { 
     data: childProfiles = [],
@@ -454,17 +456,14 @@ export default function CreateBook() {
     form.setValue("creationMethod", activeTab as "plantilla" | "personalizado");
   }, [activeTab, form]);
 
-  // Efecto para preseleccionar el personaje cuando se llega desde una ficha
+  // Preseleccionar el personaje si viene desde la ficha de personaje
   useEffect(() => {
-    if (preselectedCharacterId && childProfiles.length > 0) {
-      // Buscar el personaje en la lista de perfiles
-      const characterExists = childProfiles.some((character: any) => 
-        character.id.toString() === preselectedCharacterId
-      );
-      
-      // Si el personaje existe, preseleccionarlo
-      if (characterExists) {
+    if (preselectedCharacterId && childProfiles && childProfiles.length > 0) {
+      // Verificar que el personaje existe en la lista de perfiles
+      const character = childProfiles.find((profile: any) => profile.id.toString() === preselectedCharacterId);
+      if (character) {
         form.setValue("characterIds", [preselectedCharacterId]);
+        console.log("Personaje preseleccionado:", preselectedCharacterId);
       }
     }
   }, [preselectedCharacterId, childProfiles, form]);
