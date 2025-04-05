@@ -60,12 +60,13 @@ const bookFormSchema = z.object({
     storyObjective: z.string().optional(),
     tone: z.array(z.string()).optional(),
     moralValue: z.string().optional(),
-    fantasyLevel: z.number().default(5),
-    pageCount: z.number().default(12),
+    fantasyLevel: z.number().optional().default(5),
+    pageCount: z.number().optional().default(12),
     specialInstructions: z.string().optional(),
     storyStructure: z.string().optional(),
     genre: z.array(z.string()).optional(),
     artStyle: z.string().optional(),
+    educationalFocus: z.string().optional(),
     // Campos para opciones personalizadas
     customEra: z.string().optional(),
     customAdventureType: z.string().optional(),
@@ -73,7 +74,7 @@ const bookFormSchema = z.object({
     customMoralValue: z.string().optional(),
     customGenre: z.string().optional(),
     customArtStyle: z.string().optional(),
-    educationalFocus: z.string().optional()
+    customEducationalFocus: z.string().optional()
   }).optional(),
 });
 
@@ -435,6 +436,7 @@ export default function CreateBook() {
         storyStructure: "",
         genre: [],
         artStyle: "Acuarela infantil",
+        educationalFocus: "ninguno",
         // Valores para campos personalizados
         customEra: "",
         customAdventureType: "",
@@ -442,7 +444,7 @@ export default function CreateBook() {
         customMoralValue: "",
         customGenre: "",
         customArtStyle: "",
-        educationalFocus: ""
+        customEducationalFocus: ""
       }
     },
   });
@@ -1247,33 +1249,60 @@ export default function CreateBook() {
                           <FormField
                             control={form.control}
                             name="storyDetails.tone"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel className="font-medium flex items-center">
-                                  <div className="mr-2 text-lg">😊</div>
-                                  Tono de la historia
-                                </FormLabel>
-                                <FormControl>
-                                  <Select 
-                                    value={field.value?.join(",")} 
-                                    onValueChange={(value) => field.onChange(value ? value.split(",") : [])}
-                                  >
-                                    <SelectTrigger className="border-primary/20 focus:border-primary">
-                                      <SelectValue placeholder="Selecciona uno o varios" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="divertido">Divertido</SelectItem>
-                                      <SelectItem value="emocionante">Emocionante</SelectItem>
-                                      <SelectItem value="educativo">Educativo</SelectItem>
-                                      <SelectItem value="inspirador">Inspirador</SelectItem>
-                                      <SelectItem value="misterioso">Misterioso</SelectItem>
-                                      <SelectItem value="aventurero">Aventurero</SelectItem>
-                                      <SelectItem value="otro">Otro</SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                </FormControl>
-                              </FormItem>
-                            )}
+                            render={({ field }) => {
+                              const [showCustomTone, setShowCustomTone] = useState(false);
+                              const [customToneContent, setCustomToneContent] = useState("");
+                              
+                              useEffect(() => {
+                                // Comprobar si "otro" está en los valores seleccionados
+                                if (field.value && field.value.includes("otro")) {
+                                  setShowCustomTone(true);
+                                } else {
+                                  setShowCustomTone(false);
+                                }
+                              }, [field.value]);
+                              
+                              return (
+                                <FormItem>
+                                  <FormLabel className="font-medium flex items-center">
+                                    <div className="mr-2 text-lg">😊</div>
+                                    Tono de la historia
+                                  </FormLabel>
+                                  <FormControl>
+                                    <Select 
+                                      value={field.value?.join(",")} 
+                                      onValueChange={(value) => field.onChange(value ? value.split(",") : [])}
+                                    >
+                                      <SelectTrigger className="border-primary/20 focus:border-primary">
+                                        <SelectValue placeholder="Selecciona uno o varios" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="divertido">Divertido</SelectItem>
+                                        <SelectItem value="emocionante">Emocionante</SelectItem>
+                                        <SelectItem value="educativo">Educativo</SelectItem>
+                                        <SelectItem value="inspirador">Inspirador</SelectItem>
+                                        <SelectItem value="misterioso">Misterioso</SelectItem>
+                                        <SelectItem value="aventurero">Aventurero</SelectItem>
+                                        <SelectItem value="otro">Otro</SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                  </FormControl>
+                                  
+                                  {showCustomTone && (
+                                    <Input
+                                      placeholder="Especifica un tono personalizado..."
+                                      value={customToneContent}
+                                      onChange={(e) => {
+                                        const newValue = e.target.value;
+                                        setCustomToneContent(newValue);
+                                        form.setValue("storyDetails.customTone", newValue);
+                                      }}
+                                      className="mt-2 border-primary/20 focus:border-primary"
+                                    />
+                                  )}
+                                </FormItem>
+                              );
+                            }}
                           />
                           
                           <FormField
@@ -1341,64 +1370,120 @@ export default function CreateBook() {
                           <FormField
                             control={form.control}
                             name="storyDetails.genre"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel className="font-medium flex items-center">
-                                  <BookOpen className="h-4 w-4 mr-2 text-primary" />
-                                  Género
-                                </FormLabel>
-                                <FormControl>
-                                  <Select 
-                                    value={field.value?.join(",")} 
-                                    onValueChange={(value) => field.onChange(value ? value.split(",") : [])}
-                                  >
-                                    <SelectTrigger className="border-primary/20 focus:border-primary">
-                                      <SelectValue placeholder="Selecciona uno o varios" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="aventura">Aventura</SelectItem>
-                                      <SelectItem value="fantasia">Fantasía</SelectItem>
-                                      <SelectItem value="ciencia-ficcion">Ciencia Ficción</SelectItem>
-                                      <SelectItem value="misterio">Misterio</SelectItem>
-                                      <SelectItem value="educativo">Educativo</SelectItem>
-                                      <SelectItem value="cotidiano">Vida cotidiana</SelectItem>
-                                      <SelectItem value="otro">Otro</SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                </FormControl>
-                              </FormItem>
-                            )}
+                            render={({ field }) => {
+                              const [showCustomGenre, setShowCustomGenre] = useState(false);
+                              const [customGenreContent, setCustomGenreContent] = useState("");
+                              
+                              useEffect(() => {
+                                // Comprobar si "otro" está en los valores seleccionados
+                                if (field.value && field.value.includes("otro")) {
+                                  setShowCustomGenre(true);
+                                } else {
+                                  setShowCustomGenre(false);
+                                }
+                              }, [field.value]);
+                              
+                              return (
+                                <FormItem>
+                                  <FormLabel className="font-medium flex items-center">
+                                    <BookOpen className="h-4 w-4 mr-2 text-primary" />
+                                    Género
+                                  </FormLabel>
+                                  <FormControl>
+                                    <Select 
+                                      value={field.value?.join(",")} 
+                                      onValueChange={(value) => field.onChange(value ? value.split(",") : [])}
+                                    >
+                                      <SelectTrigger className="border-primary/20 focus:border-primary">
+                                        <SelectValue placeholder="Selecciona uno o varios" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="aventura">Aventura</SelectItem>
+                                        <SelectItem value="fantasia">Fantasía</SelectItem>
+                                        <SelectItem value="ciencia-ficcion">Ciencia Ficción</SelectItem>
+                                        <SelectItem value="misterio">Misterio</SelectItem>
+                                        <SelectItem value="educativo">Educativo</SelectItem>
+                                        <SelectItem value="cotidiano">Vida cotidiana</SelectItem>
+                                        <SelectItem value="otro">Otro</SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                  </FormControl>
+                                  
+                                  {showCustomGenre && (
+                                    <Input
+                                      placeholder="Especifica un género personalizado..."
+                                      value={customGenreContent}
+                                      onChange={(e) => {
+                                        const newValue = e.target.value;
+                                        setCustomGenreContent(newValue);
+                                        form.setValue("storyDetails.customGenre", newValue);
+                                      }}
+                                      className="mt-2 border-primary/20 focus:border-primary"
+                                    />
+                                  )}
+                                </FormItem>
+                              );
+                            }}
                           />
                           
                           <FormField
                             control={form.control}
                             name="storyDetails.artStyle"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel className="font-medium flex items-center">
-                                  <Palette className="h-4 w-4 mr-2 text-primary" />
-                                  Estilo de ilustración
-                                </FormLabel>
-                                <FormControl>
-                                  <Select 
-                                    value={field.value} 
-                                    onValueChange={field.onChange}
-                                  >
-                                    <SelectTrigger className="border-primary/20 focus:border-primary">
-                                      <SelectValue placeholder="Selecciona un estilo" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="Acuarela infantil">Acuarela infantil</SelectItem>
-                                      <SelectItem value="Comic para niños">Comic para niños</SelectItem>
-                                      <SelectItem value="Dibujos animados 3D">Dibujos animados 3D</SelectItem>
-                                      <SelectItem value="Estilo Pixar">Estilo Pixar</SelectItem>
-                                      <SelectItem value="Ilustración clásica">Ilustración clásica</SelectItem>
-                                      <SelectItem value="Otro">Otro</SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                </FormControl>
-                              </FormItem>
-                            )}
+                            render={({ field }) => {
+                              const [showCustomArtStyle, setShowCustomArtStyle] = useState(false);
+                              const [customArtStyleContent, setCustomArtStyleContent] = useState("");
+                              
+                              useEffect(() => {
+                                // Comprobar si se ha seleccionado "Otro"
+                                if (field.value === "Otro") {
+                                  setShowCustomArtStyle(true);
+                                } else {
+                                  setShowCustomArtStyle(false);
+                                }
+                              }, [field.value]);
+                              
+                              return (
+                                <FormItem>
+                                  <FormLabel className="font-medium flex items-center">
+                                    <Palette className="h-4 w-4 mr-2 text-primary" />
+                                    Estilo de ilustración
+                                  </FormLabel>
+                                  <FormControl>
+                                    <Select 
+                                      value={field.value} 
+                                      onValueChange={(value) => {
+                                        field.onChange(value);
+                                      }}
+                                    >
+                                      <SelectTrigger className="border-primary/20 focus:border-primary">
+                                        <SelectValue placeholder="Selecciona un estilo" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="Acuarela infantil">Acuarela infantil</SelectItem>
+                                        <SelectItem value="Comic para niños">Comic para niños</SelectItem>
+                                        <SelectItem value="Dibujos animados 3D">Dibujos animados 3D</SelectItem>
+                                        <SelectItem value="Estilo Pixar">Estilo Pixar</SelectItem>
+                                        <SelectItem value="Ilustración clásica">Ilustración clásica</SelectItem>
+                                        <SelectItem value="Otro">Otro</SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                  </FormControl>
+                                  
+                                  {showCustomArtStyle && (
+                                    <Input
+                                      placeholder="Especifica un estilo de ilustración personalizado..."
+                                      value={customArtStyleContent}
+                                      onChange={(e) => {
+                                        const newValue = e.target.value;
+                                        setCustomArtStyleContent(newValue);
+                                        form.setValue("storyDetails.customArtStyle", newValue);
+                                      }}
+                                      className="mt-2 border-primary/20 focus:border-primary"
+                                    />
+                                  )}
+                                </FormItem>
+                              );
+                            }}
                           />
                           
                           <div className="flex items-center space-x-4">
@@ -1431,18 +1516,46 @@ export default function CreateBook() {
                                         className="h-9 w-20 border-primary/20 focus:border-primary text-center"
                                         min={5}
                                         max={40}
-                                        value={field.value || 10}
+                                        value={field.value === undefined ? "" : field.value}
                                         onChange={(e) => {
-                                          let inputValue = e.target.value;
-                                          let val = parseInt(inputValue);
+                                          const inputValue = e.target.value;
                                           
-                                          // Si es un valor válido entre 5 y 40
+                                          // Si está vacío, permitir mantener el campo vacío para ingresar nuevo valor
+                                          if (inputValue === "") {
+                                            field.onChange(undefined);
+                                            return;
+                                          }
+                                          
+                                          // Intentar convertir a número
+                                          const val = parseInt(inputValue);
+                                          
+                                          // Si es un número válido
                                           if (!isNaN(val)) {
-                                            // Si es menor que 5, establecer a 5
-                                            if (val < 5) val = 5;
-                                            // Si es mayor que 40, establecer a 40
-                                            if (val > 40) val = 40;
-                                            field.onChange(val);
+                                            if (val < 5) {
+                                              // No mostrar error aún, permitir que termine de escribir
+                                              field.onChange(val);
+                                            } else if (val > 40) {
+                                              // No mostrar error aún, permitir que termine de escribir
+                                              field.onChange(val);
+                                            } else {
+                                              // Valor válido
+                                              field.onChange(val);
+                                            }
+                                          }
+                                        }}
+                                        onBlur={(e) => {
+                                          // Al perder el foco, validar y corregir el valor si es necesario
+                                          const val = parseInt(e.target.value);
+                                          
+                                          if (isNaN(val) || field.value === undefined) {
+                                            // Si no es un número válido, asignar un valor por defecto
+                                            field.onChange(10);
+                                          } else if (val < 5) {
+                                            // Si es menor que el mínimo
+                                            field.onChange(5);
+                                          } else if (val > 40) {
+                                            // Si es mayor que el máximo
+                                            field.onChange(40);
                                           }
                                         }}
                                       />
@@ -1505,40 +1618,68 @@ export default function CreateBook() {
                             <FormField
                               control={form.control}
                               name="storyDetails.educationalFocus"
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel className="font-medium flex items-center">
-                                    <GraduationCap className="h-4 w-4 mr-2 text-blue-500" />
-                                    Enfoque educativo (opcional)
-                                  </FormLabel>
-                                  <FormControl>
-                                    <Select 
-                                      value={field.value} 
-                                      onValueChange={field.onChange}
-                                    >
-                                      <SelectTrigger className="border-primary/20 focus:border-primary">
-                                        <SelectValue placeholder="¿Quieres incluir algún elemento educativo?" />
-                                      </SelectTrigger>
-                                      <SelectContent>
-                                        <SelectItem value="ninguno">Ninguno</SelectItem>
-                                        <SelectItem value="matematicas">Matemáticas básicas</SelectItem>
-                                        <SelectItem value="ciencias">Ciencias y naturaleza</SelectItem>
-                                        <SelectItem value="lenguaje">Lenguaje y vocabulario</SelectItem>
-                                        <SelectItem value="historia">Historia</SelectItem>
-                                        <SelectItem value="geografia">Geografía</SelectItem>
-                                        <SelectItem value="tecnologia">Tecnología</SelectItem>
-                                        <SelectItem value="musica">Música</SelectItem>
-                                        <SelectItem value="arte">Arte</SelectItem>
-                                        <SelectItem value="ecosistema">Medio ambiente</SelectItem>
-                                        <SelectItem value="otros">Otros (especificar)</SelectItem>
-                                      </SelectContent>
-                                    </Select>
-                                  </FormControl>
-                                  <FormDescription>
-                                    Selecciona si quieres que la historia incluya algún elemento educativo específico.
-                                  </FormDescription>
-                                </FormItem>
-                              )}
+                              render={({ field }) => {
+                                const [showCustomEducation, setShowCustomEducation] = useState(false);
+                                const [customEducationContent, setCustomEducationContent] = useState("");
+                                
+                                useEffect(() => {
+                                  // Comprobar si se ha seleccionado "otros"
+                                  if (field.value === "otros") {
+                                    setShowCustomEducation(true);
+                                  } else {
+                                    setShowCustomEducation(false);
+                                  }
+                                }, [field.value]);
+                                
+                                return (
+                                  <FormItem>
+                                    <FormLabel className="font-medium flex items-center">
+                                      <GraduationCap className="h-4 w-4 mr-2 text-blue-500" />
+                                      Enfoque educativo (opcional)
+                                    </FormLabel>
+                                    <FormControl>
+                                      <Select 
+                                        value={field.value} 
+                                        onValueChange={field.onChange}
+                                      >
+                                        <SelectTrigger className="border-primary/20 focus:border-primary">
+                                          <SelectValue placeholder="¿Quieres incluir algún elemento educativo?" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                          <SelectItem value="ninguno">Ninguno</SelectItem>
+                                          <SelectItem value="matematicas">Matemáticas básicas</SelectItem>
+                                          <SelectItem value="ciencias">Ciencias y naturaleza</SelectItem>
+                                          <SelectItem value="lenguaje">Lenguaje y vocabulario</SelectItem>
+                                          <SelectItem value="historia">Historia</SelectItem>
+                                          <SelectItem value="geografia">Geografía</SelectItem>
+                                          <SelectItem value="tecnologia">Tecnología</SelectItem>
+                                          <SelectItem value="musica">Música</SelectItem>
+                                          <SelectItem value="arte">Arte</SelectItem>
+                                          <SelectItem value="ecosistema">Medio ambiente</SelectItem>
+                                          <SelectItem value="otros">Otros (especificar)</SelectItem>
+                                        </SelectContent>
+                                      </Select>
+                                    </FormControl>
+                                    
+                                    {showCustomEducation && (
+                                      <Input
+                                        placeholder="Especifica un enfoque educativo personalizado..."
+                                        value={customEducationContent}
+                                        onChange={(e) => {
+                                          const newValue = e.target.value;
+                                          setCustomEducationContent(newValue);
+                                          form.setValue("storyDetails.customEducationalFocus", newValue);
+                                        }}
+                                        className="mt-2 border-primary/20 focus:border-primary"
+                                      />
+                                    )}
+                                    
+                                    <FormDescription>
+                                      Selecciona si quieres que la historia incluya algún elemento educativo específico.
+                                    </FormDescription>
+                                  </FormItem>
+                                );
+                              }}
                             />
                           </div>
                           
