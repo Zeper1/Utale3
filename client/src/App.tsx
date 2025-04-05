@@ -4,7 +4,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/Home";
-import Dashboard from "@/pages/Dashboard";
+import Dashboard from "@/pages/DashboardNew"; // Cambiamos a la nueva versión
 import CreateBook from "@/pages/CreateBook";
 import ProfileChat from "@/pages/ProfileChat";
 import BookPreview from "@/pages/BookPreview";
