@@ -9,7 +9,6 @@ import {
   LogOut, 
   Settings, 
   CreditCard, 
-  Gift, 
   ChevronDown, 
   BellRing, 
   LayoutDashboard, 
@@ -148,19 +147,7 @@ const Header = () => {
             {/* Desktop: User section */}
             <div className="flex items-center gap-3">
               {user ? (
-                <div className="flex items-center gap-3">
-                  <Button variant="outline" size="sm" className="kids-button bg-gradient-to-r from-secondary to-secondary-200 text-white border-0 py-1 px-4">
-                    <Gift className="h-4 w-4 mr-1 animate-pulse-soft" /> 
-                    <span className="relative">
-                      Regalar 
-                      <span className="absolute -top-1 -right-4">
-                        <span className="relative flex h-2 w-2">
-                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-yellow-400 opacity-75"></span>
-                          <span className="relative inline-flex rounded-full h-2 w-2 bg-yellow-500"></span>
-                        </span>
-                      </span>
-                    </span>
-                  </Button>
+                <div className="flex items-center">
                   
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>

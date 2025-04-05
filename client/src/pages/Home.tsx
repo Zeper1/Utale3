@@ -8,7 +8,7 @@ import {
   UserCircle,
   MessageSquare,
   Truck,
-  Gift,
+  BookMarked,
   Star,
   ArrowRight,
   Info,
@@ -180,11 +180,11 @@ export default function Home() {
             
             <div className="bg-gray-50 rounded-xl p-6 hover:shadow-soft transition-shadow duration-300">
               <div className="bg-primary-100 w-12 h-12 flex items-center justify-center rounded-lg mb-4 text-primary">
-                <Gift className="h-6 w-6" />
+                <BookMarked className="h-6 w-6" />
               </div>
-              <h3 className="text-xl font-bold font-heading text-gray-900 mb-2">Perfect Gifts</h3>
+              <h3 className="text-xl font-bold font-heading text-gray-900 mb-2">Libros de Colección</h3>
               <p className="text-gray-600">
-                Create meaningful gifts for birthdays, holidays, or special milestones that children will cherish.
+                Crea historias para conservar y compartir, perfectas para momentos especiales que los niños atesorarán para siempre.
               </p>
             </div>
           </div>

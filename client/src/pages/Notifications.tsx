@@ -1,6 +1,6 @@
 import React from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { Bell, Clock, Book, Gift, CreditCard, CheckCircle2, AlertCircle, Calendar } from "lucide-react";
+import { Bell, Clock, Book, Star, CreditCard, CheckCircle2, AlertCircle, Calendar } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -141,10 +141,10 @@ const Notifications = () => {
               />
               
               <NotificationItem 
-                title="Código de regalo" 
-                message="Has recibido un código de regalo para un libro extra este mes." 
+                title="Libro extra disponible" 
+                message="Tienes un libro extra disponible para generar este mes." 
                 time="Hace 2 días" 
-                icon={<Gift className="h-4 w-4" />}
+                icon={<Star className="h-4 w-4" />}
                 isRead={true}
               />
               
@@ -250,10 +250,10 @@ const Notifications = () => {
               />
               
               <NotificationItem 
-                title="Código de regalo" 
-                message="Has recibido un código de regalo para un libro extra este mes." 
+                title="Libro extra disponible" 
+                message="Tienes un libro extra disponible para generar este mes." 
                 time="Hace 2 días" 
-                icon={<Gift className="h-4 w-4" />}
+                icon={<Star className="h-4 w-4" />}
                 isRead={true}
               />
               
