@@ -73,6 +73,10 @@ export default function Dashboard() {
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
   const [selectedProfile, setSelectedProfile] = useState<any>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [showOtherTypeField, setShowOtherTypeField] = useState(false);
+  const [otherTypeValue, setOtherTypeValue] = useState("");
+  const [showOtherGenderField, setShowOtherGenderField] = useState(false);
+  const [otherGenderValue, setOtherGenderValue] = useState("");
 
   // Redirect if not logged in
   useEffect(() => {
@@ -233,6 +237,30 @@ export default function Dashboard() {
     }
   };
 
+  // Función para manejar el cambio de género, controla tanto el campo del formulario como el valor personalizado
+  const handleGenderChange = (value: string, onChange: (value: string) => void) => {
+    onChange(value);
+    if (value === 'other') {
+      setShowOtherGenderField(true);
+    } else {
+      setShowOtherGenderField(false);
+      setOtherGenderValue("");
+    }
+  };
+  
+  // Función para manejar el cambio de tipo de personaje
+  const handleCharacterTypeChange = (value: string, onChange: (value: string) => void) => {
+    onChange(value);
+    setCharacterType(value);
+    
+    if (value === 'other') {
+      setShowOtherTypeField(true);
+    } else {
+      setShowOtherTypeField(false);
+      setOtherTypeValue("");
+    }
+  };
+  
   // Configure profile form
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileSchema),
@@ -252,12 +280,15 @@ export default function Dashboard() {
   // Handle form submission for new character creation
   const onSubmit = async (values: ProfileFormValues) => {
     try {
+      // Prepare gender value - when 'other' is selected, use custom input value
+      const genderValue = values.gender === 'other' ? otherGenderValue : values.gender;
+      
       // First create the profile - note the endpoint is /api/profiles (no /api/characters)
       const profileResponse = await apiRequest('POST', '/api/profiles', { 
         name: values.name,
         type: values.type || 'child',
         age: values.age ? parseInt(values.age.toString(), 10) : null,
-        gender: values.gender,
+        gender: genderValue,
         userId: user?.id,
         interests: [],
         favorites: {},
@@ -813,8 +844,9 @@ export default function Dashboard() {
                     <FormLabel>Tipo de personaje</FormLabel>
                     <Select 
                       onValueChange={(value) => {
-                        field.onChange(value);
-                        setCharacterType(value);
+                        handleCharacterTypeChange(value, field.onChange);
+                        
+                        // Resetear los campos específicos de otros tipos de personajes
                         
                         // Resetear los campos específicos de otros tipos de personajes
                         if (value !== 'child') {
@@ -830,6 +862,7 @@ export default function Dashboard() {
                       </FormControl>
                       <SelectContent>
                         <SelectItem value="child">Niño/a</SelectItem>
+                        <SelectItem value="adult">Adulto</SelectItem>
                         <SelectItem value="toy">Juguete/Peluche</SelectItem>
                         <SelectItem value="pet">Mascota</SelectItem>
                         <SelectItem value="fantasy">Personaje fantástico</SelectItem>
@@ -855,7 +888,7 @@ export default function Dashboard() {
                         <FormControl>
                           <Input 
                             type="number" 
-                            min="1" 
+                            min="0" 
                             max="18" 
                             placeholder="Edad" 
                             value={value === null ? '' : value}
@@ -878,7 +911,7 @@ export default function Dashboard() {
                       <FormItem>
                         <FormLabel>Género (Opcional)</FormLabel>
                         <Select 
-                          onValueChange={field.onChange} 
+                          onValueChange={(value) => handleGenderChange(value, field.onChange)} 
                           defaultValue={field.value}
                         >
                           <FormControl>
@@ -891,8 +924,87 @@ export default function Dashboard() {
                             <SelectItem value="girl">Niña</SelectItem>
                             <SelectItem value="non-binary">No binario</SelectItem>
                             <SelectItem value="prefer-not-to-say">Prefiero no decirlo</SelectItem>
+                            <SelectItem value="other">Otro</SelectItem>
                           </SelectContent>
                         </Select>
+                        
+                        {field.value === 'other' && (
+                          <div className="mt-2">
+                            <Input 
+                              placeholder="Especifica el género..." 
+                              value={otherGenderValue}
+                              onChange={(e) => setOtherGenderValue(e.target.value)}
+                            />
+                          </div>
+                        )}
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              )}
+              
+              {characterType === 'adult' && (
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="age"
+                    render={({ field: { value, onChange, ...rest } }) => (
+                      <FormItem>
+                        <FormLabel>Edad (Opcional)</FormLabel>
+                        <FormControl>
+                          <Input 
+                            type="number" 
+                            min="18" 
+                            max="150" 
+                            placeholder="Edad" 
+                            value={value === null ? '' : value}
+                            onChange={e => onChange(e.target.value === '' ? null : Number(e.target.value))}
+                            {...rest} 
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          Edad del adulto
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="gender"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Género (Opcional)</FormLabel>
+                        <FormLabel>Género (Opcional)</FormLabel>
+                        <Select 
+                          onValueChange={(value) => handleGenderChange(value, field.onChange)} 
+                          defaultValue={field.value}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecciona género" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="male">Hombre</SelectItem>
+                            <SelectItem value="female">Mujer</SelectItem>
+                            <SelectItem value="non-binary">No binario</SelectItem>
+                            <SelectItem value="prefer-not-to-say">Prefiero no decirlo</SelectItem>
+                            <SelectItem value="other">Otro</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        
+                        {field.value === 'other' && (
+                          <div className="mt-2">
+                            <Input 
+                              placeholder="Especifica el género..." 
+                              value={otherGenderValue}
+                              onChange={(e) => setOtherGenderValue(e.target.value)}
+                            />
+                          </div>
+                        )}
                         <FormMessage />
                       </FormItem>
                     )}
@@ -910,7 +1022,7 @@ export default function Dashboard() {
                       <FormControl>
                         <Input 
                           type="number" 
-                          min="1" 
+                          min="0" 
                           max="30" 
                           placeholder="Edad" 
                           value={value === null ? '' : value}
@@ -920,6 +1032,33 @@ export default function Dashboard() {
                       </FormControl>
                       <FormDescription>
                         Edad aproximada de la mascota
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
+              
+              {characterType === 'other' && (
+                <FormField
+                  control={form.control}
+                  name="additionalInfo"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Tipo personalizado</FormLabel>
+                      <FormControl>
+                        <Input 
+                          placeholder="Describe qué tipo de personaje es..." 
+                          {...field}
+                          value={otherTypeValue}
+                          onChange={(e) => {
+                            setOtherTypeValue(e.target.value);
+                            field.onChange(e);
+                          }}
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        Especifica qué tipo de personaje estás creando
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -1106,12 +1245,15 @@ export default function Dashboard() {
                 try {
                   console.log("Updating profile:", selectedProfile.id);
                   
+                  // Prepare gender value - when 'other' is selected, use custom input value
+                  const genderValue = values.gender === 'other' ? otherGenderValue : values.gender;
+                  
                   const updatedProfile = {
                     id: selectedProfile.id,
                     name: values.name,
                     type: values.type || 'child',
                     age: values.age ? parseInt(values.age.toString(), 10) : null,
-                    gender: values.gender || null,
+                    gender: genderValue || null,
                     physicalDescription: values.physicalDescription || null,
                     personality: values.personality || null,
                     likes: values.likes || null,
@@ -1199,10 +1341,7 @@ export default function Dashboard() {
                   <FormItem>
                     <FormLabel>Tipo de personaje</FormLabel>
                     <Select
-                      onValueChange={(value) => {
-                        field.onChange(value);
-                        setCharacterType(value);
-                      }}
+                      onValueChange={(value) => handleCharacterTypeChange(value, field.onChange)}
                       value={field.value}
                     >
                       <FormControl>
@@ -1212,6 +1351,7 @@ export default function Dashboard() {
                       </FormControl>
                       <SelectContent>
                         <SelectItem value="child">Niño/a</SelectItem>
+                        <SelectItem value="adult">Adulto</SelectItem>
                         <SelectItem value="toy">Juguete/Peluche</SelectItem>
                         <SelectItem value="pet">Mascota</SelectItem>
                         <SelectItem value="fantasy">Personaje de fantasía</SelectItem>
@@ -1234,7 +1374,7 @@ export default function Dashboard() {
                         <FormControl>
                           <Input 
                             type="number" 
-                            min="1" 
+                            min="0" 
                             max="18" 
                             placeholder="Edad" 
                             value={value === null ? '' : value}
@@ -1257,9 +1397,8 @@ export default function Dashboard() {
                       <FormItem>
                         <FormLabel>Género (Opcional)</FormLabel>
                         <Select
-                          onValueChange={field.onChange}
-                          value={field.value || ""}
-                        >
+                          onValueChange={(value) => handleGenderChange(value, field.onChange)}
+                          value={field.value || ""}>
                           <FormControl>
                             <SelectTrigger>
                               <SelectValue placeholder="Selecciona género" />
@@ -1269,8 +1408,87 @@ export default function Dashboard() {
                             <SelectItem value="boy">Niño</SelectItem>
                             <SelectItem value="girl">Niña</SelectItem>
                             <SelectItem value="non-binary">No binario</SelectItem>
+                            <SelectItem value="prefer-not-to-say">Prefiero no decirlo</SelectItem>
+                            <SelectItem value="other">Otro</SelectItem>
                           </SelectContent>
                         </Select>
+                        
+                        {field.value === 'other' && (
+                          <div className="mt-2">
+                            <Input 
+                              placeholder="Especifica el género..." 
+                              value={otherGenderValue}
+                              onChange={(e) => setOtherGenderValue(e.target.value)}
+                            />
+                          </div>
+                        )}
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </>
+              )}
+              
+              {characterType === 'adult' && (
+                <>
+                  <FormField
+                    control={form.control}
+                    name="age"
+                    render={({ field: { value, onChange, ...rest } }) => (
+                      <FormItem>
+                        <FormLabel>Edad (Opcional)</FormLabel>
+                        <FormControl>
+                          <Input 
+                            type="number" 
+                            min="18" 
+                            max="150" 
+                            placeholder="Edad" 
+                            value={value === null ? '' : value}
+                            onChange={e => onChange(e.target.value === '' ? null : Number(e.target.value))}
+                            {...rest} 
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          Edad del adulto
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+              
+                  <FormField
+                    control={form.control}
+                    name="gender"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Género (Opcional)</FormLabel>
+                        <Select
+                          onValueChange={field.onChange}
+                          value={field.value || ""}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecciona género" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="male">Hombre</SelectItem>
+                            <SelectItem value="female">Mujer</SelectItem>
+                            <SelectItem value="non-binary">No binario</SelectItem>
+                            <SelectItem value="prefer-not-to-say">Prefiero no decirlo</SelectItem>
+                            <SelectItem value="other">Otro</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        
+                        {field.value === 'other' && (
+                          <div className="mt-2">
+                            <Input 
+                              placeholder="Especifica el género..." 
+                              value={otherGenderValue}
+                              onChange={(e) => setOtherGenderValue(e.target.value)}
+                            />
+                          </div>
+                        )}
                         <FormMessage />
                       </FormItem>
                     )}
@@ -1288,7 +1506,7 @@ export default function Dashboard() {
                       <FormControl>
                         <Input 
                           type="number" 
-                          min="1" 
+                          min="0" 
                           max="30" 
                           placeholder="Edad" 
                           value={value === null ? '' : value}
@@ -1298,6 +1516,33 @@ export default function Dashboard() {
                       </FormControl>
                       <FormDescription>
                         Edad aproximada de la mascota
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
+              
+              {characterType === 'other' && (
+                <FormField
+                  control={form.control}
+                  name="additionalInfo"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Tipo personalizado</FormLabel>
+                      <FormControl>
+                        <Input 
+                          placeholder="Describe qué tipo de personaje es..." 
+                          {...field}
+                          value={otherTypeValue}
+                          onChange={(e) => {
+                            setOtherTypeValue(e.target.value);
+                            field.onChange(e);
+                          }}
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        Especifica qué tipo de personaje estás creando
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
