@@ -49,7 +49,41 @@ const profileSchema = z.object({
       return isNaN(num) ? null : num;
     })
     .nullable()
-    .optional(),
+    .optional()
+    .refine(
+      (value) => {
+        // Si no hay valor, es válido (campo opcional)
+        if (value === null || value === undefined) return true;
+        
+        // Contexto de tipo actual disponible a través de validación customizada
+        const type = z.getCtx?.().values?.type || "child";
+        
+        if (type === "child") {
+          return value >= 0 && value <= 18;
+        } else if (type === "adult") {
+          return value >= 18 && value <= 150;
+        } else if (type === "pet") {
+          return value >= 0 && value <= 30;
+        }
+        
+        // Para otros tipos, permitir cualquier valor
+        return true;
+      },
+      (value) => {
+        // Mensaje de error personalizado según el tipo
+        const type = z.getCtx?.().values?.type || "child";
+        
+        if (type === "child") {
+          return { message: "La edad debe estar entre 0 y 18 años para un niño/a" };
+        } else if (type === "adult") {
+          return { message: "La edad debe estar entre 18 y 150 años para un adulto" };
+        } else if (type === "pet") {
+          return { message: "La edad debe estar entre 0 y 30 años para una mascota" };
+        }
+        
+        return { message: "Edad no válida" };
+      }
+    ),
   gender: z.string().optional(),
   physicalDescription: z.string().optional(),
   personality: z.string().optional(),

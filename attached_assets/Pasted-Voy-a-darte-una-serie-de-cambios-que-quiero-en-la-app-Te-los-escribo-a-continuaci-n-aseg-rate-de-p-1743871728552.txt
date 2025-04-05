@@ -1,0 +1,12 @@
+Voy a darte una serie de cambios que quiero en la app. Te los escribo a continuación, asegúrate de pensar en si estos cambios pueden afectar a otras partes de la aplicación para no afectar a otras funcionalidades.
+-Añade la opcion de adulto en tipo de personaje en la opcion de crear personaje
+-En todas las opciones que tengan una lista despleglable para seleccionar (tanto en creación de personaje como de libro) asegurate de que damos la opcion otro. Si el usuarió selecciona otro, debe aparecer en el formulario una casilla para que describa su selección, según la parte del formulario que corresponda.
+-Quita la opcion de edad en el formulario cuando el usuario selecciona la opcion mascota
+-En cuanto a las restricciones de edad en la casilla edad del formulario. Establece la restriccion de 0 a 18 años en la seleccion tipo de personaje niño/a. Establece la restriccion de 0 a 150 años en la selección tipo de personaje adulto.
+-Cuando en el panel de mis personajes el usuario pulse en el boton crear libro en una de las fichas de los personajes, al abrir la creacción del libro ese personaje ya debe estar seleccionado como protagonista
+-En el formulario de creación de libro, en la sección de paginas, que sea un selector progresivo, siendo el mínimo 5 paginas, y aumentando o reducciendo de una en una. Que tenga opción de subir y bajar pulsando botoncito, o bien escribir la cifra en la casilla.
+-En la secciones: Epoca, Tipo de aventura y enseñanza o valor pon un desplegable en el que pongas varias opciones base.
+
+Cambia la seccion personajes adicionales por una que establezca una descripcion aproximada de lo que el usuario quiere conseguir con la historia, su objetivo por así decirlo. Piensa como deberias implementar esta seccion del formulario.
+-En cuanto a la implementación para educación habria de tener mayor integración de elementos educativos específicos (matemáticas, ciencias,
+idiomas). Piensa en como podriamos implementar estos teniendo en cuenta el objetivo de tener mejores resultados en la creación de libros y una mejor experiencia de usuario.
