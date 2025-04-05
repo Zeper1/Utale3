@@ -37,7 +37,14 @@ import {
   Users,
   Minus,
   Plus,
-  Crown
+  Crown,
+  GraduationCap,
+  Clock,
+  MapPin,
+  Mountain,
+  Ship,
+  PlaneTakeoff,
+  Castle
 } from "lucide-react";
 
 // Esquema para la creación de libros
@@ -50,7 +57,7 @@ const bookFormSchema = z.object({
     scenario: z.string().optional(),
     era: z.string().optional(),
     adventureType: z.string().optional(),
-    additionalCharacters: z.string().optional(),
+    storyObjective: z.string().optional(),
     tone: z.array(z.string()).optional(),
     moralValue: z.string().optional(),
     fantasyLevel: z.number().default(5),
@@ -58,7 +65,15 @@ const bookFormSchema = z.object({
     specialInstructions: z.string().optional(),
     storyStructure: z.string().optional(),
     genre: z.array(z.string()).optional(),
-    artStyle: z.string().optional()
+    artStyle: z.string().optional(),
+    // Campos para opciones personalizadas
+    customEra: z.string().optional(),
+    customAdventureType: z.string().optional(),
+    customTone: z.string().optional(),
+    customMoralValue: z.string().optional(),
+    customGenre: z.string().optional(),
+    customArtStyle: z.string().optional(),
+    educationalFocus: z.string().optional()
   }).optional(),
 });
 
@@ -75,7 +90,7 @@ interface TemplateDetails {
   genre: string[];
   artStyle: string;
   pageCount?: number;
-  additionalCharacters?: string;
+  storyObjective?: string;
   specialInstructions?: string;
 }
 
@@ -96,7 +111,7 @@ const storyTemplates = [
       genre: ["Ciencia ficción", "Aventura"],
       artStyle: "Digital colorido con estrellas y galaxias",
       pageCount: 12,
-      additionalCharacters: "Un robot ayudante, alienígenas amistosos",
+      storyObjective: "Explorar nuevos planetas y aprender sobre astronomía",
       specialInstructions: "Incluir planetas con formas divertidas y naves espaciales coloridas"
     } as TemplateDetails
   },
@@ -115,7 +130,7 @@ const storyTemplates = [
       genre: ["Aventura", "Ecológico"],
       artStyle: "Acuarela con tonos azules y turquesa",
       pageCount: 15,
-      additionalCharacters: "Sirenas, peces de colores, una tortuga sabia",
+      storyObjective: "Descubrir la belleza del océano y aprender a proteger la vida marina",
       specialInstructions: "Incluir escenas con vida marina colorida y una ciudad de coral"
     } as TemplateDetails
   },
@@ -134,7 +149,7 @@ const storyTemplates = [
       genre: ["Fantasía", "Mágico"],
       artStyle: "Ilustración con colores vibrantes y detalles mágicos",
       pageCount: 12,
-      additionalCharacters: "Hadas, duendes, un búho sabio, árboles parlantes",
+      storyObjective: "Descubrir la magia de la naturaleza y la importancia de cuidar el bosque",
       specialInstructions: "Incluir elementos mágicos como luces brillantes y polvo de hadas"
     } as TemplateDetails
   },
@@ -153,7 +168,7 @@ const storyTemplates = [
       genre: ["Aventura", "Histórico"],
       artStyle: "Ilustración estilo mapa antiguo con detalles náuticos",
       pageCount: 15,
-      additionalCharacters: "Un loro parlante, piratas amigables, un capitán rival",
+      storyObjective: "Embarcarse en una gran aventura marina y aprender sobre el valor de la amistad",
       specialInstructions: "Incluir un mapa del tesoro y elementos náuticos coloridos"
     } as TemplateDetails
   },
@@ -172,7 +187,7 @@ const storyTemplates = [
       genre: ["Superhéroes", "Acción"],
       artStyle: "Estilo cómic vibrante con efectos especiales",
       pageCount: 15,
-      additionalCharacters: "Un mentor sabio, ciudadanos en apuros, un villano divertido",
+      storyObjective: "Descubrir superpoderes especiales y aprender a usarlos para el bien común",
       specialInstructions: "Incluir escenas de acción coloridas y efectos de poderes especiales"
     } as TemplateDetails
   },
@@ -201,37 +216,32 @@ const storyTemplates = [
 const storyGenres = [
   "Aventura", "Fantasía", "Educativo", "Misterio", "Ciencia ficción", 
   "Amistad", "Humor", "Naturaleza", "Superhéroes", "Vida cotidiana",
-  "Histórico", "Mágico", "Deportes", "Viaje", "Musical"
+  "Histórico", "Mágico", "Deportes", "Viaje", "Musical", "Otro"
 ];
 
 // Tonos emocionales para la historia
 const storyTones = [
   "Divertido", "Emocionante", "Educativo", "Inspirador", "Tranquilo", 
-  "Misterioso", "Aventurero", "Mágico", "Reflexivo", "Humorístico"
+  "Misterioso", "Aventurero", "Mágico", "Reflexivo", "Humorístico", "Otro"
 ];
 
-// Valores y enseñanzas
+// Valores y enseñanzas (simplificado)
 const moralValues = [
   "Amistad", "Valentía", "Honestidad", "Respeto", "Perseverancia", 
-  "Generosidad", "Responsabilidad", "Empatía", "Trabajo en equipo", 
-  "Inclusión", "Creatividad", "Curiosidad", "Gratitud", "Paciencia",
-  "Otro"
+  "Responsabilidad", "Empatía", "Trabajo en equipo", "Otro"
 ];
 
-// Épocas históricas o temporales
+// Épocas históricas o temporales (simplificado)
 const eras = [
-  "Presente", "Futuro próximo", "Futuro lejano", "Pasado reciente",
-  "Prehistoria", "Antiguo Egipto", "Antigua Grecia", "Imperio Romano",
-  "Época Medieval", "Renacimiento", "Era Victoriana", "Revolución Industrial",
-  "Años 20s", "Años 50s", "Años 80s", "Fantasía atemporal", "Otro"
+  "Presente", "Futuro", "Pasado", "Prehistoria", 
+  "Medieval", "Renacimiento", "Fantasía atemporal", "Otro"
 ];
 
-// Tipos de aventuras
+// Tipos de aventuras (simplificado)
 const adventureTypes = [
   "Exploración", "Rescate", "Búsqueda del tesoro", "Resolución de misterio",
-  "Superación de desafíos", "Viaje iniciático", "Aventura en la naturaleza",
-  "Descubrimiento", "Competición", "Escape", "Ayuda a otros", "Salvar el mundo",
-  "Viaje fantástico", "Aventura educativa", "Aprendizaje de habilidades", "Otro"
+  "Superación de desafíos", "Aventura en la naturaleza", "Viaje fantástico", 
+  "Aventura educativa", "Otro"
 ];
 
 // Áreas educativas específicas
@@ -253,13 +263,17 @@ const artStyles = [
 ];
 
 export default function CreateBook() {
-  const [_, setLocation] = useLocation();
+  const [location, setLocation] = useLocation();
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isCreatingBook, setIsCreatingBook] = useState(false);
   const [generationComplete, setGenerationComplete] = useState(false);
   const [bookId, setBookId] = useState<number | null>(null);
+  
+  // Verificar si hay un characterId en la URL (llega desde la ficha de personaje)
+  const params = new URLSearchParams(location.split('?')[1]);
+  const preselectedCharacterId = params.get('characterId');
 
   // Redirigir si no ha iniciado sesión
   useEffect(() => {
@@ -392,6 +406,14 @@ export default function CreateBook() {
   // Estado para el método de creación (plantilla o personalizado)
   const [activeTab, setActiveTab] = useState("personalizado");
   
+  // Estados para opciones "Otro" en los selects
+  const [customEra, setCustomEra] = useState("");
+  const [customAdventureType, setCustomAdventureType] = useState("");
+  const [customMoralValue, setCustomMoralValue] = useState("");
+  const [customTone, setCustomTone] = useState("");
+  const [customGenre, setCustomGenre] = useState("");
+  const [customArtStyle, setCustomArtStyle] = useState("");
+  
   // Configuración del formulario de creación de libros
   const form = useForm<BookFormValues>({
     resolver: zodResolver(bookFormSchema),
@@ -404,7 +426,7 @@ export default function CreateBook() {
         scenario: "",
         era: "",
         adventureType: "",
-        additionalCharacters: "",
+        storyObjective: "",
         tone: [],
         moralValue: "",
         fantasyLevel: 5,
@@ -413,6 +435,14 @@ export default function CreateBook() {
         storyStructure: "",
         genre: [],
         artStyle: "Acuarela infantil",
+        // Valores para campos personalizados
+        customEra: "",
+        customAdventureType: "",
+        customTone: "",
+        customMoralValue: "",
+        customGenre: "",
+        customArtStyle: "",
+        educationalFocus: ""
       }
     },
   });
@@ -422,6 +452,21 @@ export default function CreateBook() {
     form.setValue("creationMethod", activeTab as "plantilla" | "personalizado");
   }, [activeTab, form]);
 
+  // Efecto para preseleccionar el personaje cuando se llega desde una ficha
+  useEffect(() => {
+    if (preselectedCharacterId && childProfiles.length > 0) {
+      // Buscar el personaje en la lista de perfiles
+      const characterExists = childProfiles.some((character: any) => 
+        character.id.toString() === preselectedCharacterId
+      );
+      
+      // Si el personaje existe, preseleccionarlo
+      if (characterExists) {
+        form.setValue("characterIds", [preselectedCharacterId]);
+      }
+    }
+  }, [preselectedCharacterId, childProfiles, form]);
+  
   // Efecto para actualizar los detalles de la historia cuando se selecciona una plantilla
   useEffect(() => {
     const templateId = form.watch("templateId");
@@ -448,7 +493,7 @@ export default function CreateBook() {
           // Aseguramos que pageCount siempre tenga un valor correcto
           pageCount: template.details.pageCount || currentDetails.pageCount || 12,
           // Aseguramos que se incluyen campos adicionales si existen en la plantilla
-          additionalCharacters: template.details.additionalCharacters || currentDetails.additionalCharacters || "",
+          storyObjective: template.details.storyObjective || currentDetails.storyObjective || "",
           specialInstructions: template.details.specialInstructions || currentDetails.specialInstructions || ""
         });
         
@@ -1177,20 +1222,23 @@ export default function CreateBook() {
                           <div className="col-span-2">
                             <FormField
                               control={form.control}
-                              name="storyDetails.additionalCharacters"
+                              name="storyDetails.storyObjective"
                               render={({ field }) => (
                                 <FormItem>
                                   <FormLabel className="font-medium flex items-center">
-                                    <Users className="h-4 w-4 mr-2 text-primary" />
-                                    Personajes adicionales
+                                    <Lightbulb className="h-4 w-4 mr-2 text-yellow-500" />
+                                    Objetivo de la historia
                                   </FormLabel>
                                   <FormControl>
                                     <Textarea 
-                                      placeholder="Describe otros personajes que quieras incluir en la historia" 
+                                      placeholder="¿Qué quieres conseguir con esta historia? (ej: enseñar valores, entretener, explicar un concepto...)" 
                                       {...field}
                                       className="min-h-[80px] border-primary/20 focus:border-primary"
                                     />
                                   </FormControl>
+                                  <FormDescription>
+                                    Describe brevemente tu objetivo para esta historia y cómo quieres que impacte a los lectores.
+                                  </FormDescription>
                                 </FormItem>
                               )}
                             />
@@ -1220,6 +1268,7 @@ export default function CreateBook() {
                                       <SelectItem value="inspirador">Inspirador</SelectItem>
                                       <SelectItem value="misterioso">Misterioso</SelectItem>
                                       <SelectItem value="aventurero">Aventurero</SelectItem>
+                                      <SelectItem value="otro">Otro</SelectItem>
                                     </SelectContent>
                                   </Select>
                                 </FormControl>
@@ -1313,6 +1362,7 @@ export default function CreateBook() {
                                       <SelectItem value="misterio">Misterio</SelectItem>
                                       <SelectItem value="educativo">Educativo</SelectItem>
                                       <SelectItem value="cotidiano">Vida cotidiana</SelectItem>
+                                      <SelectItem value="otro">Otro</SelectItem>
                                     </SelectContent>
                                   </Select>
                                 </FormControl>
@@ -1343,6 +1393,7 @@ export default function CreateBook() {
                                       <SelectItem value="Dibujos animados 3D">Dibujos animados 3D</SelectItem>
                                       <SelectItem value="Estilo Pixar">Estilo Pixar</SelectItem>
                                       <SelectItem value="Ilustración clásica">Ilustración clásica</SelectItem>
+                                      <SelectItem value="Otro">Otro</SelectItem>
                                     </SelectContent>
                                   </Select>
                                 </FormControl>
@@ -1382,8 +1433,15 @@ export default function CreateBook() {
                                         max={40}
                                         value={field.value || 10}
                                         onChange={(e) => {
-                                          const val = parseInt(e.target.value);
-                                          if (!isNaN(val) && val >= 5 && val <= 40) {
+                                          let inputValue = e.target.value;
+                                          let val = parseInt(inputValue);
+                                          
+                                          // Si es un valor válido entre 5 y 40
+                                          if (!isNaN(val)) {
+                                            // Si es menor que 5, establecer a 5
+                                            if (val < 5) val = 5;
+                                            // Si es mayor que 40, establecer a 40
+                                            if (val > 40) val = 40;
                                             field.onChange(val);
                                           }
                                         }}
@@ -1438,6 +1496,47 @@ export default function CreateBook() {
                                     <span>Realista</span>
                                     <span>Mágico</span>
                                   </div>
+                                </FormItem>
+                              )}
+                            />
+                          </div>
+                          
+                          <div className="col-span-2">
+                            <FormField
+                              control={form.control}
+                              name="storyDetails.educationalFocus"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel className="font-medium flex items-center">
+                                    <GraduationCap className="h-4 w-4 mr-2 text-blue-500" />
+                                    Enfoque educativo (opcional)
+                                  </FormLabel>
+                                  <FormControl>
+                                    <Select 
+                                      value={field.value} 
+                                      onValueChange={field.onChange}
+                                    >
+                                      <SelectTrigger className="border-primary/20 focus:border-primary">
+                                        <SelectValue placeholder="¿Quieres incluir algún elemento educativo?" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="ninguno">Ninguno</SelectItem>
+                                        <SelectItem value="matematicas">Matemáticas básicas</SelectItem>
+                                        <SelectItem value="ciencias">Ciencias y naturaleza</SelectItem>
+                                        <SelectItem value="lenguaje">Lenguaje y vocabulario</SelectItem>
+                                        <SelectItem value="historia">Historia</SelectItem>
+                                        <SelectItem value="geografia">Geografía</SelectItem>
+                                        <SelectItem value="tecnologia">Tecnología</SelectItem>
+                                        <SelectItem value="musica">Música</SelectItem>
+                                        <SelectItem value="arte">Arte</SelectItem>
+                                        <SelectItem value="ecosistema">Medio ambiente</SelectItem>
+                                        <SelectItem value="otros">Otros (especificar)</SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                  </FormControl>
+                                  <FormDescription>
+                                    Selecciona si quieres que la historia incluya algún elemento educativo específico.
+                                  </FormDescription>
                                 </FormItem>
                               )}
                             />
