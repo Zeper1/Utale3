@@ -49,41 +49,7 @@ const profileSchema = z.object({
       return isNaN(num) ? null : num;
     })
     .nullable()
-    .optional()
-    .refine(
-      (value) => {
-        // Si no hay valor, es válido (campo opcional)
-        if (value === null || value === undefined) return true;
-        
-        // Contexto de tipo actual disponible a través de validación customizada
-        const type = z.getCtx?.().values?.type || "child";
-        
-        if (type === "child") {
-          return value >= 0 && value <= 18;
-        } else if (type === "adult") {
-          return value >= 18 && value <= 150;
-        } else if (type === "pet") {
-          return value >= 0 && value <= 30;
-        }
-        
-        // Para otros tipos, permitir cualquier valor
-        return true;
-      },
-      (value) => {
-        // Mensaje de error personalizado según el tipo
-        const type = z.getCtx?.().values?.type || "child";
-        
-        if (type === "child") {
-          return { message: "La edad debe estar entre 0 y 18 años para un niño/a" };
-        } else if (type === "adult") {
-          return { message: "La edad debe estar entre 18 y 150 años para un adulto" };
-        } else if (type === "pet") {
-          return { message: "La edad debe estar entre 0 y 30 años para una mascota" };
-        }
-        
-        return { message: "Edad no válida" };
-      }
-    ),
+    .optional(),
   gender: z.string().optional(),
   physicalDescription: z.string().optional(),
   personality: z.string().optional(),
@@ -926,7 +892,22 @@ export default function Dashboard() {
                             max="18" 
                             placeholder="Edad" 
                             value={value === null ? '' : value}
-                            onChange={e => onChange(e.target.value === '' ? null : Number(e.target.value))}
+                            onChange={e => {
+                              const newValue = e.target.value === '' ? null : Number(e.target.value);
+                              onChange(newValue);
+                              
+                              // Validación en tiempo real
+                              if (newValue !== null) {
+                                if (newValue < 0 || newValue > 18) {
+                                  form.setError("age", {
+                                    type: "manual",
+                                    message: "La edad debe estar entre 0 y 18 años para un niño/a"
+                                  });
+                                } else {
+                                  form.clearErrors("age");
+                                }
+                              }
+                            }}
                             {...rest} 
                           />
                         </FormControl>
@@ -993,7 +974,22 @@ export default function Dashboard() {
                             max="150" 
                             placeholder="Edad" 
                             value={value === null ? '' : value}
-                            onChange={e => onChange(e.target.value === '' ? null : Number(e.target.value))}
+                            onChange={e => {
+                              const newValue = e.target.value === '' ? null : Number(e.target.value);
+                              onChange(newValue);
+                              
+                              // Validación en tiempo real
+                              if (newValue !== null) {
+                                if (newValue < 18 || newValue > 150) {
+                                  form.setError("age", {
+                                    type: "manual",
+                                    message: "La edad debe estar entre 18 y 150 años para un adulto"
+                                  });
+                                } else {
+                                  form.clearErrors("age");
+                                }
+                              }
+                            }}
                             {...rest} 
                           />
                         </FormControl>
@@ -1010,7 +1006,6 @@ export default function Dashboard() {
                     name="gender"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Género (Opcional)</FormLabel>
                         <FormLabel>Género (Opcional)</FormLabel>
                         <Select 
                           onValueChange={(value) => handleGenderChange(value, field.onChange)} 
