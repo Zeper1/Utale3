@@ -1463,7 +1463,7 @@ export default function Dashboard() {
                       <FormItem>
                         <FormLabel>Género (Opcional)</FormLabel>
                         <Select
-                          onValueChange={field.onChange}
+                          onValueChange={(value) => handleGenderChange(value, field.onChange)}
                           value={field.value || ""}
                         >
                           <FormControl>
