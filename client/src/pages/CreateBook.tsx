@@ -34,7 +34,10 @@ import {
   PlusCircle,
   PencilLine,
   UserCircle,
-  Users
+  Users,
+  Minus,
+  Plus,
+  Crown
 } from "lucide-react";
 
 // Esquema para la creación de libros
@@ -211,14 +214,42 @@ const storyTones = [
 const moralValues = [
   "Amistad", "Valentía", "Honestidad", "Respeto", "Perseverancia", 
   "Generosidad", "Responsabilidad", "Empatía", "Trabajo en equipo", 
-  "Inclusión", "Creatividad", "Curiosidad", "Gratitud", "Paciencia"
+  "Inclusión", "Creatividad", "Curiosidad", "Gratitud", "Paciencia",
+  "Otro"
+];
+
+// Épocas históricas o temporales
+const eras = [
+  "Presente", "Futuro próximo", "Futuro lejano", "Pasado reciente",
+  "Prehistoria", "Antiguo Egipto", "Antigua Grecia", "Imperio Romano",
+  "Época Medieval", "Renacimiento", "Era Victoriana", "Revolución Industrial",
+  "Años 20s", "Años 50s", "Años 80s", "Fantasía atemporal", "Otro"
+];
+
+// Tipos de aventuras
+const adventureTypes = [
+  "Exploración", "Rescate", "Búsqueda del tesoro", "Resolución de misterio",
+  "Superación de desafíos", "Viaje iniciático", "Aventura en la naturaleza",
+  "Descubrimiento", "Competición", "Escape", "Ayuda a otros", "Salvar el mundo",
+  "Viaje fantástico", "Aventura educativa", "Aprendizaje de habilidades", "Otro"
+];
+
+// Áreas educativas específicas
+const educationalAreas = [
+  "Matemáticas básicas", "Suma y resta", "Multiplicación y división", 
+  "Fracciones", "Geometría", "Ciencias naturales", "El cuerpo humano",
+  "Los animales", "Las plantas", "El sistema solar", "El clima y estaciones",
+  "Historia", "Geografía", "Idiomas extranjeros", "Vocabulario", 
+  "Gramática", "Educación emocional", "Habilidades sociales", "Arte y música",
+  "Otro"
 ];
 
 // Estilos artísticos
 const artStyles = [
   "Acuarela infantil", "Digital colorido", "Lápiz de colores", "Estilo manga/anime suave", 
   "Pintura pastel", "Collage colorido", "Ilustración clásica de cuentos", 
-  "Minimalista y moderno", "Estilo libro pop-up", "Dibujos como hechos por niños"
+  "Minimalista y moderno", "Estilo libro pop-up", "Dibujos como hechos por niños",
+  "Otro"
 ];
 
 export default function CreateBook() {
@@ -1022,41 +1053,125 @@ export default function CreateBook() {
                           <FormField
                             control={form.control}
                             name="storyDetails.era"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel className="font-medium flex items-center">
-                                  <div className="mr-2 text-lg">⏳</div>
-                                  Época
-                                </FormLabel>
-                                <FormControl>
-                                  <Input 
-                                    placeholder="Época actual, medieval, futurista..." 
-                                    {...field}
-                                    className="border-primary/20 focus:border-primary"
-                                  />
-                                </FormControl>
-                              </FormItem>
-                            )}
+                            render={({ field }) => {
+                              const [showOtherEra, setShowOtherEra] = useState(field.value === "Otro");
+                              const [otherEraValue, setOtherEraValue] = useState("");
+                              
+                              useEffect(() => {
+                                if (field.value && field.value !== "Otro" && !eras.includes(field.value)) {
+                                  setOtherEraValue(field.value);
+                                  setShowOtherEra(true);
+                                }
+                              }, [field.value]);
+                              
+                              return (
+                                <FormItem>
+                                  <FormLabel className="font-medium flex items-center">
+                                    <div className="mr-2 text-lg">⏳</div>
+                                    Época
+                                  </FormLabel>
+                                  <FormControl>
+                                    <Select
+                                      value={showOtherEra ? "Otro" : field.value}
+                                      onValueChange={(value) => {
+                                        if (value === "Otro") {
+                                          setShowOtherEra(true);
+                                          field.onChange("Otro");
+                                        } else {
+                                          setShowOtherEra(false);
+                                          field.onChange(value);
+                                        }
+                                      }}
+                                    >
+                                      <SelectTrigger className="border-primary/20 focus:border-primary">
+                                        <SelectValue placeholder="Selecciona una época" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        {eras.map((era) => (
+                                          <SelectItem key={era} value={era}>
+                                            {era}
+                                          </SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                  </FormControl>
+                                  
+                                  {showOtherEra && (
+                                    <Input
+                                      placeholder="Especifica una época personalizada..."
+                                      value={otherEraValue}
+                                      onChange={(e) => {
+                                        setOtherEraValue(e.target.value);
+                                        field.onChange(e.target.value || "Otro");
+                                      }}
+                                      className="mt-2 border-primary/20 focus:border-primary"
+                                    />
+                                  )}
+                                </FormItem>
+                              );
+                            }}
                           />
                           
                           <FormField
                             control={form.control}
                             name="storyDetails.adventureType"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel className="font-medium flex items-center">
-                                  <div className="mr-2 text-lg">🧩</div>
-                                  Tipo de aventura
-                                </FormLabel>
-                                <FormControl>
-                                  <Input 
-                                    placeholder="Rescate, búsqueda, exploración..." 
-                                    {...field}
-                                    className="border-primary/20 focus:border-primary"
-                                  />
-                                </FormControl>
-                              </FormItem>
-                            )}
+                            render={({ field }) => {
+                              const [showOtherAdventure, setShowOtherAdventure] = useState(field.value === "Otro");
+                              const [otherAdventureValue, setOtherAdventureValue] = useState("");
+                              
+                              useEffect(() => {
+                                if (field.value && field.value !== "Otro" && !adventureTypes.includes(field.value)) {
+                                  setOtherAdventureValue(field.value);
+                                  setShowOtherAdventure(true);
+                                }
+                              }, [field.value]);
+                              
+                              return (
+                                <FormItem>
+                                  <FormLabel className="font-medium flex items-center">
+                                    <div className="mr-2 text-lg">🧩</div>
+                                    Tipo de aventura
+                                  </FormLabel>
+                                  <FormControl>
+                                    <Select
+                                      value={showOtherAdventure ? "Otro" : field.value}
+                                      onValueChange={(value) => {
+                                        if (value === "Otro") {
+                                          setShowOtherAdventure(true);
+                                          field.onChange("Otro");
+                                        } else {
+                                          setShowOtherAdventure(false);
+                                          field.onChange(value);
+                                        }
+                                      }}
+                                    >
+                                      <SelectTrigger className="border-primary/20 focus:border-primary">
+                                        <SelectValue placeholder="Selecciona un tipo de aventura" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        {adventureTypes.map((type) => (
+                                          <SelectItem key={type} value={type}>
+                                            {type}
+                                          </SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                  </FormControl>
+                                  
+                                  {showOtherAdventure && (
+                                    <Input
+                                      placeholder="Especifica un tipo de aventura personalizado..."
+                                      value={otherAdventureValue}
+                                      onChange={(e) => {
+                                        setOtherAdventureValue(e.target.value);
+                                        field.onChange(e.target.value || "Otro");
+                                      }}
+                                      className="mt-2 border-primary/20 focus:border-primary"
+                                    />
+                                  )}
+                                </FormItem>
+                              );
+                            }}
                           />
                           
                           <div className="col-span-2">
@@ -1115,21 +1230,63 @@ export default function CreateBook() {
                           <FormField
                             control={form.control}
                             name="storyDetails.moralValue"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel className="font-medium flex items-center">
-                                  <Heart className="h-4 w-4 mr-2 text-red-500" />
-                                  Enseñanza o valor
-                                </FormLabel>
-                                <FormControl>
-                                  <Input 
-                                    placeholder="Amistad, perseverancia, respeto..." 
-                                    {...field}
-                                    className="border-primary/20 focus:border-primary"
-                                  />
-                                </FormControl>
-                              </FormItem>
-                            )}
+                            render={({ field }) => {
+                              const [showOtherValue, setShowOtherValue] = useState(field.value === "Otro");
+                              const [otherValueContent, setOtherValueContent] = useState("");
+                              
+                              useEffect(() => {
+                                if (field.value && field.value !== "Otro" && !moralValues.includes(field.value)) {
+                                  setOtherValueContent(field.value);
+                                  setShowOtherValue(true);
+                                }
+                              }, [field.value]);
+                              
+                              return (
+                                <FormItem>
+                                  <FormLabel className="font-medium flex items-center">
+                                    <Heart className="h-4 w-4 mr-2 text-red-500" />
+                                    Enseñanza o valor
+                                  </FormLabel>
+                                  <FormControl>
+                                    <Select
+                                      value={showOtherValue ? "Otro" : field.value}
+                                      onValueChange={(value) => {
+                                        if (value === "Otro") {
+                                          setShowOtherValue(true);
+                                          field.onChange("Otro");
+                                        } else {
+                                          setShowOtherValue(false);
+                                          field.onChange(value);
+                                        }
+                                      }}
+                                    >
+                                      <SelectTrigger className="border-primary/20 focus:border-primary">
+                                        <SelectValue placeholder="Selecciona un valor o enseñanza" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        {moralValues.map((value) => (
+                                          <SelectItem key={value} value={value}>
+                                            {value}
+                                          </SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                  </FormControl>
+                                  
+                                  {showOtherValue && (
+                                    <Input
+                                      placeholder="Especifica un valor o enseñanza personalizada..."
+                                      value={otherValueContent}
+                                      onChange={(e) => {
+                                        setOtherValueContent(e.target.value);
+                                        field.onChange(e.target.value || "Otro");
+                                      }}
+                                      className="mt-2 border-primary/20 focus:border-primary"
+                                    />
+                                  )}
+                                </FormItem>
+                              );
+                            }}
                           />
                           
                           <FormField
@@ -1203,23 +1360,52 @@ export default function CreateBook() {
                                     <div className="mr-2 text-lg">📄</div>
                                     Número de páginas
                                   </FormLabel>
-                                  <FormControl>
-                                    <Select 
-                                      value={field.value?.toString() || "12"} 
-                                      onValueChange={(value) => field.onChange(parseInt(value))}
+                                  <div className="flex flex-row items-center gap-2">
+                                    <Button 
+                                      type="button"
+                                      variant="outline"
+                                      size="sm"
+                                      className="h-8 w-8 p-0 rounded-full"
+                                      onClick={() => {
+                                        const newValue = Math.max(5, (field.value || 10) - 1);
+                                        field.onChange(newValue);
+                                      }}
+                                      disabled={(field.value || 10) <= 5}
                                     >
-                                      <SelectTrigger className="border-primary/20 focus:border-primary">
-                                        <SelectValue placeholder="Páginas" />
-                                      </SelectTrigger>
-                                      <SelectContent>
-                                        <SelectItem value="10">10 páginas</SelectItem>
-                                        <SelectItem value="12">12 páginas</SelectItem>
-                                        <SelectItem value="15">15 páginas</SelectItem>
-                                        <SelectItem value="20">20 páginas</SelectItem>
-                                        <SelectItem value="25">25 páginas</SelectItem>
-                                      </SelectContent>
-                                    </Select>
-                                  </FormControl>
+                                      <Minus className="h-4 w-4" />
+                                    </Button>
+                                    <FormControl>
+                                      <Input
+                                        type="number"
+                                        className="h-9 w-20 border-primary/20 focus:border-primary text-center"
+                                        min={5}
+                                        max={40}
+                                        value={field.value || 10}
+                                        onChange={(e) => {
+                                          const val = parseInt(e.target.value);
+                                          if (!isNaN(val) && val >= 5 && val <= 40) {
+                                            field.onChange(val);
+                                          }
+                                        }}
+                                      />
+                                    </FormControl>
+                                    <Button 
+                                      type="button"
+                                      variant="outline"
+                                      size="sm"
+                                      className="h-8 w-8 p-0 rounded-full"
+                                      onClick={() => {
+                                        const newValue = Math.min(40, (field.value || 10) + 1);
+                                        field.onChange(newValue);
+                                      }}
+                                      disabled={(field.value || 10) >= 40}
+                                    >
+                                      <Plus className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                  <div className="text-xs text-muted-foreground mt-1">
+                                    (Mínimo 5, máximo 40 páginas)
+                                  </div>
                                 </FormItem>
                               )}
                             />
