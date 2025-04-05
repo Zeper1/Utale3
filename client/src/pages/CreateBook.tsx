@@ -273,8 +273,10 @@ export default function CreateBook() {
   const [bookId, setBookId] = useState<number | null>(null);
   
   // Verificar si hay un characterId en la URL (llega desde la ficha de personaje)
-  const params = new URLSearchParams(location.split('?')[1]);
+  const params = new URLSearchParams(window.location.search);
   const preselectedCharacterId = params.get('characterId');
+  console.log("URL params:", window.location.search);
+  console.log("Detected preselectedCharacterId:", preselectedCharacterId);
 
   // Redirigir si no ha iniciado sesión
   useEffect(() => {
@@ -296,8 +298,8 @@ export default function CreateBook() {
     isLoading: profilesLoading,
     error: profilesError
   } = useQuery({
-    queryKey: ['/api/users', user?.id, 'profiles'],
-    queryFn: () => apiRequest('GET', `/api/users/${user?.id}/profiles`).then(res => res.json()),
+    queryKey: ['/api/users', user?.id, 'characters'],
+    queryFn: () => apiRequest('GET', `/api/users/${user?.id}/characters`).then(res => res.json()),
     enabled: !!user?.id,
   });
 
