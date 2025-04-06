@@ -1,34 +1,62 @@
+import { resolve } from "path";
+import fs from "fs";
+import { drizzle } from "drizzle-orm/postgres-js";
 import { migrate } from "drizzle-orm/postgres-js/migrator";
-import { db, queryClient } from "../db";
+import postgres from "postgres";
 import { log } from "../vite";
-import path from "path";
-import { fileURLToPath } from "url";
 
-// Obtiene la ruta actual del archivo
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// Configuramos la conexión a la base de datos
+if (!process.env.DATABASE_URL) {
+  throw new Error("DATABASE_URL is not defined");
+}
 
-// Obtiene la ruta a la carpeta de migraciones
-const migrationsFolder = path.join(__dirname, "../../migrations");
+// Garantiza que sea un string para TypeScript
+const dbUrl: string = process.env.DATABASE_URL;
 
 /**
  * Ejecuta las migraciones de la base de datos
  */
 async function main() {
-  log("Iniciando proceso de migración...", "migration");
+  log("Iniciando migración de base de datos...", "db-migrate");
   
   try {
-    // Ejecuta la migración
+    const client = postgres(dbUrl, { max: 1 });
+    const db = drizzle(client);
+    
+    // Directorio que contiene los archivos de migración generados por drizzle-kit
+    const migrationsFolder = resolve("./migrations");
+    
+    // Verificamos que el directorio exista
+    if (!fs.existsSync(migrationsFolder)) {
+      log(`El directorio de migraciones ${migrationsFolder} no existe. Creándolo...`, "db-migrate");
+      fs.mkdirSync(migrationsFolder, { recursive: true });
+    }
+    
+    // Ejecutamos las migraciones
+    log(`Ejecutando migraciones desde ${migrationsFolder}...`, "db-migrate");
     await migrate(db, { migrationsFolder });
-    log("Migración completada exitosamente", "migration");
-  } catch (error) {
-    log(`Error durante la migración: ${error instanceof Error ? error.message : String(error)}`, "migration");
+    
+    log("Migración completada con éxito", "db-migrate");
+    await client.end();
+    
+    return true;
+  } catch (error: any) {
+    log(`Error durante la migración: ${error.message}`, "db-migrate");
+    console.error(error);
     process.exit(1);
-  } finally {
-    // Cierra la conexión a la base de datos
-    await queryClient.end();
   }
 }
 
-// Ejecuta la migración
-main();
+// Si este archivo se ejecuta directamente
+if (require.main === module) {
+  main()
+    .then(() => {
+      process.exit(0);
+    })
+    .catch((err) => {
+      console.error("Error en la migración:", err);
+      process.exit(1);
+    });
+}
+
+export default main;

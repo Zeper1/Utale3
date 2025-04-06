@@ -80,6 +80,19 @@ app.use((req, res, next) => {
     }
     
     serverLogger.info("Conexión a la base de datos verificada correctamente");
+    
+    // Ejecutar migraciones si es necesario
+    try {
+      const migrate = (await import("./db/migrate")).default;
+      await migrate();
+      serverLogger.info("Migraciones de base de datos aplicadas correctamente");
+    } catch (migrateError) {
+      serverLogger.error(`Error al aplicar migraciones: ${migrateError instanceof Error ? migrateError.message : String(migrateError)}`, {
+        error: migrateError instanceof Error ? migrateError.stack : String(migrateError)
+      });
+      // No detenemos la aplicación en caso de error de migración, 
+      // puede ser que ya esté en el estado correcto
+    }
   } catch (dbError) {
     serverLogger.error(`Error al verificar la conexión a la base de datos: ${dbError instanceof Error ? dbError.message : String(dbError)}`, {
       error: dbError instanceof Error ? dbError.stack : String(dbError)
