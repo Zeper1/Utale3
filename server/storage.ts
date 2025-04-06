@@ -5,7 +5,6 @@ import {
   customBookThemes, type CustomBookTheme, type InsertCustomBookTheme,
   books, type Book, type InsertBook,
   bookCharacters, type BookCharacter, type InsertBookCharacter,
-  chatMessages, type ChatMessage, type InsertChatMessage,
   orders, type Order, type InsertOrder,
   subscriptions, type Subscription, type InsertSubscription,
   subscriptionTiers, type SubscriptionTier, type InsertSubscriptionTier,
@@ -51,9 +50,7 @@ export interface IStorage {
   addCharacterToBook(bookCharacter: InsertBookCharacter): Promise<BookCharacter>;
   removeCharacterFromBook(bookId: number, characterId: number): Promise<boolean>;
   
-  // Chat operations
-  getChatMessages(characterId: number): Promise<ChatMessage[]>;
-  createChatMessage(message: InsertChatMessage): Promise<ChatMessage>;
+  // Las operaciones de chat han sido eliminadas
   
   // Order operations
   getOrders(userId: number): Promise<Order[]>;
@@ -94,7 +91,6 @@ export class MemStorage implements IStorage {
   private customBookThemes: Map<number, CustomBookTheme>;
   private books: Map<number, Book>;
   private bookCharacters: Map<number, BookCharacter>;
-  private chatMessages: Map<number, ChatMessage>;
   private orders: Map<number, Order>;
   private subscriptionTiers: Map<number, SubscriptionTier>;
   private subscriptions: Map<number, Subscription>;
@@ -106,7 +102,6 @@ export class MemStorage implements IStorage {
   private customThemeId = 1;
   private bookId = 1;
   private bookCharacterId = 1;
-  private chatMessageId = 1;
   private orderId = 1;
   private subscriptionTierId = 1;
   private subscriptionId = 1;
@@ -119,7 +114,6 @@ export class MemStorage implements IStorage {
     this.customBookThemes = new Map();
     this.books = new Map();
     this.bookCharacters = new Map();
-    this.chatMessages = new Map();
     this.orders = new Map();
     this.subscriptionTiers = new Map();
     this.subscriptions = new Map();
@@ -423,24 +417,7 @@ export class MemStorage implements IStorage {
     return this.bookCharacters.delete(relationToDelete.id);
   }
 
-  // Chat operations
-  async getChatMessages(characterId: number): Promise<ChatMessage[]> {
-    return Array.from(this.chatMessages.values())
-      .filter(message => message.characterId === characterId)
-      .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
-  }
-
-  async createChatMessage(messageData: InsertChatMessage): Promise<ChatMessage> {
-    const id = this.chatMessageId++;
-    const now = new Date();
-    const message: ChatMessage = { 
-      ...messageData, 
-      id,
-      createdAt: now
-    };
-    this.chatMessages.set(id, message);
-    return message;
-  }
+  // Las operaciones de chat han sido eliminadas
 
   // Order operations
   async getOrders(userId: number): Promise<Order[]> {

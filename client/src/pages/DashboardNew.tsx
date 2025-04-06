@@ -349,10 +349,7 @@ export default function Dashboard() {
     }
   };
 
-  // Navigate to profile chat
-  const goToProfileChat = (profileId: number) => {
-    setLocation(`/profile-chat/${profileId}`);
-  };
+  // Esta función ha sido eliminada ya que no utilizamos chat
 
   // Navigate to create book
   const goToCreateBook = (characterId?: number) => {
@@ -509,12 +506,6 @@ export default function Dashboard() {
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
                                 <DropdownMenuItem 
-                                  onClick={() => goToProfileChat(profile.id)}
-                                  className="cursor-pointer"
-                                >
-                                  <MessageCircle className="h-4 w-4 mr-2" /> Chatear
-                                </DropdownMenuItem>
-                                <DropdownMenuItem 
                                   onClick={() => goToCreateBook(profile.id)}
                                   className="cursor-pointer"
                                 >
@@ -562,17 +553,9 @@ export default function Dashboard() {
                       )}
                     </div>
                   </CardContent>
-                  <CardFooter className="flex justify-between border-t pt-4">
+                  <CardFooter className="flex justify-center border-t pt-4">
                     <Button 
-                      variant="outline" 
-                      size="sm" 
                       className="w-full"
-                      onClick={() => goToProfileChat(profile.id)}
-                    >
-                      <MessageCircle className="h-4 w-4 mr-2" /> Chatear
-                    </Button>
-                    <Button 
-                      className="w-full ml-2"
                       size="sm"
                       onClick={() => goToCreateBook(profile.id)}
                     >

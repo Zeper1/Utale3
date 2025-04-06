@@ -5,7 +5,6 @@ import {
   insertUserSchema, 
   insertCharacterSchema, 
   insertBookSchema, 
-  insertChatMessageSchema, 
   insertOrderSchema,
   insertSubscriptionSchema,
   insertSubscriptionTierSchema,
@@ -316,115 +315,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // --- Chat Routes ---
-  app.get("/api/profiles/:profileId/chat", async (req, res) => {
-    try {
-      const profileId = parseInt(req.params.profileId);
-      const messages = await storage.getChatMessages(profileId);
-      res.status(200).json(messages);
-    } catch (error) {
-      res.status(500).json({ message: "Failed to retrieve chat messages" });
-    }
-  });
-
-  app.post("/api/chat", async (req, res) => {
-    try {
-      const messageData = insertChatMessageSchema.parse(req.body);
-      const newMessage = await storage.createChatMessage(messageData);
-      
-      // If this is a user message, generate a system response
-      if (messageData.sender === 'user') {
-        const character = await storage.getCharacter(messageData.characterId);
-        
-        if (character) {
-          // Get previous chat messages for context
-          const previousMessages = await storage.getChatMessages(messageData.characterId);
-          
-          // Format messages for OpenAI
-          const formattedMessages = previousMessages.map(msg => ({
-            role: msg.sender === 'user' ? 'user' as const : 'assistant' as const,
-            content: msg.message
-          }));
-          
-          // Add system instruction
-          formattedMessages.unshift({
-            role: "system" as const,
-            content: `Eres un asistente amigable que ayuda a recopilar información sobre un personaje llamado ${character.name} (${character.type}) para crear un libro de cuentos personalizado. Haz preguntas de seguimiento para aprender más sobre los intereses, amigos, familia, mascotas, actividades favoritas y rasgos de personalidad. Sé conversacional, cálido y atractivo.`
-          });
-          
-          try {
-            // Generate AI response
-            const completion = await openai.chat.completions.create({
-              model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
-              messages: formattedMessages,
-              max_tokens: 300,
-            });
-            
-            // Save AI response
-            const aiResponse = completion.choices[0].message.content;
-            if (aiResponse) {
-              await storage.createChatMessage({
-                userId: messageData.userId,
-                characterId: messageData.characterId,
-                message: aiResponse,
-                sender: 'system'
-              });
-              
-              // Extract new information from conversation to update profile
-              const extractCompletion = await openai.chat.completions.create({
-                model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
-                messages: [
-                  {
-                    role: "system" as const,
-                    content: `Basado en esta conversación, extrae cualquier información nueva sobre ${character.name} que debería guardarse en su perfil. Devuelve un objeto JSON con cualquiera de estos campos si hay información disponible: interests (array de strings), favorites (objeto con claves como color, food, animal, etc.), friends (array de nombres), traits (array de rasgos de personalidad).`
-                  },
-                  ...formattedMessages,
-                  {
-                    role: "user" as const,
-                    content: "Extrae información del perfil de nuestra conversación."
-                  }
-                ],
-                response_format: { type: "json_object" }
-              });
-              
-              const extractedInfo = JSON.parse(extractCompletion.choices[0].message.content || "{}");
-              
-              // Update profile with extracted information
-              if (Object.keys(extractedInfo).length > 0) {
-                const updatedCharacter = {
-                  ...character,
-                  interests: [...(character.interests || []), ...(extractedInfo.interests || [])].filter((v, i, a) => a.indexOf(v) === i),
-                  favorites: { ...(character.favorites || {}), ...(extractedInfo.favorites || {}) },
-                  friends: [...(character.relationships?.friends || []), ...(extractedInfo.friends || [])].filter((v, i, a) => a.indexOf(v) === i),
-                  traits: [...(character.traits || []), ...(extractedInfo.traits || [])].filter((v, i, a) => a.indexOf(v) === i),
-                };
-                
-                await storage.updateCharacter(character.id, updatedCharacter);
-              }
-            }
-            
-            // Return both messages
-            res.status(201).json({
-              userMessage: newMessage,
-              aiResponse: aiResponse
-            });
-          } catch (error) {
-            console.error("OpenAI error:", error);
-            res.status(201).json({ userMessage: newMessage });
-          }
-        } else {
-          res.status(201).json({ userMessage: newMessage });
-        }
-      } else {
-        res.status(201).json({ userMessage: newMessage });
-      }
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ message: "Invalid message data", errors: error.errors });
-      }
-      res.status(500).json({ message: "Failed to send chat message" });
-    }
-  });
+  // Las rutas de chat han sido eliminadas
 
   // --- Book Generation with OpenAI ---
   app.post("/api/generate-book", async (req, res) => {
@@ -624,14 +515,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Personajes secundarios (resto de la lista)
       const supportingCharacters = characters.slice(1);
       
-      // Get chat history for additional context for the main character
-      const chatHistory = await storage.getChatMessages(mainCharacter.id);
-      
-      // Preparar el contexto del chat para una comprensión más profunda del personaje principal
-      const chatContext = chatHistory.length > 0 
-        ? `Basado en conversaciones previas con ${mainCharacter.name}, se ha aprendido que: 
-          ${chatHistory.filter(m => m.sender === 'user').slice(-5).map(m => `- ${m.message}`).join('\n')}`
-        : '';
+      // El historial de chat ha sido eliminado
+      const chatContext = '';
       
       // Crear descripciones de los personajes secundarios para el prompt
       const supportingCharactersText = supportingCharacters.length > 0 

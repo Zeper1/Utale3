@@ -122,20 +122,7 @@ export const insertBookCharacterSchema = createInsertSchema(bookCharacters).omit
   createdAt: true,
 });
 
-// Chat message schema
-export const chatMessages = pgTable("chat_messages", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull().references(() => users.id),
-  characterId: integer("character_id").notNull().references(() => characters.id),
-  message: text("message").notNull(),
-  sender: text("sender").notNull(), // user or system
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-});
-
-export const insertChatMessageSchema = createInsertSchema(chatMessages).omit({
-  id: true,
-  createdAt: true,
-});
+// El modelo de chat ha sido eliminado
 
 // Orders schema
 export const orders = pgTable("orders", {
@@ -177,8 +164,7 @@ export type InsertBook = z.infer<typeof insertBookSchema>;
 export type BookCharacter = typeof bookCharacters.$inferSelect;
 export type InsertBookCharacter = z.infer<typeof insertBookCharacterSchema>;
 
-export type ChatMessage = typeof chatMessages.$inferSelect;
-export type InsertChatMessage = z.infer<typeof insertChatMessageSchema>;
+// Los tipos de chat han sido eliminados
 
 // Subscription tiers schema
 export const subscriptionTiers = pgTable("subscription_tiers", {

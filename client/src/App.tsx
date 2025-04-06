@@ -6,7 +6,6 @@ import NotFound from "@/pages/not-found";
 import Home from "@/pages/Home";
 import Dashboard from "@/pages/DashboardNew"; // Cambiamos a la nueva versión
 import CreateBook from "@/pages/CreateBook";
-import ProfileChat from "@/pages/ProfileChat";
 import BookPreview from "@/pages/BookPreview";
 import Checkout from "@/pages/Checkout";
 import Subscribe from "@/pages/Subscribe";
@@ -32,7 +31,6 @@ function Router() {
           <Route path="/" component={Home} />
           <Route path="/dashboard" component={Dashboard} />
           <Route path="/create-book" component={CreateBook} />
-          <Route path="/profile-chat/:id" component={ProfileChat} />
           <Route path="/book-preview/:id" component={BookPreview} />
           <Route path="/checkout/:id" component={Checkout} />
           <Route path="/checkout" component={Checkout} />
