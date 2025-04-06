@@ -110,9 +110,13 @@ export class DatabaseStorage implements IStorage {
 
   async createCharacter(characterData: InsertCharacter): Promise<Character> {
     try {
-      const [character] = await db.insert(characters).values({
-        ...characterData
-      }).returning();
+      // Asegurar que todos los campos requeridos estén definidos
+      const dataToInsert = {
+        ...characterData,
+        type: characterData.type || 'child'
+      };
+      
+      const [character] = await db.insert(characters).values(dataToInsert).returning();
       return character;
     } catch (error) {
       log(`Error en createCharacter: ${error instanceof Error ? error.message : String(error)}`, 'database');
@@ -294,9 +298,20 @@ export class DatabaseStorage implements IStorage {
 
   async createBook(bookData: InsertBook): Promise<Book> {
     try {
-      const [book] = await db.insert(books).values({
-        ...bookData
-      }).returning();
+      // Asegurar que todos los campos requeridos estén definidos
+      const dataToInsert = {
+        ...bookData,
+        format: bookData.format || 'digital',
+        status: bookData.status || 'draft',
+        numPages: bookData.numPages || 10,
+        content: bookData.content || null,
+        previewImage: bookData.previewImage || null,
+        themeId: bookData.themeId || null,
+        customThemeId: bookData.customThemeId || null,
+        orderReference: bookData.orderReference || null
+      };
+      
+      const [book] = await db.insert(books).values(dataToInsert).returning();
       return book;
     } catch (error) {
       log(`Error en createBook: ${error instanceof Error ? error.message : String(error)}`, 'database');
@@ -356,10 +371,14 @@ export class DatabaseStorage implements IStorage {
 
   async addCharacterToBook(bookCharacterData: InsertBookCharacter): Promise<BookCharacter> {
     try {
+      // Asegurar que el rol está definido
+      const dataToInsert = {
+        ...bookCharacterData,
+        role: bookCharacterData.role || 'protagonist'
+      };
+      
       const [bookCharacter] = await db.insert(bookCharacters)
-        .values({
-          ...bookCharacterData
-        })
+        .values(dataToInsert)
         .returning();
       return bookCharacter;
     } catch (error) {

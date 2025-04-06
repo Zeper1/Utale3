@@ -677,17 +677,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Generate images for book
   app.post("/api/books/generate-images", async (req: Request, res: Response) => {
     try {
-      const { bookContent } = req.body;
+      const { bookContent, bookId } = req.body;
       
       if (!bookContent || !bookContent.pages) {
         return res.status(400).json({ message: "Book content with pages is required" });
       }
       
-      // Create a directory for storing the generated images if it doesn't exist
-      const imageDir = path.join(process.cwd(), 'public', 'book-images');
-      if (!fs.existsSync(imageDir)) {
-        fs.mkdirSync(imageDir, { recursive: true });
-      }
+      // Obtenemos el usuario autenticado para guardar las imágenes en su carpeta
+      // Si no hay usuario autenticado, usamos un ID predeterminado solo para desarrollo
+      const userId = req.user && 'id' in req.user ? (req.user.id as number) : 1;
+      
+      // Importamos el servicio de Cloudinary
+      const { cloudinaryService } = await import('./services/cloudinaryService');
       
       // Process each page and generate an image
       const processedContent = { ...bookContent };
@@ -732,10 +733,45 @@ Esta imagen es para un libro infantil que será leído por niños.
             style: "vivid", // Estilo más colorido y vibrante
           });
           
-          const imageUrl = imageResponse.data[0].url;
+          // Obtiene la URL de la imagen generada por DALL-E
+          const tempImageUrl = imageResponse.data[0].url;
           
-          // Save the image URL to the page
-          processedContent.pages[i].imageUrl = imageUrl;
+          // Asegurarnos de que tenemos una URL válida
+          if (!tempImageUrl) {
+            throw new Error("No se obtuvo URL de imagen desde OpenAI");
+          }
+          
+          // Subimos la imagen a Cloudinary y obtenemos una URL permanente
+          let cloudinaryResult;
+          
+          if (bookId) {
+            // Si tenemos un ID de libro, almacenamos en la estructura de carpetas correcta
+            cloudinaryResult = await cloudinaryService.uploadBookImage(
+              userId, 
+              typeof bookId === 'string' ? parseInt(bookId) : bookId, 
+              page.pageNumber, 
+              tempImageUrl
+            );
+          } else {
+            // Si no hay ID (modo preview), usamos una carpeta temporal
+            cloudinaryResult = await cloudinaryService.uploadImage(tempImageUrl, {
+              folder: `utale/temp/${userId}`,
+              public_id: `preview_page_${page.pageNumber}_${Date.now()}`,
+              transformation: [
+                { quality: "auto:good" },
+                { fetch_format: "auto" }
+              ]
+            });
+          }
+          
+          // Guardamos la URL optimizada de Cloudinary
+          processedContent.pages[i].imageUrl = cloudinaryResult.url;
+          
+          // También guardamos el public_id para posible eliminación futura si es necesario
+          processedContent.pages[i].imagePublicId = cloudinaryResult.public_id;
+          
+          console.log(`Imagen de página ${page.pageNumber} subida a Cloudinary: ${cloudinaryResult.url}`);
+          
         } catch (imgError) {
           console.error(`Error generating image for page ${i+1}:`, imgError);
           // Continue with other pages even if one fails
@@ -845,13 +881,41 @@ Esta imagen es para un libro infantil que será leído por niños.
       
       const coverPage = bookContent.pages[0];
       
-      // In a real implementation, you would use the cover page image
-      // For now, just update with a placeholder
-      const previewImage = coverPage.imageUrl || `/api/books/${bookId}/cover`;
+      // Si no hay una imagen de portada, no podemos crear una previsualización
+      if (!coverPage.imageUrl) {
+        return res.status(400).json({ message: "El libro no tiene imagen de portada" });
+      }
       
-      const updatedBook = await storage.updateBook(bookId, { previewImage });
+      // Importamos el servicio de Cloudinary
+      const { cloudinaryService } = await import('./services/cloudinaryService');
       
-      res.status(200).json({ previewImage });
+      try {
+        // Subir la imagen de portada a Cloudinary como portada del libro
+        const uploadResult = await cloudinaryService.uploadBookCover(
+          book.userId,
+          bookId,
+          coverPage.imageUrl
+        );
+        
+        // Obtener una URL optimizada para la previsualización (tamaño reducido)
+        const previewImage = cloudinaryService.getOptimizedUrl(uploadResult.url, 'preview');
+        
+        // Actualizar el libro con la URL de la previsualización
+        const updatedBook = await storage.updateBook(bookId, { previewImage });
+        
+        res.status(200).json({ 
+          previewImage,
+          fullCoverUrl: cloudinaryService.getOptimizedUrl(uploadResult.url, 'full')
+        });
+      } catch (cloudinaryError) {
+        console.error('Error al procesar la imagen de portada:', cloudinaryError);
+        
+        // En caso de error de Cloudinary, usar la URL original como fallback
+        const previewImage = coverPage.imageUrl;
+        await storage.updateBook(bookId, { previewImage });
+        
+        res.status(200).json({ previewImage });
+      }
     } catch (error) {
       console.error("Error creating book preview:", error);
       res.status(500).json({ message: "Failed to create book preview" });
@@ -896,7 +960,7 @@ Esta imagen es para un libro infantil que será leído por niños.
     }
   });
   
-  // Ruta para subir imagen de personaje
+  // Ruta para subir imagen de personaje usando Cloudinary
   app.post('/api/characters/:id/avatar', upload.single('avatar'), async (req, res) => {
     try {
       if (!req.file) {
@@ -914,31 +978,73 @@ Esta imagen es para un libro infantil que será leído por niños.
         return res.status(404).json({ message: 'Personaje no encontrado' });
       }
       
-      // Si el personaje ya tenía una imagen, eliminarla
-      if (character.avatarUrl) {
-        const oldAvatarPath = path.join(process.cwd(), 'public', character.avatarUrl.replace(/^\//, ''));
-        if (fs.existsSync(oldAvatarPath)) {
-          fs.unlinkSync(oldAvatarPath);
+      // Importamos el servicio de Cloudinary
+      const { cloudinaryService } = await import('./services/cloudinaryService');
+      
+      // Obtener el userId para la estructura de carpetas
+      const userId = character.userId;
+      
+      // Leer el archivo temporal subido
+      const fileBuffer = fs.readFileSync(req.file.path);
+      const base64Image = `data:${req.file.mimetype};base64,${fileBuffer.toString('base64')}`;
+      
+      try {
+        // Subir imagen a Cloudinary 
+        const uploadResult = await cloudinaryService.uploadCharacterImage(
+          userId,
+          characterId,
+          base64Image
+        );
+        
+        // Eliminar el archivo temporal
+        fs.unlinkSync(req.file.path);
+        
+        // Si el personaje ya tenía una imagen en Cloudinary, eliminarla
+        if (character.avatarUrl && character.avatarUrl.includes('cloudinary.com')) {
+          try {
+            // Intentar extraer el public_id del URL anterior
+            const oldPublicId = character.avatarUrl.split('/').slice(-2).join('/').split('.')[0];
+            if (oldPublicId) {
+              await cloudinaryService.deleteImage(oldPublicId);
+            }
+          } catch (cloudError) {
+            console.error('Error al eliminar imagen anterior:', cloudError);
+            // Continuamos aunque falle la eliminación
+          }
         }
+        
+        // Actualizar el personaje con la URL de la imagen
+        const updatedCharacter = await storage.updateCharacter(characterId, { 
+          avatarUrl: uploadResult.url 
+        });
+        
+        if (!updatedCharacter) {
+          return res.status(500).json({ message: 'Error al actualizar el personaje' });
+        }
+        
+        res.status(200).json({ 
+          characterId, 
+          avatarUrl: uploadResult.url, 
+          message: 'Imagen de personaje actualizada exitosamente' 
+        });
+      } catch (cloudinaryError) {
+        console.error('Error al subir imagen a Cloudinary:', cloudinaryError);
+        
+        // En caso de error, eliminar el archivo temporal
+        if (fs.existsSync(req.file.path)) {
+          fs.unlinkSync(req.file.path);
+        }
+        
+        res.status(500).json({ message: 'Error al procesar la imagen en Cloudinary' });
       }
-      
-      // La URL relativa para acceder a la imagen
-      const avatarUrl = `/uploads/${path.basename(req.file.path)}`;
-      
-      // Actualizar el personaje con la URL de la imagen
-      const updatedCharacter = await storage.updateCharacter(characterId, { avatarUrl });
-      
-      if (!updatedCharacter) {
-        return res.status(500).json({ message: 'Error al actualizar el personaje' });
-      }
-      
-      res.status(200).json({ 
-        characterId, 
-        avatarUrl, 
-        message: 'Imagen de personaje actualizada exitosamente' 
-      });
     } catch (error) {
       console.error('Error en subida de imagen:', error);
+      
+      // Asegurarnos de limpiar el archivo temporal si existe
+      if (req.file && req.file.path && fs.existsSync(req.file.path)) {
+        fs.unlinkSync(req.file.path);
+      }
+      
       res.status(500).json({ message: 'Error en la subida de la imagen del personaje' });
     }
   });
