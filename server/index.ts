@@ -1,6 +1,7 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
-import { setupVite, serveStatic, log } from "./vite";
+import { setupVite, serveStatic } from "./vite";
+import { serverLogger, createLogger } from "./lib/logger";
 
 const app = express();
 app.use(express.json({ limit: '50mb' }));
@@ -20,20 +21,36 @@ app.use((req, res, next) => {
   res.on("finish", () => {
     const duration = Date.now() - start;
     if (path.startsWith("/api")) {
-      let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
+      const statusCode = res.statusCode;
+      let responseData;
+      
       if (capturedJsonResponse) {
         const responseStr = JSON.stringify(capturedJsonResponse);
-        const truncatedStr = responseStr.length > 100 
+        responseData = responseStr.length > 100 
           ? responseStr.substring(0, 100) + "..." 
           : responseStr;
-        logLine += ` :: ${truncatedStr}`;
       }
-
-      if (logLine.length > 80) {
-        logLine = logLine.slice(0, 79) + "…";
+      
+      // Determinamos el nivel de log según el código de estado
+      if (statusCode >= 500) {
+        serverLogger.error(`${req.method} ${path} ${statusCode} in ${duration}ms`, { 
+          responseData, 
+          duration,
+          statusCode
+        });
+      } else if (statusCode >= 400) {
+        serverLogger.warn(`${req.method} ${path} ${statusCode} in ${duration}ms`, { 
+          responseData, 
+          duration,
+          statusCode
+        });
+      } else {
+        serverLogger.info(`${req.method} ${path} ${statusCode} in ${duration}ms`, { 
+          responseData, 
+          duration,
+          statusCode
+        });
       }
-
-      log(logLine);
     }
   });
 
@@ -52,19 +69,44 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  // Verificar la conexión a la base de datos antes de iniciar el servidor
+  try {
+    const { testDatabaseConnection } = await import("./db");
+    const isConnected = await testDatabaseConnection();
+    
+    if (!isConnected) {
+      serverLogger.error("No se pudo establecer conexión con la base de datos. Verificar configuración.");
+      process.exit(1);
+    }
+    
+    serverLogger.info("Conexión a la base de datos verificada correctamente");
+  } catch (dbError) {
+    serverLogger.error(`Error al verificar la conexión a la base de datos: ${dbError instanceof Error ? dbError.message : String(dbError)}`, {
+      error: dbError instanceof Error ? dbError.stack : String(dbError)
+    });
+    process.exit(1);
+  }
+
   const server = await registerRoutes(app);
 
   // Inicializar niveles de suscripción
   try {
     const { initializeSubscriptionTiers } = await import("./initialize-subscription-tiers");
     await initializeSubscriptionTiers();
-    log("Niveles de suscripción inicializados correctamente");
+    serverLogger.info("Niveles de suscripción inicializados correctamente");
   } catch (error) {
-    console.error("Error al inicializar niveles de suscripción:", error);
+    serverLogger.error("Error al inicializar niveles de suscripción", { 
+      error: error instanceof Error ? error.stack : String(error) 
+    });
   }
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
-    console.error(err);
+    serverLogger.error("Error en la aplicación", { 
+      error: err instanceof Error ? err.stack : String(err),
+      status: err.status || err.statusCode || 500,
+      message: err.message || "Internal Server Error"
+    });
+    
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
 
@@ -89,6 +131,6 @@ app.use((req, res, next) => {
     host: "0.0.0.0",
     reusePort: true,
   }, () => {
-    log(`StoryMagic server running on port ${port}`);
+    serverLogger.info(`Utale server running on port ${port}`);
   });
 })();

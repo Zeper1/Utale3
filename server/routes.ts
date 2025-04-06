@@ -18,6 +18,15 @@ import * as fs from "fs";
 import * as path from "path";
 import multer from "multer";
 import * as crypto from "crypto";
+import { createLogger, LogLevel } from "./lib/logger";
+
+// Crear loggers específicos para diferentes operaciones
+const apiLogger = createLogger('api');
+const authLogger = createLogger('auth');
+const bookLogger = createLogger('books');
+const characterLogger = createLogger('characters');
+const paymentLogger = createLogger('payments');
+const subscriptionLogger = createLogger('subscriptions');
 
 // Initialize OpenAI
 const openai = new OpenAI({
@@ -33,14 +42,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // --- User Routes ---
   app.post("/api/auth/register", async (req, res) => {
     try {
+      authLogger.info("Intento de registro de nuevo usuario", { 
+        ip: req.ip,
+        userAgent: req.headers['user-agent']
+      });
+      
       const userData = insertUserSchema.parse(req.body);
+      authLogger.debug("Datos de usuario validados correctamente", { 
+        email: userData.email, 
+        username: userData.username 
+      });
+      
       const existingUser = await storage.getUserByEmail(userData.email);
       
       if (existingUser) {
+        authLogger.warn("Intento de registro con email ya existente", { 
+          email: userData.email 
+        });
         return res.status(400).json({ message: "User with this email already exists" });
       }
       
       const newUser = await storage.createUser(userData);
+      authLogger.info("Usuario registrado exitosamente", { 
+        userId: newUser.id,
+        username: newUser.username 
+      });
+      
       res.status(201).json({ 
         id: newUser.id,
         username: newUser.username,
@@ -49,8 +76,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       if (error instanceof z.ZodError) {
+        authLogger.warn("Datos de registro inválidos", { 
+          errors: error.errors.map(e => `${e.path.join('.')}: ${e.message}`) 
+        });
         return res.status(400).json({ message: "Invalid user data", errors: error.errors });
       }
+      
+      authLogger.error("Error en registro de usuario", { 
+        error: error instanceof Error ? error.stack : String(error) 
+      });
       res.status(500).json({ message: "Failed to create user account" });
     }
   });
@@ -59,7 +93,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { firebaseUserId, email, displayName } = req.body;
       
+      authLogger.info("Intento de autenticación con Firebase", { 
+        firebaseUserId: firebaseUserId ? firebaseUserId.substring(0, 8) + '...' : 'undefined',
+        email: email || 'undefined',
+        ip: req.ip
+      });
+      
       if (!firebaseUserId || !email) {
+        authLogger.warn("Autenticación Firebase rechazada: datos incompletos", {
+          hasFirebaseId: !!firebaseUserId,
+          hasEmail: !!email,
+          ip: req.ip
+        });
         return res.status(400).json({ message: "Firebase user ID and email are required" });
       }
       
@@ -67,15 +112,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let user = await storage.getUserByFirebaseId(firebaseUserId);
       
       if (!user) {
+        authLogger.debug("Usuario no encontrado por Firebase ID, buscando por email", { email });
         // Check if user exists by email
         user = await storage.getUserByEmail(email);
         
         if (user) {
+          authLogger.info("Vinculando cuenta existente con Firebase", { 
+            userId: user.id, 
+            email: user.email 
+          });
           // Update existing user with Firebase ID
           user = await storage.updateUser(user.id, { firebaseUserId });
         } else {
           // Create new user
           const username = email.split('@')[0];
+          authLogger.info("Creando nuevo usuario desde Firebase", { 
+            email, 
+            username 
+          });
+          
           user = await storage.createUser({
             username,
             email,
@@ -84,6 +139,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
             firebaseUserId
           });
         }
+      } else {
+        authLogger.info("Usuario autenticado con Firebase", { 
+          userId: user.id, 
+          email: user.email 
+        });
+      }
+      
+      if (!user) {
+        authLogger.error("Error crítico: Usuario nulo después de autenticación", {
+          firebaseUserId: firebaseUserId.substring(0, 8) + '...'
+        });
+        return res.status(500).json({ message: "Error en la autenticación de Firebase" });
       }
       
       res.status(200).json({ 
@@ -93,6 +160,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         displayName: user.displayName 
       });
     } catch (error) {
+      authLogger.error("Error en autenticación Firebase", { 
+        error: error instanceof Error ? error.stack : String(error) 
+      });
       res.status(500).json({ message: "Failed to process Firebase authentication" });
     }
   });
@@ -322,7 +392,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { characterId, themeId } = req.body;
       
+      bookLogger.info("Solicitud de generación de libro recibida", {
+        characterId,
+        themeId,
+        ip: req.ip,
+        userAgent: req.headers['user-agent']
+      });
+      
       if (!characterId || !themeId) {
+        bookLogger.warn("Solicitud rechazada: faltan datos requeridos", {
+          hasCharacterId: !!characterId,
+          hasThemeId: !!themeId
+        });
         return res.status(400).json({ message: "Character ID and theme ID are required" });
       }
       
@@ -330,14 +411,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const theme = await storage.getBookTheme(parseInt(themeId));
       
       if (!character) {
+        bookLogger.warn("Personaje no encontrado", { characterId });
         return res.status(404).json({ message: "Character profile not found" });
       }
       
       if (!theme) {
+        bookLogger.warn("Tema no encontrado", { themeId });
         return res.status(404).json({ message: "Book theme not found" });
       }
       
+      bookLogger.info("Iniciando generación de contenido con OpenAI", {
+        characterName: character.name,
+        characterType: character.type,
+        themeName: theme.name,
+        model: "gpt-4o"
+      });
+      
       // Generate book content with OpenAI
+      const startTime = Date.now();
       const completion = await openai.chat.completions.create({
         model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
         messages: [
@@ -369,11 +460,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
         response_format: { type: "json_object" }
       });
       
+      const endTime = Date.now();
+      const processingTime = endTime - startTime;
+      
       const bookContent = JSON.parse(completion.choices[0].message.content || "{}");
+      
+      bookLogger.info("Contenido del libro generado exitosamente", {
+        title: bookContent.title,
+        pageCount: bookContent.pages?.length || 0,
+        characterId,
+        themeId,
+        processingTimeMs: processingTime,
+        modelUsed: "gpt-4o",
+        promptTokens: completion.usage?.prompt_tokens,
+        completionTokens: completion.usage?.completion_tokens,
+        totalTokens: completion.usage?.total_tokens
+      });
       
       res.status(200).json(bookContent);
     } catch (error) {
-      console.error("Book generation error:", error);
+      bookLogger.error("Error en la generación del libro", {
+        error: error instanceof Error ? error.stack : String(error),
+        characterId: req.body.characterId,
+        themeId: req.body.themeId,
+      });
       res.status(500).json({ message: "Failed to generate book content" });
     }
   });
@@ -384,13 +494,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { amount, bookId, userId, format } = req.body;
       
+      paymentLogger.info("Solicitud de intención de pago recibida", {
+        amount,
+        bookId,
+        userId,
+        format,
+        ip: req.ip
+      });
+      
       if (!amount || !bookId || !userId || !format) {
+        paymentLogger.warn("Solicitud de pago rechazada: datos incompletos", {
+          hasAmount: !!amount,
+          hasBookId: !!bookId, 
+          hasUserId: !!userId,
+          hasFormat: !!format,
+          ip: req.ip
+        });
         return res.status(400).json({ message: "Amount, book ID, user ID, and format are required" });
       }
       
+      paymentLogger.debug("Creando intención de pago en Stripe", {
+        amountInCents: Math.round(amount * 100),
+        currency: "eur",
+        bookId,
+        userId,
+        format
+      });
+      
       const paymentIntent = await stripe.paymentIntents.create({
         amount: Math.round(amount * 100), // Convert to cents
-        currency: "usd",
+        currency: "eur", // Cambiado a euros para el mercado español
         metadata: {
           bookId: bookId.toString(),
           userId: userId.toString(),
@@ -398,9 +531,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       });
       
+      paymentLogger.info("Intención de pago creada exitosamente", {
+        paymentIntentId: paymentIntent.id,
+        amount: paymentIntent.amount,
+        userId,
+        bookId
+      });
+      
       res.status(200).json({ clientSecret: paymentIntent.client_secret });
     } catch (error) {
-      console.error("Stripe error:", error);
+      paymentLogger.error("Error al crear intención de pago en Stripe", {
+        error: error instanceof Error ? error.stack : String(error),
+        amount: req.body?.amount,
+        bookId: req.body?.bookId,
+        userId: req.body?.userId
+      });
       res.status(500).json({ message: "Payment processing error" });
     }
   });
@@ -413,28 +558,59 @@ export async function registerRoutes(app: Express): Promise<Server> {
     
     try {
       const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
+      
+      paymentLogger.info("Webhook de Stripe recibido", {
+        hasSignature: !!sig,
+        hasEndpointSecret: !!endpointSecret,
+        payloadSize: JSON.stringify(payload).length
+      });
+      
       if (endpointSecret) {
         event = stripe.webhooks.constructEvent(payload, sig, endpointSecret);
+        paymentLogger.debug("Evento de Stripe verificado correctamente", {
+          eventType: event.type,
+          eventId: event.id
+        });
       } else {
         event = payload;
+        paymentLogger.warn("Webhook procesado sin verificación de firma", {
+          eventType: event.type,
+          environment: process.env.NODE_ENV
+        });
       }
       
       if (event.type === 'payment_intent.succeeded') {
         const paymentIntent = event.data.object;
+        
         // Handle successful payment
         const bookId = parseInt(paymentIntent.metadata.bookId);
         const userId = parseInt(paymentIntent.metadata.userId);
         const format = paymentIntent.metadata.format;
         
+        paymentLogger.info("Pago exitoso recibido", {
+          paymentIntentId: paymentIntent.id,
+          amount: paymentIntent.amount,
+          bookId,
+          userId,
+          format
+        });
+        
         // Update book status
-        await storage.updateBook(bookId, { 
+        const updatedBook = await storage.updateBook(bookId, { 
           status: 'completed',
           format,
           orderReference: paymentIntent.id
         });
         
+        paymentLogger.debug("Estado del libro actualizado", {
+          bookId,
+          newStatus: 'completed',
+          format,
+          orderReference: paymentIntent.id
+        });
+        
         // Create order record
-        await storage.createOrder({
+        const newOrder = await storage.createOrder({
           userId,
           bookId,
           amount: paymentIntent.amount,
@@ -444,11 +620,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
           status: 'completed',
           shippingAddress: {} // This would be populated with actual shipping info
         });
+        
+        paymentLogger.info("Pedido creado correctamente", {
+          orderId: newOrder.id,
+          userId,
+          bookId,
+          status: 'completed'
+        });
+      } else {
+        paymentLogger.debug("Evento de Stripe ignorado (no es payment_intent.succeeded)", {
+          eventType: event.type
+        });
       }
       
       res.status(200).json({ received: true });
     } catch (error) {
-      console.error("Stripe webhook error:", error);
+      paymentLogger.error("Error en webhook de Stripe", {
+        error: error instanceof Error ? error.stack : String(error),
+        hasSignature: !!sig,
+        eventType: event?.type
+      });
       res.status(400).json({ message: "Webhook error" });
     }
   });
@@ -486,12 +677,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { characterIds, themeId, storyDetails } = req.body;
       
+      bookLogger.info("Solicitud de generación avanzada de contenido recibida", {
+        characterCount: characterIds?.length || 0,
+        themeId: themeId || 'personalizado',
+        requestedPageCount: storyDetails?.pageCount || 12,
+        ip: req.ip,
+        userAgent: req.headers['user-agent']
+      });
+      
       if (!characterIds || !Array.isArray(characterIds) || characterIds.length === 0) {
+        bookLogger.warn("Generación rechazada: No se proporcionaron IDs de personajes", {
+          hasCharacterIds: !!characterIds,
+          isArray: Array.isArray(characterIds),
+          length: characterIds?.length
+        });
         return res.status(400).json({ message: "Al menos un ID de personaje es requerido" });
       }
       
       // Obtener el número de páginas solicitado (excluyendo la portada)
       const requestedPageCount = storyDetails?.pageCount || 12;
+      
+      bookLogger.debug("Procesando solicitud de generación de libro multi-personaje", {
+        characterIds,
+        pageCount: requestedPageCount,
+        hasThemeId: !!themeId,
+        hasStoryDetails: !!storyDetails
+      });
       
       // Detalles específicos de los personajes para esta historia (si existen)
       const charactersWithDetails = storyDetails?.charactersWithDetails || [];
@@ -561,6 +772,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         : '';
       
       // Generate book content with OpenAI
+      bookLogger.info("Iniciando generación de contenido avanzado con OpenAI", {
+        modelo: "gpt-4o",
+        characterCount: characters.length,
+        supportingCharacterCount: supportingCharacters.length,
+        themeName: theme.name,
+        pageCount: requestedPageCount
+      });
+      
+      const startTime = Date.now();
       const completion = await openai.chat.completions.create({
         model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024
         messages: [
@@ -665,11 +885,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
         max_tokens: 2500
       });
       
+      const endTime = Date.now();
+      const processingTime = endTime - startTime;
+      
       const bookContent = JSON.parse(completion.choices[0].message.content || "{}");
+      
+      bookLogger.info("Contenido del libro multi-personaje generado exitosamente", {
+        title: bookContent.title,
+        pageCount: bookContent.pages?.length || 0,
+        characterCount: characters.length,
+        themeName: theme.name,
+        processingTimeMs: processingTime,
+        promptTokens: completion.usage?.prompt_tokens,
+        completionTokens: completion.usage?.completion_tokens,
+        totalTokens: completion.usage?.total_tokens
+      });
       
       res.status(200).json(bookContent);
     } catch (error) {
-      console.error("Error generating book content:", error);
+      bookLogger.error("Error en la generación avanzada del libro", {
+        error: error instanceof Error ? error.stack : String(error),
+        characterCount: req.body.characterIds?.length || 0,
+        themeId: req.body.themeId,
+        requestedPageCount: req.body.storyDetails?.pageCount
+      });
       res.status(500).json({ message: "Failed to generate book content" });
     }
   });
@@ -679,7 +918,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { bookContent, bookId } = req.body;
       
+      bookLogger.info("Solicitud de generación de imágenes recibida", {
+        bookId: bookId || 'preview',
+        pageCount: bookContent?.pages?.length || 0,
+        title: bookContent?.title || 'unknown',
+        ip: req.ip
+      });
+      
       if (!bookContent || !bookContent.pages) {
+        bookLogger.warn("Solicitud de imágenes rechazada: falta contenido", {
+          hasBookContent: !!bookContent,
+          hasPages: !!(bookContent && bookContent.pages)
+        });
         return res.status(400).json({ message: "Book content with pages is required" });
       }
       
@@ -687,16 +937,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Si no hay usuario autenticado, usamos un ID predeterminado solo para desarrollo
       const userId = req.user && 'id' in req.user ? (req.user.id as number) : 1;
       
+      bookLogger.debug("Iniciando generación de imágenes para libro", {
+        userId,
+        bookId: bookId || 'preview',
+        pageCount: bookContent.pages.length
+      });
+      
       // Importamos el servicio de Cloudinary
       const { cloudinaryService } = await import('./services/cloudinaryService');
       
       // Process each page and generate an image
       const processedContent = { ...bookContent };
+      const generationStartTime = Date.now();
+      let successCount = 0;
+      let failureCount = 0;
       
       // Generate images for each page (sequentially to avoid rate limiting)
       for (let i = 0; i < processedContent.pages.length; i++) {
         const page = processedContent.pages[i];
+        const pageStartTime = Date.now();
+        
         try {
+          bookLogger.debug(`Generando imagen para página ${i+1}/${processedContent.pages.length}`, {
+            pageNumber: page.pageNumber,
+            bookId: bookId || 'preview'
+          });
+          
           // Preparamos un prompt más detallado y controlado
           const baseStyle = "Ilustración infantil en estilo acuarela digital, colorida y alegre, con colores vibrantes y apto para niños";
           
@@ -741,6 +1007,12 @@ Esta imagen es para un libro infantil que será leído por niños.
             throw new Error("No se obtuvo URL de imagen desde OpenAI");
           }
           
+          bookLogger.debug(`Imagen generada con DALL-E, subiendo a Cloudinary`, {
+            pageNumber: page.pageNumber,
+            hasImageUrl: !!tempImageUrl,
+            processTimeMs: Date.now() - pageStartTime
+          });
+          
           // Subimos la imagen a Cloudinary y obtenemos una URL permanente
           let cloudinaryResult;
           
@@ -770,17 +1042,44 @@ Esta imagen es para un libro infantil que será leído por niños.
           // También guardamos el public_id para posible eliminación futura si es necesario
           processedContent.pages[i].imagePublicId = cloudinaryResult.public_id;
           
-          console.log(`Imagen de página ${page.pageNumber} subida a Cloudinary: ${cloudinaryResult.url}`);
+          bookLogger.info(`Imagen para página ${page.pageNumber} generada y almacenada correctamente`, {
+            pageNumber: page.pageNumber,
+            bookId: bookId || 'preview',
+            cloudinaryPublicId: cloudinaryResult.public_id,
+            cloudinaryFolder: cloudinaryResult.folder,
+            totalProcessTimeMs: Date.now() - pageStartTime
+          });
           
+          successCount++;
         } catch (imgError) {
-          console.error(`Error generating image for page ${i+1}:`, imgError);
+          bookLogger.error(`Error al generar imagen para página ${i+1}`, {
+            error: imgError instanceof Error ? imgError.stack : String(imgError),
+            pageNumber: page.pageNumber,
+            bookId: bookId || 'preview',
+            processTimeMs: Date.now() - pageStartTime
+          });
+          failureCount++;
           // Continue with other pages even if one fails
         }
       }
       
+      const totalProcessTime = Date.now() - generationStartTime;
+      
+      bookLogger.info("Proceso de generación de imágenes completado", {
+        bookId: bookId || 'preview',
+        totalPages: processedContent.pages.length,
+        successCount,
+        failureCount,
+        totalProcessTimeMs: totalProcessTime,
+        avgTimePerPageMs: totalProcessTime / processedContent.pages.length
+      });
+      
       res.status(200).json(processedContent);
     } catch (error) {
-      console.error("Error generating book images:", error);
+      bookLogger.error("Error general en generación de imágenes", {
+        error: error instanceof Error ? error.stack : String(error),
+        bookId: req.body.bookId || 'unknown'
+      });
       res.status(500).json({ message: "Failed to generate book images" });
     }
   });
@@ -790,29 +1089,55 @@ Esta imagen es para un libro infantil que será leído por niños.
     try {
       const { bookId } = req.body;
       
+      bookLogger.info("Solicitud de creación de PDF recibida", {
+        bookId: bookId || 'unknown',
+        ip: req.ip
+      });
+      
       if (!bookId) {
+        bookLogger.warn("Solicitud rechazada: ID de libro requerido", {
+          ip: req.ip
+        });
         return res.status(400).json({ message: "Book ID is required" });
       }
       
       const book = await storage.getBook(parseInt(bookId.toString()));
       
       if (!book) {
+        bookLogger.warn("Libro no encontrado para generación de PDF", {
+          bookId
+        });
         return res.status(404).json({ message: "Book not found" });
       }
+      
+      bookLogger.debug("Iniciando generación de PDF para libro", {
+        bookId: book.id,
+        title: book.title,
+        userId: book.userId
+      });
       
       // In a real implementation, you would use a PDF generation library
       // For now, we'll just simulate PDF creation
       const pdfUrl = `/api/books/${bookId}/download`;
       
       // Update book with PDF URL
-      await storage.updateBook(book.id, { 
+      const updatedBook = await storage.updateBook(book.id, { 
         orderReference: pdfUrl,
         status: 'completed'
       });
       
+      bookLogger.info("PDF generado exitosamente para libro", {
+        bookId: book.id,
+        pdfUrl,
+        newStatus: 'completed'
+      });
+      
       res.status(200).json({ url: pdfUrl });
     } catch (error) {
-      console.error("Error creating PDF:", error);
+      bookLogger.error("Error al crear PDF de libro", {
+        error: error instanceof Error ? error.stack : String(error),
+        bookId: req.body?.bookId
+      });
       res.status(500).json({ message: "Failed to create PDF" });
     }
   });
@@ -821,21 +1146,49 @@ Esta imagen es para un libro infantil que será leído por niños.
   app.get("/api/books/:id/download", async (req: Request, res: Response) => {
     try {
       const bookId = parseInt(req.params.id);
+      
+      bookLogger.info("Solicitud de descarga de libro recibida", {
+        bookId,
+        ip: req.ip,
+        userAgent: req.headers['user-agent']
+      });
+      
       const book = await storage.getBook(bookId);
       
       if (!book) {
+        bookLogger.warn("Libro no encontrado para descarga", {
+          bookId,
+          ip: req.ip
+        });
         return res.status(404).json({ message: "Book not found" });
       }
+      
+      bookLogger.debug("Procesando descarga de libro", {
+        bookId: book.id,
+        userId: book.userId,
+        title: book.title,
+        status: book.status
+      });
       
       // In a real implementation, you would generate a PDF file
       // For now, we'll just send a mock response
       res.setHeader('Content-Type', 'application/json');
+      
+      bookLogger.info("Libro descargado exitosamente", {
+        bookId: book.id,
+        userId: book.userId,
+        format: 'JSON (simulado)'
+      });
+      
       res.status(200).json({ 
         message: "This endpoint would serve the PDF file for download", 
         bookTitle: book.title 
       });
     } catch (error) {
-      console.error("Error downloading book:", error);
+      bookLogger.error("Error al descargar libro", {
+        error: error instanceof Error ? error.stack : String(error),
+        bookId: req.params.id
+      });
       res.status(500).json({ message: "Failed to download book" });
     }
   });
@@ -846,19 +1199,58 @@ Esta imagen es para un libro infantil que será leído por niños.
       const bookId = parseInt(req.params.id);
       const { status } = req.body;
       
+      bookLogger.info("Solicitud de actualización de estado de libro recibida", {
+        bookId,
+        newStatus: status || 'undefined',
+        ip: req.ip
+      });
+      
       if (!status) {
+        bookLogger.warn("Solicitud rechazada: estado requerido", {
+          bookId,
+          ip: req.ip
+        });
         return res.status(400).json({ message: "Status is required" });
       }
+      
+      const book = await storage.getBook(bookId);
+      if (!book) {
+        bookLogger.warn("Libro no encontrado para actualización de estado", {
+          bookId
+        });
+        return res.status(404).json({ message: "Book not found" });
+      }
+      
+      bookLogger.debug("Actualizando estado de libro", {
+        bookId,
+        oldStatus: book.status,
+        newStatus: status,
+        userId: book.userId
+      });
       
       const updatedBook = await storage.updateBook(bookId, { status });
       
       if (!updatedBook) {
+        bookLogger.error("Error al actualizar estado del libro", {
+          bookId,
+          status
+        });
         return res.status(404).json({ message: "Book not found" });
       }
       
+      bookLogger.info("Estado de libro actualizado exitosamente", {
+        bookId: updatedBook.id,
+        oldStatus: book.status,
+        newStatus: updatedBook.status
+      });
+      
       res.status(200).json(updatedBook);
     } catch (error) {
-      console.error("Error updating book status:", error);
+      bookLogger.error("Error en la actualización de estado de libro", {
+        error: error instanceof Error ? error.stack : String(error),
+        bookId: req.params.id,
+        status: req.body?.status
+      });
       res.status(500).json({ message: "Failed to update book status" });
     }
   });
@@ -867,22 +1259,46 @@ Esta imagen es para un libro infantil que será leído por niños.
   app.post("/api/books/:id/preview", async (req: Request, res: Response) => {
     try {
       const bookId = parseInt(req.params.id);
+      
+      bookLogger.info("Solicitud de creación de previsualización recibida", {
+        bookId,
+        ip: req.ip
+      });
+      
       const book = await storage.getBook(bookId);
       
       if (!book) {
+        bookLogger.warn("Libro no encontrado para crear previsualización", {
+          bookId
+        });
         return res.status(404).json({ message: "Book not found" });
       }
       
       // Generate a preview image for the book (first page/cover)
       const bookContent = book.content as any;
       if (!bookContent || !bookContent.pages || bookContent.pages.length === 0) {
+        bookLogger.warn("Libro sin contenido para crear previsualización", {
+          bookId,
+          hasContent: !!bookContent,
+          hasPages: !!(bookContent && bookContent.pages),
+          pageCount: bookContent?.pages?.length || 0
+        });
         return res.status(400).json({ message: "Book has no content" });
       }
       
       const coverPage = bookContent.pages[0];
       
+      bookLogger.debug("Procesando previsualización del libro", {
+        bookId,
+        userId: book.userId,
+        hasCoverImage: !!coverPage.imageUrl
+      });
+      
       // Si no hay una imagen de portada, no podemos crear una previsualización
       if (!coverPage.imageUrl) {
+        bookLogger.warn("Portada sin imagen para crear previsualización", {
+          bookId
+        });
         return res.status(400).json({ message: "El libro no tiene imagen de portada" });
       }
       
@@ -897,18 +1313,32 @@ Esta imagen es para un libro infantil que será leído por niños.
           coverPage.imageUrl
         );
         
+        bookLogger.debug("Imagen de portada subida a Cloudinary", {
+          bookId,
+          publicId: uploadResult.public_id
+        });
+        
         // Obtener una URL optimizada para la previsualización (tamaño reducido)
         const previewImage = cloudinaryService.getOptimizedUrl(uploadResult.url, 'preview');
         
         // Actualizar el libro con la URL de la previsualización
         const updatedBook = await storage.updateBook(bookId, { previewImage });
         
+        bookLogger.info("Previsualización del libro creada exitosamente", {
+          bookId,
+          hasPreviewImage: !!updatedBook?.previewImage
+        });
+        
         res.status(200).json({ 
           previewImage,
           fullCoverUrl: cloudinaryService.getOptimizedUrl(uploadResult.url, 'full')
         });
       } catch (cloudinaryError) {
-        console.error('Error al procesar la imagen de portada:', cloudinaryError);
+        bookLogger.error("Error con Cloudinary al procesar la imagen de portada", {
+          error: cloudinaryError instanceof Error ? cloudinaryError.stack : String(cloudinaryError),
+          bookId,
+          coverImageUrl: 'usando URL original como fallback'
+        });
         
         // En caso de error de Cloudinary, usar la URL original como fallback
         const previewImage = coverPage.imageUrl;
@@ -917,7 +1347,10 @@ Esta imagen es para un libro infantil que será leído por niños.
         res.status(200).json({ previewImage });
       }
     } catch (error) {
-      console.error("Error creating book preview:", error);
+      bookLogger.error("Error al crear previsualización del libro", {
+        error: error instanceof Error ? error.stack : String(error),
+        bookId: req.params.id
+      });
       res.status(500).json({ message: "Failed to create book preview" });
     }
   });

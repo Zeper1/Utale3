@@ -1,0 +1,60 @@
+Completar la transición a DatabaseStorage
+Eliminaremos por completo MemStorage y usaremos exclusivamente DatabaseStorage para todas las operaciones de almacenamiento.
+
+2. Optimización de consultas y patrones de acceso
+Las consultas más críticas para optimizar en una aplicación como Utale serían:
+
+Dashboard del usuario: Consultas de libros por usuario con ordenación por fecha (más recientes primero)
+Personajes por usuario: Crítico para la creación de libros y selección de personajes
+Detalles de suscripción: Para verificar rápidamente el estado y permisos
+Libros por personaje: Para mostrar historias relacionadas con un personaje específico
+Entregas pendientes: Para procesar eficientemente las entregas programadas
+Implementaremos índices compuestos para estas consultas frecuentes y patrones de acceso comunes:
+
+books: índices en (userId, createdAt) y status
+characters: índice en (userId, name)
+bookCharacters: índices en bookId y characterId
+subscriptions: índices en (userId, status) y currentPeriodEnd
+bookDeliveries: índices en (userId, status) y (subscriptionId, status)
+3. Gestión de base de datos y migraciones
+Para una aplicación en producción como Utale, utilizaremos:
+
+Migraciones explícitas en lugar de "push" directo, lo que permitirá:
+
+Control granular sobre cambios
+Historial de cambios en la base de datos
+Mejor soporte para entornos múltiples (desarrollo, staging, producción)
+Sistema de rollback para migraciones fallidas:
+
+Cada migración tendrá su script de reversión
+Se implementará un sistema de verificación antes de aplicar migraciones
+4. Optimización de imágenes con Cloudinary
+Implementaremos dos niveles de optimización:
+
+Plan gratuito:
+
+Compresión alta (calidad 60-70%)
+Resolución reducida para imágenes del libro
+Marca de agua con logo de Utale
+Formato automático adaptado al navegador
+Planes de pago:
+
+Compresión moderada (calidad 80-90%)
+Resolución completa
+Sin marca de agua
+Formato automático optimizado
+5. Sistema de logging y monitoreo
+Implementaremos un sistema de logging estructurado con:
+
+Niveles de detalle:
+
+ERROR: Problemas críticos que afectan a la operación
+WARN: Situaciones inesperadas, pero no críticas
+INFO: Eventos importantes del sistema (inicios de sesión, creación de libros, pagos)
+DEBUG: Información detallada para resolución de problemas (solo en entorno de desarrollo)
+Herramientas de monitoreo:
+
+Winston para manejo de logs estructurados
+Pino para logging de alto rendimiento
+Express-prometheus-middleware para métricas de API
+Integración con Cloudwatch cuando se escale la aplicación
