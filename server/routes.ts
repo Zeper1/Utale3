@@ -593,11 +593,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Generate book content with AI
   app.post("/api/books/generate-content", async (req: Request, res: Response) => {
     try {
-      const { characterIds, themeId } = req.body;
+      const { characterIds, themeId, storyDetails } = req.body;
       
       if (!characterIds || !themeId || !Array.isArray(characterIds) || characterIds.length === 0) {
         return res.status(400).json({ message: "Al menos un ID de personaje y un ID de tema son requeridos" });
       }
+      
+      // Obtener el número de páginas solicitado (excluyendo la portada)
+      const requestedPageCount = storyDetails?.pageCount || 12;
       
       // Obtener todos los personajes
       const characters = [];
@@ -665,11 +668,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
                      - Evita cualquier contenido inapropiado, terrorífico o angustiante
                      
                      ESTRUCTURA DE LA HISTORIA:
-                     - Página 1: Portada con título e introducción de los personajes principales
-                     - Página 2-3: Establecimiento del escenario y situación inicial con todos los personajes
-                     - Página 4-6: Desarrollo de la aventura o reto que involucre a todos los personajes
-                     - Página 7-9: Clímax o momento crucial donde los personajes colaboran
-                     - Página 10-12: Resolución y final feliz con mensaje positivo para todos
+                     - Página 1: Portada con título e introducción de los personajes principales (no se considera en el número total de páginas)
+                     - Páginas 2-${Math.floor(requestedPageCount * 0.25) + 1}: Establecimiento del escenario y situación inicial con los personajes
+                     - Páginas ${Math.floor(requestedPageCount * 0.25) + 2}-${Math.floor(requestedPageCount * 0.6)}: Desarrollo de la aventura que involucre a todos los personajes
+                     - Páginas ${Math.floor(requestedPageCount * 0.6) + 1}-${Math.floor(requestedPageCount * 0.8)}: Clímax o momento crucial
+                     - Páginas ${Math.floor(requestedPageCount * 0.8) + 1}-${requestedPageCount}: Resolución y final feliz con mensaje positivo
                      
                      Debes generar un objeto JSON con la siguiente estructura exacta:
                      {
@@ -689,7 +692,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                      }
                      
                      REQUISITOS TÉCNICOS:
-                     - El libro debe tener 10-12 páginas incluyendo portada
+                     - El libro debe tener exactamente ${requestedPageCount + 1} páginas en total: 1 portada + ${requestedPageCount} páginas de contenido
+                     - La portada (página 1) no cuenta para el número de páginas solicitado por el usuario
                      - Cada página debe tener texto atractivo y apropiado para la edad que haga avanzar la historia
                      - Los prompts de imagen deben ser detallados para crear ilustraciones que incluyan a todos los personajes relevantes
                      - Usa el estilo ilustrativo "acuarela infantil" o "ilustración infantil digital colorida" para consistencia

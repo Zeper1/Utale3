@@ -1576,7 +1576,7 @@ export default function CreateBook() {
                                     </Button>
                                   </div>
                                   <div className="text-xs text-muted-foreground mt-1">
-                                    (Mínimo 5, máximo 40 páginas)
+                                    (Mínimo 5, máximo 40 páginas - la portada no se incluye en este conteo)
                                   </div>
                                 </FormItem>
                               )}
