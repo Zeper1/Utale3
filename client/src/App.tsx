@@ -18,6 +18,9 @@ import Subscription from "@/pages/Subscription";
 import FAQs from "@/pages/FAQs";
 import Contacto from "@/pages/Contacto";
 import Terminos from "@/pages/Terminos";
+import Privacidad from "@/pages/Privacidad";
+import Cookies from "@/pages/Cookies";
+import ComoFunciona from "@/pages/ComoFunciona";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { AuthProvider } from "@/hooks/useAuth";
@@ -45,8 +48,9 @@ function Router() {
           <Route path="/faqs" component={FAQs} />
           <Route path="/contacto" component={Contacto} />
           <Route path="/terminos" component={Terminos} />
-          <Route path="/privacidad" component={Terminos} /> {/* Temporalmente dirigida a Términos */}
-          <Route path="/cookies" component={Terminos} /> {/* Temporalmente dirigida a Términos */}
+          <Route path="/privacidad" component={Privacidad} />
+          <Route path="/cookies" component={Cookies} />
+          <Route path="/como-funciona" component={ComoFunciona} />
           <Route component={NotFound} />
         </Switch>
       </main>

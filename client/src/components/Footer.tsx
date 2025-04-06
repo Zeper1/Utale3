@@ -1,11 +1,24 @@
+import React, { useState } from "react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { BookOpen, Send } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle
+} from "@/components/ui/dialog";
+import { Separator } from "@/components/ui/separator";
 
 const Footer = () => {
   const { toast } = useToast();
+  
+  const [showPrivacyDialog, setShowPrivacyDialog] = useState(false);
+  const [tempEmail, setTempEmail] = useState("");
   
   const handleSubscribe = (e: React.FormEvent) => {
     e.preventDefault();
@@ -13,15 +26,21 @@ const Footer = () => {
     const email = (form.elements.namedItem("email") as HTMLInputElement).value;
     
     if (email) {
-      toast({
-        title: "Suscripción exitosa",
-        description: "¡Gracias por suscribirte a nuestro boletín!",
-      });
-      form.reset();
+      setTempEmail(email);
+      setShowPrivacyDialog(true);
     }
   };
   
-  return (
+  const confirmSubscription = () => {
+    toast({
+      title: "Suscripción exitosa",
+      description: "¡Gracias por suscribirte a nuestro newsletter!",
+    });
+    setShowPrivacyDialog(false);
+    setTempEmail("");
+  };
+  
+  const footerSection = (
     <footer className="bg-gray-900 text-white pt-16 pb-8">
       <div className="container mx-auto px-4">
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
@@ -55,10 +74,7 @@ const Footer = () => {
             <h3 className="text-white font-bold mb-4">Enlaces Rápidos</h3>
             <ul className="space-y-3">
               <li><Link href="/como-funciona" className="text-gray-400 hover:text-primary transition-colors">Cómo Funciona</Link></li>
-              <li><Link href="/catalogo" className="text-gray-400 hover:text-primary transition-colors">Catálogo de Libros</Link></li>
               <li><Link href="/precios" className="text-gray-400 hover:text-primary transition-colors">Precios</Link></li>
-              <li><Link href="/tarjetas-regalo" className="text-gray-400 hover:text-primary transition-colors">Tarjetas Regalo</Link></li>
-              <li><Link href="/testimonios" className="text-gray-400 hover:text-primary transition-colors">Testimonios</Link></li>
             </ul>
           </div>
           
@@ -67,14 +83,11 @@ const Footer = () => {
             <ul className="space-y-3">
               <li><Link href="/faqs" className="text-gray-400 hover:text-primary transition-colors">Preguntas Frecuentes</Link></li>
               <li><Link href="/contacto" className="text-gray-400 hover:text-primary transition-colors">Contáctanos</Link></li>
-              <li><Link href="/envios" className="text-gray-400 hover:text-primary transition-colors">Política de Envíos</Link></li>
-              <li><Link href="/devoluciones" className="text-gray-400 hover:text-primary transition-colors">Política de Devoluciones</Link></li>
-              <li><Link href="/ayuda" className="text-gray-400 hover:text-primary transition-colors">Centro de Ayuda</Link></li>
             </ul>
           </div>
           
           <div>
-            <h3 className="text-white font-bold mb-4">Boletín</h3>
+            <h3 className="text-white font-bold mb-4">Newsletter</h3>
             <p className="text-gray-400 mb-4">
               Suscríbete para recibir actualizaciones, acceso a ofertas exclusivas y más.
             </p>
@@ -115,6 +128,47 @@ const Footer = () => {
         </div>
       </div>
     </footer>
+  );
+  
+  const privacyDialog = (
+    <Dialog open={showPrivacyDialog} onOpenChange={setShowPrivacyDialog}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Confirmación de suscripción</DialogTitle>
+          <DialogDescription>
+            Al confirmar, aceptas nuestra Política de Privacidad y das tu consentimiento para recibir actualizaciones periódicas sobre nuestros productos, ofertas y novedades.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="grid gap-4 py-4">
+          <p className="text-sm text-muted-foreground">
+            Tu dirección de email: <span className="font-medium">{tempEmail}</span>
+          </p>
+          <p className="text-sm text-muted-foreground">
+            Puedes darte de baja en cualquier momento utilizando el enlace que aparece en nuestros emails.
+            Tus datos serán tratados de acuerdo con nuestra <Link href="/privacidad" className="text-primary hover:underline">Política de Privacidad</Link>.
+          </p>
+        </div>
+        <DialogFooter className="flex flex-col sm:flex-row sm:justify-between sm:space-x-2">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => setShowPrivacyDialog(false)}
+          >
+            Cancelar
+          </Button>
+          <Button type="button" onClick={confirmSubscription}>
+            Confirmar suscripción
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+  
+  return (
+    <React.Fragment>
+      {footerSection}
+      {privacyDialog}
+    </React.Fragment>
   );
 };
 
