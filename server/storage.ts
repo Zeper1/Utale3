@@ -622,4 +622,13 @@ export class MemStorage implements IStorage {
   }
 }
 
-export const storage = new MemStorage();
+// Importamos la nueva implementación de almacenamiento basada en base de datos
+import { DatabaseStorage } from './databaseStorage';
+
+// Determinamos qué implementación usar basándonos en el entorno
+const useDatabase = process.env.NODE_ENV === 'production' || process.env.USE_DATABASE === 'true';
+
+// Creamos y exportamos la instancia de almacenamiento
+export const storage = useDatabase 
+  ? new DatabaseStorage() 
+  : new MemStorage();
