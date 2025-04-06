@@ -44,7 +44,8 @@ import {
   Mountain,
   Ship,
   PlaneTakeoff,
-  Castle
+  Castle,
+  Save
 } from "lucide-react";
 
 // Esquema para la creación de libros
@@ -419,6 +420,11 @@ export default function CreateBook() {
   const [customGenre, setCustomGenre] = useState("");
   const [customArtStyle, setCustomArtStyle] = useState("");
   
+  // Estados para el modal de detalles específicos del personaje
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+  const [selectedCharacter, setSelectedCharacter] = useState<any>(null);
+  const [characterDetails, setCharacterDetails] = useState<{[key: string]: any}>({});
+  
   // Configuración del formulario de creación de libros
   const form = useForm<BookFormValues>({
     resolver: zodResolver(bookFormSchema),
@@ -567,16 +573,73 @@ export default function CreateBook() {
       description: `Protagonista: ${protagonistName}${numSecondaryCharacters > 0 ? ` y ${numSecondaryCharacters} personaje${numSecondaryCharacters > 1 ? 's' : ''} secundario${numSecondaryCharacters > 1 ? 's' : ''}` : ''}`,
     });
     
+    // Añadir los detalles específicos de cada personaje para esta historia
+    const charactersWithDetails = characterIds.map(id => {
+      const character = childProfiles.find((p: any) => p.id === id);
+      const details = characterDetails[id] || {};
+      
+      return {
+        characterId: id,
+        name: character?.name,
+        type: character?.type,
+        age: character?.age,
+        gender: character?.gender,
+        interests: character?.interests || [],
+        // Detalles específicos para esta historia
+        specificRole: details.specificRole || "",
+        specialAbilities: details.specialAbilities || "",
+        storySpecificDetails: details.storySpecificDetails || ""
+      };
+    });
+    
     // Generar el libro con todos los personajes seleccionados
     generateBook.mutate({
       characterIds: characterIds,
-      storyDetails: storyDetails
+      storyDetails: {
+        ...storyDetails,
+        charactersWithDetails // Añadir los detalles específicos de los personajes
+      }
     });
   };
 
-  // Navegar al chat de perfil
-  const goToProfileChat = (profileId: string) => {
-    setLocation(`/profile-chat/${profileId}`);
+  // Abrir el modal de detalles específicos para el personaje
+  const openCharacterDetailsModal = (characterId: string) => {
+    const character = childProfiles.find((profile: any) => profile.id.toString() === characterId);
+    if (character) {
+      setSelectedCharacter(character);
+      // Si ya hay detalles específicos para este personaje, los cargamos
+      if (characterDetails[characterId]) {
+        // Ya hay detalles guardados para este personaje en esta historia
+      } else {
+        // Inicializamos con los datos del personaje base
+        setCharacterDetails({
+          ...characterDetails,
+          [characterId]: {
+            interests: character.interests || [],
+            preferences: character.preferences || {},
+            specificRole: "",
+            specialAbilities: "",
+            storySpecificDetails: ""
+          }
+        });
+      }
+      setIsDetailsModalOpen(true);
+    }
+  };
+  
+  // Guardar los detalles específicos del personaje para esta historia
+  const saveCharacterDetails = (characterId: string, details: any) => {
+    setCharacterDetails({
+      ...characterDetails,
+      [characterId]: details
+    });
+    
+    toast({
+      title: "Detalles guardados",
+      description: "Los detalles específicos del personaje se han guardado para esta historia",
+    });
+    
+    setIsDetailsModalOpen(false);
   };
 
   // Navegar a la vista previa del libro
@@ -760,22 +823,20 @@ export default function CreateBook() {
                                     </div>
                                     
                                     {/* Botón para añadir detalles */}
-                                    {(!character.interests || character.interests.length === 0) && (
-                                      <Button
-                                        type="button"
-                                        variant="ghost"
-                                        size="sm"
-                                        className="text-xs w-full rounded-none border-t text-primary"
-                                        onClick={(e) => {
-                                          e.preventDefault();
-                                          e.stopPropagation();
-                                          goToProfileChat(character.id.toString());
-                                        }}
-                                      >
-                                        <PlusCircle className="h-3 w-3 mr-1" />
-                                        Añadir detalles
-                                      </Button>
-                                    )}
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="sm"
+                                      className="text-xs w-full rounded-none border-t text-primary"
+                                      onClick={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        openCharacterDetailsModal(character.id.toString());
+                                      }}
+                                    >
+                                      <PlusCircle className="h-3 w-3 mr-1" />
+                                      Añadir detalles para esta historia
+                                    </Button>
                                   </label>
                                   
                                   {/* Indicador de protagonista */}
@@ -1796,6 +1857,117 @@ export default function CreateBook() {
                 Volver al Tablero
               </Button>
             )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Modal para detalles específicos del personaje */}
+      <Dialog open={isDetailsModalOpen} onOpenChange={setIsDetailsModalOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Detalles específicos para esta historia</DialogTitle>
+            <DialogDescription>
+              Añade detalles específicos para {selectedCharacter?.name} en esta historia sin modificar el personaje base.
+              Estos datos solo se aplicarán a este libro en particular.
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedCharacter && (
+            <div className="space-y-4 py-4">
+              <div className="flex items-center space-x-4 mb-6">
+                {selectedCharacter.avatarUrl ? (
+                  <img 
+                    src={selectedCharacter.avatarUrl} 
+                    alt={selectedCharacter.name} 
+                    className="h-16 w-16 rounded-full object-cover border-2 border-primary"
+                  />
+                ) : (
+                  <div className="h-16 w-16 rounded-full flex items-center justify-center bg-primary/20 border-2 border-primary">
+                    <UserCircle className="h-10 w-10 text-primary" />
+                  </div>
+                )}
+                <div>
+                  <h3 className="text-lg font-bold">{selectedCharacter.name}</h3>
+                  <p className="text-sm text-gray-500">
+                    {selectedCharacter.type === 'child' 
+                      ? `${selectedCharacter.age} años` 
+                      : selectedCharacter.type === 'pet' 
+                        ? 'Mascota' 
+                        : selectedCharacter.type === 'toy' 
+                          ? 'Juguete' 
+                          : 'Otro'}
+                  </p>
+                </div>
+              </div>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="text-sm font-medium mb-1 block">Rol específico en esta historia</label>
+                  <Input 
+                    placeholder="Ej: Explorador, Chef, Inventor, Profesor..." 
+                    value={characterDetails[selectedCharacter.id]?.specificRole || ""}
+                    onChange={(e) => setCharacterDetails({
+                      ...characterDetails,
+                      [selectedCharacter.id]: {
+                        ...characterDetails[selectedCharacter.id],
+                        specificRole: e.target.value
+                      }
+                    })}
+                  />
+                  <p className="text-xs text-gray-500 mt-1">¿Qué papel tendrá este personaje en la historia?</p>
+                </div>
+                
+                <div>
+                  <label className="text-sm font-medium mb-1 block">Habilidades especiales para esta aventura</label>
+                  <Input 
+                    placeholder="Ej: Hablar con animales, Construir inventos, Cocinar platos mágicos..." 
+                    value={characterDetails[selectedCharacter.id]?.specialAbilities || ""}
+                    onChange={(e) => setCharacterDetails({
+                      ...characterDetails,
+                      [selectedCharacter.id]: {
+                        ...characterDetails[selectedCharacter.id],
+                        specialAbilities: e.target.value
+                      }
+                    })}
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Habilidades o poderes que tendrá solo en esta historia</p>
+                </div>
+                
+                <div>
+                  <label className="text-sm font-medium mb-1 block">Detalles específicos para esta historia</label>
+                  <Textarea 
+                    placeholder="Describe cualquier otro detalle que desees incluir sobre cómo debe aparecer este personaje en esta historia específica..."
+                    className="min-h-[100px]"
+                    value={characterDetails[selectedCharacter.id]?.storySpecificDetails || ""}
+                    onChange={(e) => setCharacterDetails({
+                      ...characterDetails,
+                      [selectedCharacter.id]: {
+                        ...characterDetails[selectedCharacter.id],
+                        storySpecificDetails: e.target.value
+                      }
+                    })}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+          
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => setIsDetailsModalOpen(false)}
+            >
+              Cancelar
+            </Button>
+            <Button 
+              onClick={() => saveCharacterDetails(
+                selectedCharacter.id.toString(), 
+                characterDetails[selectedCharacter.id]
+              )}
+            >
+              <Save className="h-4 w-4 mr-2" />
+              Guardar detalles
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

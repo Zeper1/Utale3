@@ -486,12 +486,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { characterIds, themeId, storyDetails } = req.body;
       
-      if (!characterIds || !themeId || !Array.isArray(characterIds) || characterIds.length === 0) {
-        return res.status(400).json({ message: "Al menos un ID de personaje y un ID de tema son requeridos" });
+      if (!characterIds || !Array.isArray(characterIds) || characterIds.length === 0) {
+        return res.status(400).json({ message: "Al menos un ID de personaje es requerido" });
       }
       
       // Obtener el número de páginas solicitado (excluyendo la portada)
       const requestedPageCount = storyDetails?.pageCount || 12;
+      
+      // Detalles específicos de los personajes para esta historia (si existen)
+      const charactersWithDetails = storyDetails?.charactersWithDetails || [];
       
       // Obtener todos los personajes
       const characters = [];
@@ -500,13 +503,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (!character) {
           return res.status(404).json({ message: `Personaje con ID ${id} no encontrado` });
         }
-        characters.push(character);
+        
+        // Buscar si hay detalles específicos para este personaje en esta historia
+        const specificDetails = charactersWithDetails.find((c: any) => c.characterId == id);
+        
+        // Clonar el personaje y añadir los detalles específicos si existen
+        const characterWithDetails = {
+          ...character,
+          specificRole: specificDetails?.specificRole || "",
+          specialAbilities: specificDetails?.specialAbilities || "",
+          storySpecificDetails: specificDetails?.storySpecificDetails || ""
+        };
+        
+        characters.push(characterWithDetails);
       }
       
-      // Obtener el tema
-      const theme = await storage.getBookTheme(parseInt(themeId.toString()));
-      if (!theme) {
-        return res.status(404).json({ message: "Book theme not found" });
+      // Obtener el tema (ya sea ID o detalles personalizados enviados directamente)
+      let theme;
+      if (themeId) {
+        theme = await storage.getBookTheme(parseInt(themeId.toString()));
+        if (!theme) {
+          return res.status(404).json({ message: "Tema de libro no encontrado" });
+        }
+      } else if (storyDetails) {
+        // Si no hay ID de tema pero hay detalles de la historia, usamos esos directamente
+        theme = {
+          name: storyDetails.scenario || "Aventura personalizada",
+          description: storyDetails.storyObjective || "Una historia personalizada"
+        };
+      } else {
+        return res.status(400).json({ message: "Se requiere un tema o detalles de la historia" });
       }
 
       // Personaje principal (el primero de la lista)
@@ -527,7 +553,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
             - Edad: ${char.age || 'no especificada'}
             - Descripción: ${char.physicalDescription || 'No disponible'}
             - Personalidad: ${char.personality || 'No disponible'}
-            - Intereses: ${char.interests ? char.interests.join(', ') : 'No disponibles'}
+            - Intereses: ${Array.isArray(char.interests) ? char.interests.join(', ') : 'No disponibles'}
+            ${char.specificRole ? `- Rol en esta historia: ${char.specificRole}` : ''}
+            ${char.specialAbilities ? `- Habilidades especiales: ${char.specialAbilities}` : ''}
+            ${char.storySpecificDetails ? `- Detalles específicos: ${char.storySpecificDetails}` : ''}
           `).join('\n')}`
         : '';
       
@@ -545,6 +574,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                      ${supportingCharacters.length > 0 ? `- Incluye a los personajes secundarios como parte importante de la trama: ${supportingCharacters.map(c => c.name).join(', ')}` : ''}
                      - La historia debe ser apropiada para niños de ${theme.ageRange || '5-10'} años
                      - La narrativa debe incorporar los intereses y personalidad de todos los personajes
+                     - Si se proporcionaron detalles específicos para los personajes en esta historia (como roles específicos, habilidades especiales), asegúrate de incluirlos en la narrativa
                      - Incorpora interacciones significativas entre los personajes que reflejen sus personalidades
                      - Utiliza un lenguaje sencillo pero enriquecedor, adaptado a la edad objetivo
                      - Incluye enseñanzas sutiles o valores positivos (amistad, valentía, respeto, etc.)
@@ -601,6 +631,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
                      - Cosas favoritas: ${mainCharacter.favorites ? JSON.stringify(mainCharacter.favorites, null, 2) : '(color favorito, animal favorito, etc. - usar lo que se deduzca del perfil)'}
                      - Amigos y familia: ${mainCharacter.relationships?.friends ? mainCharacter.relationships.friends.join(', ') : 'amigos, familia y posibles mascotas'}
                      - Rasgos de personalidad: ${mainCharacter.traits ? mainCharacter.traits.join(', ') : 'amigable, curioso y valiente'}
+                     ${mainCharacter.specificRole ? `- Rol en esta historia: ${mainCharacter.specificRole}` : ''}
+                     ${mainCharacter.specialAbilities ? `- Habilidades especiales: ${mainCharacter.specialAbilities}` : ''}
+                     ${mainCharacter.storySpecificDetails ? `- Detalles específicos: ${mainCharacter.storySpecificDetails}` : ''}
                      
                      ${supportingCharactersText}
                      
