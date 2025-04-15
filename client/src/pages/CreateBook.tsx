@@ -936,9 +936,8 @@ export default function CreateBook() {
   const [selectedTemplate, setSelectedTemplate] = useState("adventure");
   
   // Determinar si hay un personaje preseleccionado (de la URL)
-  const searchParams = location.search ? location.search.substring(1) : '';
-  const params = new URLSearchParams(searchParams);
-  const preselectedCharacterId = params.get('character');
+  const urlParams = new URLSearchParams(location.search || '');
+  const preselectedCharacterId = urlParams.get('character');
   
   // Formulario con validación
   const form = useForm<BookFormValues>({
