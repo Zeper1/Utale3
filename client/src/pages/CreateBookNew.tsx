@@ -120,9 +120,13 @@ function CharacterSelectionModal({
   characterDetails,
   setCharacterDetails
 }: CharacterSelectionModalProps) {
-  // Lógica del componente de selección de personajes
+  const [location, setLocation] = useLocation();
   
-  // Para simplificar el ejemplo, solo mostraremos un diálogo básico
+  // Función para ir a la página de creación de personajes
+  const goToCreateCharacter = () => {
+    setLocation('/profile'); // Asumiendo que la página de perfil tiene la funcionalidad de crear personajes
+  };
+  
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[600px]">
@@ -135,9 +139,18 @@ function CharacterSelectionModal({
         
         <div className="py-4">
           {childProfiles.length === 0 ? (
-            <p className="text-center text-muted-foreground">
-              No tienes personajes creados. Crea un personaje para comenzar.
-            </p>
+            <div className="text-center space-y-4 py-6">
+              <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
+                <Users className="h-8 w-8 text-primary" />
+              </div>
+              <p className="text-lg font-medium">No tienes personajes creados</p>
+              <p className="text-muted-foreground mb-4">
+                Para crear un libro personalizado, primero necesitas crear al menos un personaje.
+              </p>
+              <Button onClick={goToCreateCharacter} className="mx-auto">
+                Crear Personaje
+              </Button>
+            </div>
           ) : (
             <div className="grid grid-cols-2 gap-4 max-h-[400px] overflow-y-auto p-2">
               {childProfiles.map((profile) => (
@@ -167,7 +180,7 @@ function CharacterSelectionModal({
                 >
                   <p className="font-medium">{profile.name}</p>
                   <p className="text-sm text-muted-foreground">
-                    {profile.type}, {profile.age} años
+                    {profile.type}, {profile.age ? `${profile.age} años` : 'Edad no especificada'}
                   </p>
                 </div>
               ))}
@@ -175,7 +188,18 @@ function CharacterSelectionModal({
           )}
         </div>
         
-        <DialogFooter>
+        <DialogFooter className="flex justify-between">
+          {childProfiles.length > 0 && (
+            <div className="mr-auto">
+              <Button 
+                variant="outline" 
+                onClick={goToCreateCharacter}
+              >
+                Añadir Personaje
+              </Button>
+            </div>
+          )}
+          
           <Button 
             onClick={onNext} 
             disabled={selectedCharacterIds.length === 0}
@@ -416,7 +440,7 @@ export default function CreateBook() {
   const [selectedTemplate, setSelectedTemplate] = useState("adventure");
   
   // Determinar si hay un personaje preseleccionado (de la URL)
-  const urlParams = new URLSearchParams(window.location.search);
+  const urlParams = new URLSearchParams(location.search.toString());
   const preselectedCharacterId = urlParams.get('character');
   
   // Formulario con validación
@@ -442,7 +466,7 @@ export default function CreateBook() {
   
   // Cargar los perfiles de personajes
   const { data: childProfilesData = [], isLoading: isLoadingProfiles } = useQuery({
-    queryKey: ['/api/characters'],
+    queryKey: ['/api/users/1/characters'], // Esta es la ruta correcta para obtener los personajes del usuario
   });
   
   // Convertir a array tipado
