@@ -1,0 +1,76 @@
+1. Optimización de los Prompts para Generación de Texto
+a. Separación de Campos Obligatorios y Opcionales
+Claridad y Validación:
+La propuesta distingue de forma clara entre campos obligatorios y opcionales tanto para personajes como para libros. Esto es fundamental para garantizar la coherencia en el contenido generado.
+Sugerencia:
+
+Implementa validaciones robustas en el frontend y backend para que el usuario sepa en tiempo real qué información es imprescindible.
+
+Agrega mensajes de error claros para cuando falten campos obligatorios.
+
+b. Plantilla del Sistema y del Usuario
+System Prompt:
+La función generateSystemPrompt establece unas reglas narrativas y técnicas muy completas, lo cual es ideal para encauzar la generación de contenido de forma consistente.
+Sugerencia:
+
+Considera parametrizar algunos de los elementos (por ejemplo, el tono o ciertos aspectos narrativos) para permitir una mayor flexibilidad y adaptación a distintos estilos o preferencias del usuario sin tener que modificar el código base.
+
+Verifica que el prompt final que se envía cumpla estrictamente con la estructura JSON requerida y maneje casos en los que alguna variable pueda estar vacía o nula.
+
+User Prompt para Múltiples Personajes:
+Se utiliza una plantilla detallada para incluir la información de personajes principales y secundarios.
+Puntos a mejorar:
+
+La concatenación de información mediante interpolación de strings puede volverse compleja y propensa a errores si algunos campos opcionales no están definidos.
+
+Es importante asegurarse de que cada sección se genere con la sintaxis adecuada (por ejemplo, evitar guiones o etiquetas que queden sin texto si no se cumple la condición).
+Sugerencia:
+
+Utilizar funciones auxiliares o librerías de templating que permitan construir este texto de forma modular y condicional, lo que hará el código más mantenible.
+
+Revisar el manejo de arrays y objetos (por ejemplo, en favorites) para garantizar que la salida sea legible y se eviten errores de formato.
+
+c. Reglas Narrativas y Técnicas
+Narrativa Infantil:
+Las reglas establecidas (introducción, nudo, desenlace, diálogos identificables, etc.) son muy adecuadas para garantizar una historia coherente, atractiva y con un mensaje educativo.
+Sugerencia:
+
+Podrías considerar la posibilidad de establecer “plantillas” o “arquetipos” narrativos predefinidos para ciertos rangos de edad o estilos (aventura, fantasía, etc.) que se puedan seleccionar y combinar con la información de los personajes.
+
+Evaluar la posibilidad de incorporar elementos de personalización basados en las preferencias del usuario que ya estén registradas en su perfil (por ejemplo, preferencia por historias más tranquilas o más dinámicas).
+
+2. Optimización de Prompts para Generación de Imágenes
+a. Reglas Técnicas para Imágenes
+Aspect Ratio y Composición:
+La propuesta detalla aspectos como el ratio 16:9, la regla de los tercios, profundidad de campo y coherencia visual.
+Observación:
+
+Aunque se sugiere un tamaño concreto para las imágenes, se menciona un tamaño ideal (1792x1024) pero se adapta a las limitaciones de DALL-E 3.
+Sugerencia:
+
+Considerar una capa intermedia de redimensionado o recorte automático después de la generación de la imagen para ajustarla al formato 16:9 sin perder calidad ni composición.
+
+Asegurarse de que la descripción de la escena incluya suficientes detalles para que el generador pueda diferenciar elementos en primer plano, plano medio y fondo.
+
+b. Generación del Prompt de Imágenes
+Integración de Datos de Personajes:
+Se identifica al personaje principal y se filtran los personajes secundarios mencionados en el texto de la página.
+Puntos a mejorar:
+
+La técnica de usar pageText.includes(char.name) puede fallar en algunos casos debido a diferencias en mayúsculas/minúsculas o cuando el nombre forma parte de otra palabra.
+Sugerencia:
+
+Realizar un filtrado con expresiones regulares o normalizar los textos (minúsculas, eliminación de acentos) para mejorar la precisión.
+
+Complementar la descripción visual con datos contextuales adicionales que provengan de la base de datos, en lugar de depender únicamente del texto de la página.
+
+La función determineSceneEmotion es muy útil, pero podrías ampliarla incluyendo sinónimos o incluso usar técnicas de procesamiento de lenguaje natural (dentro del límite de tokens) para una detección más precisa de la emoción predominante.
+
+c. Consistencia Visual
+Reglas de Estilo:
+Se establece la necesidad de expresiones faciales legibles, iluminación adecuada y coherencia en la paleta de colores.
+Sugerencia:
+
+Si es posible, contar con un mecanismo de feedback que permita a los usuarios ajustar o recalibrar los prompts de imagen si la primera versión no cumple con las expectativas visuales.
+
+Documentar o incluso preconfigurar ciertos “modos” visuales para distintos tipos de escenas (por ejemplo, “escena de aventura”, “escena tranquila”) para acelerar la generación y mejorar la coherencia.

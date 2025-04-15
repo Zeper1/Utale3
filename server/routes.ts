@@ -19,6 +19,17 @@ import * as path from "path";
 import multer from "multer";
 import * as crypto from "crypto";
 import { createLogger, LogLevel } from "./lib/logger";
+import { 
+  generateSystemPrompt, 
+  generateUserPrompt, 
+  generateEnhancedImagePrompt, 
+  processCharacterWithStoryDetails 
+} from "./lib/promptEngineering";
+import { 
+  validateWithSchema, 
+  generateBookContentSchema, 
+  generateBookImagesSchema 
+} from "./lib/validationHelpers";
 
 // Crear loggers específicos para diferentes operaciones
 const apiLogger = createLogger('api');
