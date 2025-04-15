@@ -686,24 +686,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Generate book content with AI
   app.post("/api/books/generate-content", async (req: Request, res: Response) => {
     try {
-      const { characterIds, themeId, storyDetails } = req.body;
+      // Validar datos usando el esquema
+      const validation = validateWithSchema(generateBookContentSchema, req.body);
+      if (!validation.success) {
+        bookLogger.warn("Validación fallida para generación de contenido", {
+          errors: validation.errors
+        });
+        return res.status(400).json({ 
+          message: "Datos de solicitud inválidos", 
+          errors: validation.errors 
+        });
+      }
+
+      const { characterIds, themeId, storyDetails } = validation.data;
       
       bookLogger.info("Solicitud de generación avanzada de contenido recibida", {
-        characterCount: characterIds?.length || 0,
+        characterCount: characterIds.length,
         themeId: themeId || 'personalizado',
         requestedPageCount: storyDetails?.pageCount || 12,
         ip: req.ip,
         userAgent: req.headers['user-agent']
       });
-      
-      if (!characterIds || !Array.isArray(characterIds) || characterIds.length === 0) {
-        bookLogger.warn("Generación rechazada: No se proporcionaron IDs de personajes", {
-          hasCharacterIds: !!characterIds,
-          isArray: Array.isArray(characterIds),
-          length: characterIds?.length
-        });
-        return res.status(400).json({ message: "Al menos un ID de personaje es requerido" });
-      }
       
       // Obtener el número de páginas solicitado (excluyendo la portada)
       const requestedPageCount = storyDetails?.pageCount || 12;
@@ -715,43 +718,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
         hasStoryDetails: !!storyDetails
       });
       
-      // Detalles específicos de los personajes para esta historia (si existen)
-      const charactersWithDetails = storyDetails?.charactersWithDetails || [];
-      
-      // Obtener todos los personajes
-      const characters = [];
+      // Obtener todos los personajes y procesar con detalles específicos
+      const enrichedCharacters = [];
       for (const id of characterIds) {
-        const character = await storage.getCharacter(parseInt(id.toString()));
+        const character = await storage.getCharacter(id);
         if (!character) {
           return res.status(404).json({ message: `Personaje con ID ${id} no encontrado` });
         }
         
-        // Buscar si hay detalles específicos para este personaje en esta historia
-        const specificDetails = charactersWithDetails.find((c: any) => c.characterId == id);
+        // Buscar detalles específicos para este personaje en esta historia (si existen)
+        const characterDetails = storyDetails?.characterDetails?.[id.toString()];
         
-        // Clonar el personaje y añadir los detalles específicos si existen
-        const characterWithDetails = {
-          ...character,
-          specificRole: specificDetails?.specificRole || "",
-          specialAbilities: specificDetails?.specialAbilities || "",
-          storySpecificDetails: specificDetails?.storySpecificDetails || ""
-        };
-        
-        characters.push(characterWithDetails);
+        // Procesar el personaje con los detalles específicos
+        const enrichedCharacter = processCharacterWithStoryDetails(character, characterDetails);
+        enrichedCharacters.push(enrichedCharacter);
       }
       
-      // Obtener el tema (ya sea ID o detalles personalizados enviados directamente)
+      // Obtener el tema (ya sea ID o detalles personalizados)
       let theme;
       if (themeId) {
-        theme = await storage.getBookTheme(parseInt(themeId.toString()));
+        theme = await storage.getBookTheme(themeId);
         if (!theme) {
           return res.status(404).json({ message: "Tema de libro no encontrado" });
         }
       } else if (storyDetails) {
         // Si no hay ID de tema pero hay detalles de la historia, usamos esos directamente
         theme = {
-          name: storyDetails.scenario || "Aventura personalizada",
-          description: storyDetails.storyObjective || "Una historia personalizada"
+          name: storyDetails.setting || "Aventura personalizada",
+          description: storyDetails.message || "Una historia personalizada",
+          ageRange: "5-10" // Valor predeterminado
         };
       } else {
         return res.status(400).json({ message: "Se requiere un tema o detalles de la historia" });

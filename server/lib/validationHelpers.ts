@@ -24,7 +24,13 @@ export const enhancedCharacterSchema = insertCharacterSchema
     (data) => {
       // La edad es obligatoria solo para tipos específicos
       if (["niño", "niña", "adulto", "adulta"].includes(data.type || "")) {
-        return data.age && data.age.trim().length > 0;
+        // Verificar si age es un número o string
+        if (typeof data.age === 'number') {
+          return data.age > 0;
+        } else if (typeof data.age === 'string') {
+          return data.age.trim().length > 0;
+        }
+        return false;
       }
       return true;
     },

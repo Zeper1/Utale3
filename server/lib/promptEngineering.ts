@@ -132,8 +132,8 @@ Debes generar un objeto JSON con la siguiente estructura exacta:
  * Genera un prompt para el usuario integrando toda la información disponible
  */
 export function generateUserPrompt(
-  mainCharacter: Character & Partial<CharacterStoryDetails>,
-  supportingCharacters: (Character & Partial<CharacterStoryDetails>)[],
+  mainCharacter: ExtendedCharacter,
+  supportingCharacters: ExtendedCharacter[],
   theme: BookTheme,
   pageCount: number,
   storyDetails?: StoryDetails
@@ -185,7 +185,7 @@ ${supportingCharacters.length > 0 ? '- Incluye momentos destacados para cada per
  * Maneja de forma segura los campos que podrían ser nulos o indefinidos
  */
 function formatCharacterInfo(
-  character: Character & Partial<CharacterStoryDetails>,
+  character: ExtendedCharacter,
   isMainCharacter: boolean
 ): string {
   const sections: string[] = [];
@@ -345,7 +345,7 @@ export function determineSceneEmotion(text: string): string {
 export function generateEnhancedImagePrompt(
   page: { pageNumber: number; text: string; imagePrompt: string },
   bookContent: { title: string; targetAge?: string; theme?: string },
-  characters: (Character & Partial<CharacterStoryDetails>)[]
+  characters: ExtendedCharacter[]
 ): string {
   if (!characters || characters.length === 0) {
     return defaultImagePrompt(page, bookContent);
@@ -444,7 +444,7 @@ Esta ilustración es para niños de ${bookContent.targetAge || '5-10'} años.`;
  * Formatea la descripción de un personaje para el prompt de imagen
  */
 function formatCharacterImagePrompt(
-  character: Character & Partial<CharacterStoryDetails>,
+  character: ExtendedCharacter,
   isMainCharacter: boolean
 ): string {
   let description = `${character.name} (${isMainCharacter ? 'protagonista' : 'personaje secundario'}): `;
