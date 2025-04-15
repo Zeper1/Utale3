@@ -753,137 +753,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Personaje principal (el primero de la lista)
-      const mainCharacter = characters[0];
+      const mainCharacter = enrichedCharacters[0];
       
       // Personajes secundarios (resto de la lista)
-      const supportingCharacters = characters.slice(1);
-      
-      // El historial de chat ha sido eliminado
-      const chatContext = '';
-      
-      // Crear descripciones de los personajes secundarios para el prompt
-      const supportingCharactersText = supportingCharacters.length > 0 
-        ? `PERSONAJES SECUNDARIOS:
-          ${supportingCharacters.map(char => `
-            - Nombre: ${char.name}
-            - Tipo: ${char.type || 'personaje'}
-            - Edad: ${char.age || 'no especificada'}
-            - Descripción: ${char.physicalDescription || 'No disponible'}
-            - Personalidad: ${char.personality || 'No disponible'}
-            - Intereses: ${Array.isArray(char.interests) ? char.interests.join(', ') : 'No disponibles'}
-            ${char.specificRole ? `- Rol en esta historia: ${char.specificRole}` : ''}
-            ${char.specialAbilities ? `- Habilidades especiales: ${char.specialAbilities}` : ''}
-            ${char.storySpecificDetails ? `- Detalles específicos: ${char.storySpecificDetails}` : ''}
-          `).join('\n')}`
-        : '';
+      const supportingCharacters = enrichedCharacters.slice(1);
       
       // Generate book content with OpenAI
       bookLogger.info("Iniciando generación de contenido avanzado con OpenAI", {
         modelo: "gpt-4o",
-        characterCount: characters.length,
+        characterCount: enrichedCharacters.length,
         supportingCharacterCount: supportingCharacters.length,
         themeName: theme.name,
         pageCount: requestedPageCount
       });
       
       const startTime = Date.now();
+      
+      // Generar el prompt del sistema utilizando nuestra función de ingeniería de prompts
+      const systemPrompt = generateSystemPrompt(theme.name);
+      
+      // Generar el prompt del usuario con todos los detalles de personajes y tema
+      const userPrompt = generateUserPrompt(
+        mainCharacter,
+        supportingCharacters,
+        theme as any, // Hack temporal para manejar los diferentes tipos de theme
+        requestedPageCount,
+        storyDetails
+      );
+      
       const completion = await openai.chat.completions.create({
         model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024
         messages: [
           {
             role: "system",
-            content: `Eres un experto narrador de cuentos infantiles que crea historias mágicas con múltiples personajes.
-                     
-                     INSTRUCCIONES PARA LA CREACIÓN DE HISTORIAS:
-                     - Crea un libro infantil personalizado con el tema: "${theme.name}"
-                     - La historia debe incluir ${characters.length} personaje(s), con ${mainCharacter.name} como protagonista principal
-                     ${supportingCharacters.length > 0 ? `- Incluye a los personajes secundarios como parte importante de la trama: ${supportingCharacters.map(c => c.name).join(', ')}` : ''}
-                     - La historia debe ser apropiada para niños de ${theme.ageRange || '5-10'} años
-                     - La narrativa debe incorporar los intereses y personalidad de todos los personajes
-                     - Si se proporcionaron detalles específicos para los personajes en esta historia (como roles específicos, habilidades especiales), asegúrate de incluirlos en la narrativa
-                     - Incorpora interacciones significativas entre los personajes que reflejen sus personalidades
-                     - Utiliza un lenguaje sencillo pero enriquecedor, adaptado a la edad objetivo
-                     - Incluye enseñanzas sutiles o valores positivos (amistad, valentía, respeto, etc.)
-                     - Asegúrate de que la historia tenga un arco narrativo claro: introducción, desarrollo, clímax y resolución
-                     - Las ilustraciones deben incluir a todos los personajes que participan en cada escena
-                     - Evita cualquier contenido inapropiado, terrorífico o angustiante
-                     
-                     ESTRUCTURA DE LA HISTORIA:
-                     - Página 1: Portada con título e introducción de los personajes principales (no se considera en el número total de páginas)
-                     - Páginas 2-${Math.floor(requestedPageCount * 0.25) + 1}: Establecimiento del escenario y situación inicial con los personajes
-                     - Páginas ${Math.floor(requestedPageCount * 0.25) + 2}-${Math.floor(requestedPageCount * 0.6)}: Desarrollo de la aventura que involucre a todos los personajes
-                     - Páginas ${Math.floor(requestedPageCount * 0.6) + 1}-${Math.floor(requestedPageCount * 0.8)}: Clímax o momento crucial
-                     - Páginas ${Math.floor(requestedPageCount * 0.8) + 1}-${requestedPageCount}: Resolución y final feliz con mensaje positivo
-                     
-                     Debes generar un objeto JSON con la siguiente estructura exacta:
-                     {
-                       "title": "Título de la historia incluyendo los nombres de los personajes principales",
-                       "pages": [
-                         {
-                          "pageNumber": 1,
-                          "text": "Texto de la página con narración de la historia (2-3 frases)",
-                          "imagePrompt": "Descripción detallada para ilustrar esta página con todos los personajes participantes"
-                         },
-                         ...
-                       ],
-                       "summary": "Breve resumen de la historia",
-                       "targetAge": "Rango de edad apropiado para la historia",
-                       "theme": "${theme.name}",
-                       "characters": ${JSON.stringify(characters.map(c => c.name))}
-                     }
-                     
-                     REQUISITOS TÉCNICOS:
-                     - El libro debe tener exactamente ${requestedPageCount + 1} páginas en total: 1 portada + ${requestedPageCount} páginas de contenido
-                     - La portada (página 1) no cuenta para el número de páginas solicitado por el usuario
-                     - Cada página debe tener texto atractivo y apropiado para la edad que haga avanzar la historia
-                     - Los prompts de imagen deben ser detallados para crear ilustraciones que incluyan a todos los personajes relevantes
-                     - Usa el estilo ilustrativo "acuarela infantil" o "ilustración infantil digital colorida" para consistencia
-                     - Menciona colores específicos y elementos de la escena en cada prompt de imagen
-                     - Proporciona descripciones físicas de los personajes en los prompts de imagen basadas en los perfiles`
+            content: systemPrompt
           },
           {
             role: "user",
-            content: `Crea una historia mágica y personalizada con ${mainCharacter.name} como protagonista principal${supportingCharacters.length > 0 ? ` y con ${supportingCharacters.map(c => c.name).join(', ')} como personaje(s) secundario(s)` : ''}.
-                     
-                     PERFIL DEL PERSONAJE PRINCIPAL:
-                     - Nombre: ${mainCharacter.name}
-                     - Tipo: ${mainCharacter.type || 'niño/a'}
-                     - Edad: ${mainCharacter.age || 'escolar'}
-                     - Descripción física: ${mainCharacter.physicalDescription || 'No disponible'}
-                     - Personalidad: ${mainCharacter.personality || 'amigable, curioso y valiente'}
-                     - Intereses: ${mainCharacter.interests ? mainCharacter.interests.join(', ') : 'juegos, aventuras, animales y descubrimientos'}
-                     - Le gusta: ${mainCharacter.likes || 'No especificado'}
-                     - No le gusta: ${mainCharacter.dislikes || 'No especificado'}
-                     - Cosas favoritas: ${mainCharacter.favorites ? JSON.stringify(mainCharacter.favorites, null, 2) : '(color favorito, animal favorito, etc. - usar lo que se deduzca del perfil)'}
-                     - Amigos y familia: ${mainCharacter.relationships?.friends ? mainCharacter.relationships.friends.join(', ') : 'amigos, familia y posibles mascotas'}
-                     - Rasgos de personalidad: ${mainCharacter.traits ? mainCharacter.traits.join(', ') : 'amigable, curioso y valiente'}
-                     ${mainCharacter.specificRole ? `- Rol en esta historia: ${mainCharacter.specificRole}` : ''}
-                     ${mainCharacter.specialAbilities ? `- Habilidades especiales: ${mainCharacter.specialAbilities}` : ''}
-                     ${mainCharacter.storySpecificDetails ? `- Detalles específicos: ${mainCharacter.storySpecificDetails}` : ''}
-                     
-                     ${supportingCharactersText}
-                     
-                     TEMA DEL LIBRO:
-                     - Tema: ${theme.name}
-                     - Descripción del tema: ${theme.description}
-                     
-                     ${chatContext ? `CONTEXTO ADICIONAL DE CONVERSACIONES:\n${chatContext}` : ''}
-                     
-                     INSTRUCCIONES ESPECÍFICAS PARA MÚLTIPLES PERSONAJES:
-                     - Asegúrate de que todos los personajes tengan un papel significativo en la historia
-                     - Involucra a todos los personajes en la resolución del conflicto o aventura
-                     - Refleja las personalidades y características únicas de cada personaje en sus diálogos y acciones
-                     - Crea interacciones entre los personajes que muestren amistad, cooperación y apoyo mutuo
-                     - Los personajes secundarios deben tener momentos destacados donde brillen por sus habilidades o cualidades
-                     - El protagonista debe aprender algo importante con la ayuda de los demás personajes
-                     - Todas las ilustraciones deben incluir representaciones visuales adecuadas de todos los personajes relevantes en cada escena
-                     
-                     Crea una historia única y encantadora que realmente se sienta como si fuera escrita específicamente para estos personajes,
-                     incorporando sus intereses y personalidades de manera natural en la narrativa.
-                     
-                     Asegúrate de que la historia sea apropiada para la edad, educativa, divertida y con un mensaje positivo.
-                     Las ilustraciones deben ser coherentes con la historia y apropiadas para niños.
-                     `
+            content: userPrompt
           }
         ],
         response_format: { type: "json_object" },
@@ -899,7 +806,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       bookLogger.info("Contenido del libro multi-personaje generado exitosamente", {
         title: bookContent.title,
         pageCount: bookContent.pages?.length || 0,
-        characterCount: characters.length,
+        characterCount: enrichedCharacters.length,
         themeName: theme.name,
         processingTimeMs: processingTime,
         promptTokens: completion.usage?.prompt_tokens,
@@ -969,32 +876,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
             bookId: bookId || 'preview'
           });
           
-          // Preparamos un prompt más detallado y controlado
-          const baseStyle = "Ilustración infantil en estilo acuarela digital, colorida y alegre, con colores vibrantes y apto para niños";
-          
-          // Mejoramos el prompt para DALL-E
-          const enhancedPrompt = `
-Crea una ilustración de libro infantil de alta calidad para un cuento sobre ${processedContent.mainCharacter}:
+          // Obtener los personajes del libro si están disponibles
+          let charactersList: ExtendedCharacter[] = [];
+          if (processedContent.characters && Array.isArray(processedContent.characters)) {
+            // Crear objetos de personaje a partir de los nombres
+            charactersList = processedContent.characters.map((name: string, index: number) => ({
+              id: index + 1,
+              name,
+              type: 'personaje',
+              createdAt: new Date(),
+              updatedAt: new Date(),
+              userId: userId,
+              age: null,
+              gender: null,
+              physicalDescription: null,
+              personality: null,
+              interests: [],
+              likes: null,
+              dislikes: null,
+              favorites: {},
+              relationships: null,
+              additionalInfo: null,
+              // Campos extendidos para personajes
+              specificRole: null,
+              specialAbilities: null,
+              storySpecificDetails: null,
+              relationToMainCharacter: index === 0 ? null : 'personaje secundario'
+            }));
+          }
 
-${page.imagePrompt}
-
-ESTILO ARTÍSTICO REQUERIDO:
-- ${baseStyle}
-- Diseño apropiado para niños de ${processedContent.targetAge} años
-- Colores brillantes y amigables, escenas bien iluminadas
-- Personajes con expresiones faciales claras y amigables
-- Estilo consistente con ilustraciones de libros infantiles profesionales
-- Sin texto, solo la imagen
-- Proporciones correctas y anatomía apropiada para personajes infantiles
-
-NO INCLUIR:
-- Elementos aterradores, oscuros o inapropiados
-- Texto o letras dentro de la ilustración
-- Elementos que puedan causar miedo o ansiedad
-- Escenas violentas o perturbadoras
-
-Esta imagen es para un libro infantil que será leído por niños.
-`;
+          // Usar nuestra función avanzada de generación de prompts para imágenes
+          const enhancedPrompt = generateEnhancedImagePrompt(
+            {
+              pageNumber: page.pageNumber,
+              text: page.text,
+              imagePrompt: page.imagePrompt
+            },
+            {
+              title: processedContent.title,
+              targetAge: processedContent.targetAge,
+              theme: processedContent.theme
+            },
+            charactersList
+          );
 
           const imageResponse = await openai.images.generate({
             model: "dall-e-3",
