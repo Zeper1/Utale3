@@ -72,11 +72,42 @@ const AuthModal = ({ isOpen, onClose, view, setView }: AuthModalProps) => {
         description: "¡Bienvenido de nuevo a Utale!",
       });
       onClose();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Login error:", error);
+      
+      let errorMessage = "Por favor, verifica tus credenciales e inténtalo de nuevo.";
+      
+      // Mensajes específicos según el código de error de Firebase
+      if (error.code) {
+        switch (error.code) {
+          case 'auth/user-not-found':
+          case 'auth/wrong-password':
+            errorMessage = "Correo electrónico o contraseña incorrectos.";
+            break;
+          case 'auth/too-many-requests':
+            errorMessage = "Demasiados intentos fallidos. Por favor, espera unos minutos.";
+            break;
+          case 'auth/user-disabled':
+            errorMessage = "Tu cuenta ha sido deshabilitada. Contacta con soporte.";
+            break;
+          case 'auth/requires-recent-login':
+            errorMessage = "Esta operación requiere una autenticación reciente. Inicia sesión de nuevo.";
+            break;
+          case 'auth/invalid-email':
+            errorMessage = "El formato del correo electrónico no es válido.";
+            break;
+          case 'auth/network-request-failed':
+            errorMessage = "Error de conexión. Verifica tu conexión a internet.";
+            break;
+          case 'auth/unauthorized-domain':
+            errorMessage = "Este dominio no está autorizado para inicios de sesión.";
+            break;
+        }
+      }
+      
       toast({
         title: "Error de inicio de sesión",
-        description: "Por favor, verifica tus credenciales e inténtalo de nuevo.",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -94,11 +125,38 @@ const AuthModal = ({ isOpen, onClose, view, setView }: AuthModalProps) => {
         description: "¡Bienvenido a Utale!",
       });
       onClose();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Signup error:", error);
+      
+      let errorMessage = "Hubo un error al crear tu cuenta. Por favor, inténtalo de nuevo.";
+      
+      // Mensajes específicos según el código de error de Firebase
+      if (error.code) {
+        switch (error.code) {
+          case 'auth/email-already-in-use':
+            errorMessage = "Este correo electrónico ya está en uso. Prueba a iniciar sesión o a recuperar tu contraseña.";
+            break;
+          case 'auth/invalid-email':
+            errorMessage = "El formato del correo electrónico no es válido.";
+            break;
+          case 'auth/operation-not-allowed':
+            errorMessage = "El registro con correo y contraseña no está habilitado. Contacta con soporte.";
+            break;
+          case 'auth/weak-password':
+            errorMessage = "La contraseña es demasiado débil. Usa al menos 6 caracteres.";
+            break;
+          case 'auth/network-request-failed':
+            errorMessage = "Error de conexión. Verifica tu conexión a internet.";
+            break;
+          case 'auth/too-many-requests':
+            errorMessage = "Demasiados intentos. Por favor, espera unos minutos antes de intentarlo de nuevo.";
+            break;
+        }
+      }
+      
       toast({
         title: "Error de registro",
-        description: "Hubo un error al crear tu cuenta. Por favor, inténtalo de nuevo.",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -108,15 +166,49 @@ const AuthModal = ({ isOpen, onClose, view, setView }: AuthModalProps) => {
 
   const handleGoogleSignIn = async () => {
     try {
+      setIsLoading(true);
       await signInWithGoogle();
+      toast({
+        title: "Inicio de sesión exitoso",
+        description: "¡Bienvenido a Utale!",
+      });
       onClose();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Google sign-in error:", error);
+      
+      let errorMessage = "Hubo un error al iniciar sesión con Google. Por favor, inténtalo de nuevo.";
+      
+      // Mensajes específicos según el código de error de Firebase
+      if (error.code) {
+        switch (error.code) {
+          case 'auth/popup-closed-by-user':
+            errorMessage = "Has cerrado la ventana de inicio de sesión. Inténtalo de nuevo.";
+            break;
+          case 'auth/cancelled-popup-request':
+            errorMessage = "La solicitud de inicio de sesión fue cancelada. Inténtalo de nuevo.";
+            break;
+          case 'auth/popup-blocked':
+            errorMessage = "El navegador ha bloqueado la ventana emergente. Permite ventanas emergentes e inténtalo de nuevo.";
+            break;
+          case 'auth/account-exists-with-different-credential':
+            errorMessage = "Ya existe una cuenta con este correo electrónico pero con diferente método de inicio de sesión.";
+            break;
+          case 'auth/unauthorized-domain':
+            errorMessage = "Este dominio no está autorizado para operaciones de inicio de sesión.";
+            break;
+          case 'auth/network-request-failed':
+            errorMessage = "Error de conexión. Verifica tu conexión a internet.";
+            break;
+        }
+      }
+      
       toast({
         title: "Error de inicio con Google",
-        description: "Hubo un error al iniciar sesión con Google. Por favor, inténtalo de nuevo.",
+        description: errorMessage,
         variant: "destructive",
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
