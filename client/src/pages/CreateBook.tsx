@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { useNavigate, useLocation } from "wouter";
+import { useLocation } from "wouter";
 import { useState, useEffect } from "react";
 import { apiRequest } from "@/lib/queryClient";
 import { useQuery } from "@tanstack/react-query";
@@ -916,7 +916,7 @@ function TechnicalSettingsModal({
 
 export default function CreateBook() {
   const { toast } = useToast();
-  const [location, navigate] = useLocation();
+  const [location, setLocation] = useLocation();
   
   // Estado para los componentes modales
   const [characterSelectionOpen, setCharacterSelectionOpen] = useState(false);
@@ -936,7 +936,8 @@ export default function CreateBook() {
   const [selectedTemplate, setSelectedTemplate] = useState("adventure");
   
   // Determinar si hay un personaje preseleccionado (de la URL)
-  const params = new URLSearchParams(location.search);
+  const searchParams = location.search ? location.search.substring(1) : '';
+  const params = new URLSearchParams(searchParams);
   const preselectedCharacterId = params.get('character');
   
   // Formulario con validación
@@ -961,9 +962,12 @@ export default function CreateBook() {
   });
   
   // Cargar los perfiles de personajes
-  const { data: childProfiles = [], isLoading: isLoadingProfiles } = useQuery({
+  const { data: childProfilesData = [], isLoading: isLoadingProfiles } = useQuery({
     queryKey: ['/api/characters'],
   });
+  
+  // Convertir a array tipado
+  const childProfiles = childProfilesData as any[];
   
   // Navegar entre los pasos del asistente
   const goToStep = (step: number) => {
@@ -991,13 +995,13 @@ export default function CreateBook() {
   // Navegar al visor de libros una vez generado
   const goToBookPreview = () => {
     if (generatedBookId) {
-      navigate(`/book-preview/${generatedBookId}`);
+      setLocation(`/book-preview/${generatedBookId}`);
     }
   };
   
   // Volver al dashboard
   const goToDashboard = () => {
-    navigate('/dashboard');
+    setLocation('/dashboard');
   };
   
   // Manejar envío del formulario

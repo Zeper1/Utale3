@@ -27,8 +27,8 @@ export const enhancedCharacterSchema = insertCharacterSchema
         // Verificar si age es un número o string
         if (typeof data.age === 'number') {
           return data.age > 0;
-        } else if (typeof data.age === 'string' && data.age) {
-          return data.age.trim().length > 0;
+        } else if (typeof data.age === 'string') {
+          return data.age !== null && data.age !== undefined && data.age !== '';
         }
         return false;
       }
