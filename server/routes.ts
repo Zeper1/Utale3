@@ -23,7 +23,8 @@ import {
   generateSystemPrompt, 
   generateUserPrompt, 
   generateEnhancedImagePrompt, 
-  processCharacterWithStoryDetails 
+  processCharacterWithStoryDetails,
+  type ExtendedCharacter 
 } from "./lib/promptEngineering";
 import { 
   validateWithSchema, 
@@ -848,7 +849,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Obtenemos el usuario autenticado para guardar las imágenes en su carpeta
       // Si no hay usuario autenticado, usamos un ID predeterminado solo para desarrollo
-      const userId = req.user && 'id' in req.user ? (req.user.id as number) : 1;
+      const userId = (req as any).user && 'id' in (req as any).user ? ((req as any).user.id as number) : 1;
       
       bookLogger.debug("Iniciando generación de imágenes para libro", {
         userId,
@@ -976,7 +977,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             pageNumber: page.pageNumber,
             bookId: bookId || 'preview',
             cloudinaryPublicId: cloudinaryResult.public_id,
-            cloudinaryFolder: cloudinaryResult.folder,
+            cloudinaryFolder: (cloudinaryResult as any).folder,
             totalProcessTimeMs: Date.now() - pageStartTime
           });
           
