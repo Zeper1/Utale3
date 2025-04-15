@@ -5,7 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/Home";
 import Dashboard from "@/pages/DashboardNew"; // Cambiamos a la nueva versión
-import CreateBook from "@/pages/CreateBook";
+import CreateBook from "@/pages/CreateBookNew"; // Usamos la nueva implementación
 import BookPreview from "@/pages/BookPreview";
 import Checkout from "@/pages/Checkout";
 import Subscribe from "@/pages/Subscribe";

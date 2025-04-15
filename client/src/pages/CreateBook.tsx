@@ -918,8 +918,8 @@ export default function CreateBook() {
   const { toast } = useToast();
   const [location, setLocation] = useLocation();
   
-  // Estado para los componentes modales
-  const [characterSelectionOpen, setCharacterSelectionOpen] = useState(false);
+  // Estado para los componentes modales - El primero abierto por defecto
+  const [characterSelectionOpen, setCharacterSelectionOpen] = useState(true);
   const [storyDetailsOpen, setStoryDetailsOpen] = useState(false);
   const [technicalSettingsOpen, setTechnicalSettingsOpen] = useState(false);
   const [generatingDialogOpen, setGeneratingDialogOpen] = useState(false);
@@ -936,7 +936,7 @@ export default function CreateBook() {
   const [selectedTemplate, setSelectedTemplate] = useState("adventure");
   
   // Determinar si hay un personaje preseleccionado (de la URL)
-  const urlParams = new URLSearchParams(location.search || '');
+  const urlParams = new URLSearchParams(location.search);
   const preselectedCharacterId = urlParams.get('character');
   
   // Formulario con validación
@@ -1057,98 +1057,23 @@ export default function CreateBook() {
   };
   
   return (
-    <div className="container max-w-5xl py-10">
-      <div className="space-y-8">
-        <div className="text-center">
-          <h1 className="text-3xl font-bold text-primary">Crear Libro Personalizado</h1>
-          <p className="text-gray-500 mt-2">
-            Elige personajes y configura los detalles para crear una historia única
-          </p>
+    <>
+      {isLoadingProfiles ? (
+        // Mostrar un indicador de carga centrado si los perfiles están cargando
+        <div className="flex justify-center items-center h-[80vh]">
+          <div className="animate-spin h-12 w-12 border-4 border-primary border-t-transparent rounded-full" />
         </div>
-        
-        {isLoadingProfiles ? (
-          <Card className="p-8">
-            <div className="flex justify-center">
-              <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
-            </div>
-          </Card>
-        ) : (
-          <div className="space-y-8">
-            <Card className="overflow-hidden border-2 border-primary/10 shadow-lg">
-              <CardContent className="p-0">
-                <div className="grid grid-cols-3 divide-x">
-                  <Button 
-                    variant="ghost" 
-                    onClick={() => goToStep(1)} 
-                    className="py-6 rounded-none flex flex-col items-center gap-2 hover:bg-primary/5"
-                  >
-                    <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                      <Users className="h-6 w-6 text-primary" />
-                    </div>
-                    <div className="text-center">
-                      <p className="font-medium text-primary">Paso 1</p>
-                      <p className="text-sm text-muted-foreground">Personajes</p>
-                    </div>
-                  </Button>
-                  
-                  <Button 
-                    variant="ghost" 
-                    onClick={() => goToStep(2)} 
-                    className="py-6 rounded-none flex flex-col items-center gap-2 hover:bg-primary/5"
-                    disabled={selectedCharacterIds.length === 0}
-                  >
-                    <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                      <BookText className="h-6 w-6 text-primary" />
-                    </div>
-                    <div className="text-center">
-                      <p className="font-medium text-primary">Paso 2</p>
-                      <p className="text-sm text-muted-foreground">Historia</p>
-                    </div>
-                  </Button>
-                  
-                  <Button 
-                    variant="ghost" 
-                    onClick={() => goToStep(3)} 
-                    className="py-6 rounded-none flex flex-col items-center gap-2 hover:bg-primary/5"
-                    disabled={selectedCharacterIds.length === 0}
-                  >
-                    <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                      <Settings className="h-6 w-6 text-primary" />
-                    </div>
-                    <div className="text-center">
-                      <p className="font-medium text-primary">Paso 3</p>
-                      <p className="text-sm text-muted-foreground">Configuración</p>
-                    </div>
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-            
-            <div className="text-center">
-              <p className="text-lg font-medium mb-4">¡Comienza a crear tu historia personalizada!</p>
-              <p className="text-muted-foreground mb-8">
-                Sigue los tres sencillos pasos para generar un libro único con tus personajes favoritos.
-              </p>
-              
-              <Button 
-                size="lg" 
-                onClick={startCreation}
-                className="mx-auto px-8 py-6 text-lg"
-              >
-                <Wand2 className="mr-2 h-5 w-5" />
-                Comenzar Creación
-              </Button>
-            </div>
-            
-            {/* Formulario oculto para manejar la validación */}
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="hidden">
-                <Button type="submit">Enviar</Button>
-              </form>
-            </Form>
-          </div>
-        )}
-      </div>
+      ) : (
+        // No mostrar contenido en la página principal - solo los modales
+        <div className="hidden">
+          {/* Formulario oculto para manejar la validación */}
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)}>
+              <Button type="submit">Enviar</Button>
+            </form>
+          </Form>
+        </div>
+      )}
       
       {/* Modales del asistente */}
       <CharacterSelectionModal
@@ -1232,6 +1157,6 @@ export default function CreateBook() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </>
   );
 }
