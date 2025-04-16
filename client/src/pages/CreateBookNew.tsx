@@ -96,6 +96,18 @@ function getTemplateDetails(templateId: string) {
   return templates[templateId] || templates.adventure;
 }
 
+// Definición de los roles de personajes
+type CharacterRole = 'protagonist' | 'secondary' | 'antagonist' | 'mentor' | 'ally';
+
+// Interfaces para manejar la información del personaje en la historia
+interface CharacterStoryDetails {
+  role: CharacterRole;
+  specificTraits?: string[];
+  storyBackground?: string;
+  specialAbilities?: string[];
+  customDescription?: string;
+}
+
 // Componente de selección de personajes (Modal Paso 1)
 interface CharacterSelectionModalProps {
   childProfiles: any[];
@@ -105,8 +117,404 @@ interface CharacterSelectionModalProps {
   onNext: () => void;
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
-  characterDetails: {[key: string]: any};
-  setCharacterDetails: (details: {[key: string]: any}) => void;
+  characterDetails: {[key: string]: CharacterStoryDetails};
+  setCharacterDetails: (details: {[key: string]: CharacterStoryDetails}) => void;
+}
+
+// Componente para configurar detalles específicos del personaje
+interface CharacterDetailsModalProps {
+  isOpen: boolean;
+  onOpenChange: (open: boolean) => void;
+  characterId: string;
+  character: any;
+  storyDetails: CharacterStoryDetails;
+  onUpdate: (characterId: string, details: CharacterStoryDetails) => void;
+}
+
+function CharacterDetailsModal({
+  isOpen,
+  onOpenChange,
+  characterId,
+  character,
+  storyDetails,
+  onUpdate
+}: CharacterDetailsModalProps) {
+  // Estados para los campos editables
+  const [role, setRole] = useState<CharacterRole>(storyDetails?.role || 'protagonist');
+  const [traits, setTraits] = useState<string>(storyDetails?.specificTraits?.join(', ') || '');
+  const [background, setBackground] = useState<string>(storyDetails?.storyBackground || '');
+  const [abilities, setAbilities] = useState<string>(storyDetails?.specialAbilities?.join(', ') || '');
+  const [description, setDescription] = useState<string>(storyDetails?.customDescription || '');
+  
+  // Roles disponibles para un personaje
+  const availableRoles: {value: CharacterRole, label: string, description: string, icon: React.ReactNode}[] = [
+    { 
+      value: 'protagonist', 
+      label: 'Protagonista', 
+      description: 'El personaje principal de la historia',
+      icon: <div className="w-6 h-6 bg-yellow-500/20 rounded-full flex items-center justify-center"><span className="text-yellow-600 text-xs font-bold">P</span></div>
+    },
+    { 
+      value: 'secondary', 
+      label: 'Secundario', 
+      description: 'Un personaje que acompaña al protagonista',
+      icon: <div className="w-6 h-6 bg-blue-500/20 rounded-full flex items-center justify-center"><span className="text-blue-600 text-xs font-bold">S</span></div>
+    },
+    { 
+      value: 'antagonist', 
+      label: 'Antagonista', 
+      description: 'El adversario o villano de la historia',
+      icon: <div className="w-6 h-6 bg-red-500/20 rounded-full flex items-center justify-center"><span className="text-red-600 text-xs font-bold">A</span></div>
+    },
+    { 
+      value: 'mentor', 
+      label: 'Mentor', 
+      description: 'Guía y aconseja al protagonista',
+      icon: <div className="w-6 h-6 bg-purple-500/20 rounded-full flex items-center justify-center"><span className="text-purple-600 text-xs font-bold">M</span></div>
+    },
+    { 
+      value: 'ally', 
+      label: 'Aliado', 
+      description: 'Ayuda al protagonista en su aventura',
+      icon: <div className="w-6 h-6 bg-green-500/20 rounded-full flex items-center justify-center"><span className="text-green-600 text-xs font-bold">Al</span></div>
+    }
+  ];
+  
+  // Guardar los cambios
+  const handleSave = () => {
+    const updatedDetails: CharacterStoryDetails = {
+      role,
+      specificTraits: traits.split(',').map(t => t.trim()).filter(Boolean),
+      storyBackground: background,
+      specialAbilities: abilities.split(',').map(a => a.trim()).filter(Boolean),
+      customDescription: description
+    };
+    
+    onUpdate(characterId, updatedDetails);
+    onOpenChange(false);
+  };
+  
+  return (
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[650px]">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
+              <Users className="h-4 w-4 text-primary" />
+            </div>
+            Detalles de {character?.name || 'Personaje'} para esta historia
+          </DialogTitle>
+          <DialogDescription>
+            Personaliza cómo aparecerá este personaje en tu historia
+          </DialogDescription>
+        </DialogHeader>
+        
+        <div className="py-4 space-y-6">
+          {/* Sección de rol del personaje */}
+          <div className="space-y-3">
+            <h3 className="text-base font-medium">Rol en la historia</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              {availableRoles.map((roleOption) => (
+                <div 
+                  key={roleOption.value}
+                  className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
+                    role === roleOption.value
+                      ? 'border-primary bg-primary/5'
+                      : 'border-border hover:border-primary/30'
+                  }`}
+                  onClick={() => setRole(roleOption.value)}
+                >
+                  {roleOption.icon}
+                  <div>
+                    <p className="font-medium text-sm">{roleOption.label}</p>
+                    <p className="text-xs text-muted-foreground">{roleOption.description}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+          
+          {/* Sección de rasgos específicos */}
+          <div className="space-y-2">
+            <div className="flex justify-between">
+              <label className="text-sm font-medium">Rasgos específicos</label>
+              <span className="text-xs text-muted-foreground">Separa con comas</span>
+            </div>
+            <input
+              type="text"
+              className="w-full px-3 py-2 border rounded-md"
+              placeholder="Ej: Valiente, Curioso, Divertido"
+              value={traits}
+              onChange={(e) => setTraits(e.target.value)}
+            />
+            <p className="text-xs text-muted-foreground">Añade rasgos que este personaje mostrará específicamente en esta historia</p>
+          </div>
+          
+          {/* Sección de trasfondo */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Trasfondo para esta historia</label>
+            <textarea
+              className="w-full px-3 py-2 border rounded-md"
+              rows={2}
+              placeholder="Describe el pasado o motivación del personaje en esta historia..."
+              value={background}
+              onChange={(e) => setBackground(e.target.value)}
+            />
+          </div>
+          
+          {/* Sección de habilidades especiales */}
+          <div className="space-y-2">
+            <div className="flex justify-between">
+              <label className="text-sm font-medium">Habilidades especiales</label>
+              <span className="text-xs text-muted-foreground">Separa con comas</span>
+            </div>
+            <input
+              type="text"
+              className="w-full px-3 py-2 border rounded-md"
+              placeholder="Ej: Cantar, Magia, Cocinar"
+              value={abilities}
+              onChange={(e) => setAbilities(e.target.value)}
+            />
+          </div>
+          
+          {/* Sección de descripción personalizada */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Descripción personalizada (opcional)</label>
+            <textarea
+              className="w-full px-3 py-2 border rounded-md"
+              rows={3}
+              placeholder="Añade cualquier detalle adicional sobre este personaje para esta historia específica..."
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+            />
+          </div>
+        </div>
+        
+        <DialogFooter className="flex justify-between">
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Cancelar
+          </Button>
+          <Button onClick={handleSave}>
+            Guardar Detalles
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// Modal para crear un nuevo personaje
+interface CreateCharacterModalProps {
+  isOpen: boolean;
+  onOpenChange: (open: boolean) => void;
+  onCharacterCreated: () => void;
+}
+
+function CreateCharacterModal({
+  isOpen,
+  onOpenChange,
+  onCharacterCreated
+}: CreateCharacterModalProps) {
+  // Estados para los campos del nuevo personaje
+  const [name, setName] = useState<string>('');
+  const [type, setType] = useState<string>('child');
+  const [age, setAge] = useState<string>('');
+  const [gender, setGender] = useState<string>('');
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const { toast } = useToast();
+  
+  // Tipos de personajes disponibles
+  const characterTypes = [
+    { value: 'child', label: 'Niño/a' },
+    { value: 'adult', label: 'Adulto' },
+    { value: 'pet', label: 'Mascota' },
+    { value: 'teddy', label: 'Peluche' },
+    { value: 'fantasy', label: 'Fantasía' },
+    { value: 'other', label: 'Otro' }
+  ];
+  
+  // Limpiar el formulario
+  const resetForm = () => {
+    setName('');
+    setType('child');
+    setAge('');
+    setGender('');
+    setIsSubmitting(false);
+  };
+  
+  // Crear un nuevo personaje
+  const handleCreateCharacter = async () => {
+    if (!name.trim()) {
+      toast({
+        title: "Nombre requerido",
+        description: "Por favor introduce un nombre para el personaje",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    try {
+      setIsSubmitting(true);
+      
+      // Preparar los datos para el nuevo personaje
+      const characterData = {
+        name: name.trim(),
+        type,
+        age: age ? parseInt(age) : null,
+        gender,
+      };
+      
+      // Enviar la solicitud de creación
+      const response = await apiRequest('POST', '/api/characters', characterData);
+      
+      if (!response.ok) {
+        throw new Error("Error al crear el personaje");
+      }
+      
+      // Notificar éxito
+      toast({
+        title: "Personaje creado",
+        description: `Se ha creado el personaje "${name}" correctamente.`,
+      });
+      
+      // Limpiar y cerrar
+      resetForm();
+      onOpenChange(false);
+      
+      // Notificar al componente padre para que actualice la lista
+      onCharacterCreated();
+      
+    } catch (error) {
+      console.error("Error al crear personaje:", error);
+      toast({
+        title: "Error",
+        description: "Hubo un problema al crear el personaje. Por favor, inténtalo de nuevo.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+  
+  return (
+    <Dialog open={isOpen} onOpenChange={(open) => !isSubmitting && onOpenChange(open)}>
+      <DialogContent className="sm:max-w-[500px]">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
+              <Users className="h-4 w-4 text-primary" />
+            </div>
+            Crear Nuevo Personaje
+          </DialogTitle>
+          <DialogDescription>
+            Completa la información básica para crear un nuevo personaje
+          </DialogDescription>
+        </DialogHeader>
+        
+        <div className="py-4 space-y-5">
+          {/* Nombre del personaje */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Nombre del personaje *</label>
+            <input
+              type="text"
+              className="w-full px-3 py-2 border rounded-md"
+              placeholder="Introduce el nombre"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+            />
+          </div>
+          
+          {/* Tipo de personaje */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Tipo de personaje</label>
+            <div className="grid grid-cols-3 gap-2">
+              {characterTypes.map((typeOption) => (
+                <div 
+                  key={typeOption.value}
+                  className={`px-3 py-2 text-center border rounded-md cursor-pointer text-sm ${
+                    type === typeOption.value
+                      ? 'border-primary bg-primary/5'
+                      : 'border-border hover:border-primary/30'
+                  }`}
+                  onClick={() => setType(typeOption.value)}
+                >
+                  {typeOption.label}
+                </div>
+              ))}
+            </div>
+          </div>
+          
+          {/* Edad */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Edad</label>
+            <input
+              type="number"
+              className="w-full px-3 py-2 border rounded-md"
+              placeholder="Edad (opcional)"
+              value={age}
+              onChange={(e) => setAge(e.target.value)}
+              min="0"
+              max="150"
+            />
+          </div>
+          
+          {/* Género */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Género</label>
+            <div className="flex gap-4">
+              <div
+                className={`flex-1 px-3 py-2 text-center border rounded-md cursor-pointer ${
+                  gender === 'masculino' 
+                    ? 'border-primary bg-primary/5' 
+                    : 'border-border hover:border-primary/30'
+                }`}
+                onClick={() => setGender('masculino')}
+              >
+                Masculino
+              </div>
+              <div
+                className={`flex-1 px-3 py-2 text-center border rounded-md cursor-pointer ${
+                  gender === 'femenino' 
+                    ? 'border-primary bg-primary/5' 
+                    : 'border-border hover:border-primary/30'
+                }`}
+                onClick={() => setGender('femenino')}
+              >
+                Femenino
+              </div>
+              <div
+                className={`flex-1 px-3 py-2 text-center border rounded-md cursor-pointer ${
+                  gender === 'otro' 
+                    ? 'border-primary bg-primary/5' 
+                    : 'border-border hover:border-primary/30'
+                }`}
+                onClick={() => setGender('otro')}
+              >
+                Otro
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <DialogFooter className="flex justify-between">
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isSubmitting}>
+            Cancelar
+          </Button>
+          <Button onClick={handleCreateCharacter} disabled={isSubmitting}>
+            {isSubmitting ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Creando...
+              </>
+            ) : (
+              'Crear Personaje'
+            )}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
 }
 
 function CharacterSelectionModal({
@@ -120,95 +528,290 @@ function CharacterSelectionModal({
   characterDetails,
   setCharacterDetails
 }: CharacterSelectionModalProps) {
-  const [location, setLocation] = useLocation();
+  // Estados para los modales adicionales
+  const [createModalOpen, setCreateModalOpen] = useState<boolean>(false);
+  const [detailsModalOpen, setDetailsModalOpen] = useState<boolean>(false);
+  const [selectedCharacterForDetails, setSelectedCharacterForDetails] = useState<string | null>(null);
   
-  // Función para ir a la página de creación de personajes
-  const goToCreateCharacter = () => {
-    setLocation('/profile'); // Asumiendo que la página de perfil tiene la funcionalidad de crear personajes
+  // Función para actualizar los detalles de un personaje
+  const updateCharacterDetails = (characterId: string, details: CharacterStoryDetails) => {
+    setCharacterDetails({
+      ...characterDetails,
+      [characterId]: details
+    });
+  };
+  
+  // Función para refrescar la lista de personajes después de crear uno nuevo
+  const handleCharacterCreated = () => {
+    // La recarga se hará automáticamente a través de React Query
+  };
+  
+  // Obtener el personaje seleccionado para editar detalles
+  const selectedCharacter = selectedCharacterForDetails 
+    ? childProfiles.find(c => c.id.toString() === selectedCharacterForDetails) 
+    : null;
+  
+  // Función para abrir el modal de detalles de un personaje
+  const openDetailsModal = (characterId: string) => {
+    setSelectedCharacterForDetails(characterId);
+    setDetailsModalOpen(true);
+  };
+  
+  // Función para renderizar el icono de rol
+  const getRoleIcon = (characterId: string) => {
+    const details = characterDetails[characterId];
+    if (!details || !details.role) return null;
+    
+    const roleIcons: Record<CharacterRole, React.ReactNode> = {
+      'protagonist': <div className="w-5 h-5 bg-yellow-500/20 rounded-full flex items-center justify-center"><span className="text-yellow-600 text-xs font-bold">P</span></div>,
+      'secondary': <div className="w-5 h-5 bg-blue-500/20 rounded-full flex items-center justify-center"><span className="text-blue-600 text-xs font-bold">S</span></div>,
+      'antagonist': <div className="w-5 h-5 bg-red-500/20 rounded-full flex items-center justify-center"><span className="text-red-600 text-xs font-bold">A</span></div>,
+      'mentor': <div className="w-5 h-5 bg-purple-500/20 rounded-full flex items-center justify-center"><span className="text-purple-600 text-xs font-bold">M</span></div>,
+      'ally': <div className="w-5 h-5 bg-green-500/20 rounded-full flex items-center justify-center"><span className="text-green-600 text-xs font-bold">Al</span></div>
+    };
+    
+    return roleIcons[details.role];
+  };
+  
+  // Función para obtener el label del rol
+  const getRoleLabel = (characterId: string) => {
+    const details = characterDetails[characterId];
+    if (!details || !details.role) return '';
+    
+    const roleLabels: Record<CharacterRole, string> = {
+      'protagonist': 'Protagonista',
+      'secondary': 'Secundario',
+      'antagonist': 'Antagonista',
+      'mentor': 'Mentor',
+      'ally': 'Aliado'
+    };
+    
+    return roleLabels[details.role];
   };
   
   return (
-    <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px]">
-        <DialogHeader>
-          <DialogTitle>Selección de Personajes</DialogTitle>
-          <DialogDescription>
-            Elige hasta 5 personajes para tu historia
-          </DialogDescription>
-        </DialogHeader>
-        
-        <div className="py-4">
-          {childProfiles.length === 0 ? (
-            <div className="text-center space-y-4 py-6">
-              <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
-                <Users className="h-8 w-8 text-primary" />
-              </div>
-              <p className="text-lg font-medium">No tienes personajes creados</p>
-              <p className="text-muted-foreground mb-4">
-                Para crear un libro personalizado, primero necesitas crear al menos un personaje.
-              </p>
-              <Button onClick={goToCreateCharacter} className="mx-auto">
-                Crear Personaje
-              </Button>
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 gap-4 max-h-[400px] overflow-y-auto p-2">
-              {childProfiles.map((profile) => (
-                <div 
-                  key={profile.id} 
-                  className={`border rounded-lg p-4 cursor-pointer transition-all ${
-                    selectedCharacterIds.includes(profile.id.toString()) 
-                      ? "border-primary bg-primary/5" 
-                      : "border-border hover:border-primary/50"
-                  }`}
-                  onClick={() => {
-                    const isSelected = selectedCharacterIds.includes(profile.id.toString());
-                    let newSelection = [...selectedCharacterIds];
-                    
-                    if (isSelected) {
-                      // Remover de la selección
-                      newSelection = newSelection.filter(id => id !== profile.id.toString());
-                    } else {
-                      // Añadir a la selección (máximo 5)
-                      if (newSelection.length < 5) {
-                        newSelection.push(profile.id.toString());
-                      }
-                    }
-                    
-                    setSelectedCharacterIds(newSelection);
-                  }}
-                >
-                  <p className="font-medium">{profile.name}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {profile.type}, {profile.age ? `${profile.age} años` : 'Edad no especificada'}
-                  </p>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-        
-        <DialogFooter className="flex justify-between">
-          {childProfiles.length > 0 && (
-            <div className="mr-auto">
-              <Button 
-                variant="outline" 
-                onClick={goToCreateCharacter}
-              >
-                Añadir Personaje
-              </Button>
-            </div>
-          )}
+    <>
+      <Dialog open={isOpen} onOpenChange={onOpenChange}>
+        <DialogContent className="sm:max-w-[700px]">
+          <DialogHeader>
+            <DialogTitle className="text-xl flex items-center gap-2">
+              <Users className="h-5 w-5 text-primary" />
+              Selección de Personajes
+            </DialogTitle>
+            <DialogDescription>
+              Elige entre 1 y 5 personajes para tu historia y asígnales roles
+            </DialogDescription>
+          </DialogHeader>
           
-          <Button 
-            onClick={onNext} 
-            disabled={selectedCharacterIds.length === 0}
-          >
-            Continuar
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+          <div className="py-4">
+            {childProfiles.length === 0 ? (
+              <div className="text-center space-y-4 py-8">
+                <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
+                  <Users className="h-10 w-10 text-primary" />
+                </div>
+                <h3 className="text-lg font-medium">No tienes personajes creados</h3>
+                <p className="text-muted-foreground mb-4 max-w-md mx-auto">
+                  Para crear un libro personalizado, primero necesitas crear al menos un personaje. Puedes añadir niños, adultos, mascotas e incluso personajes de fantasía.
+                </p>
+                <Button 
+                  onClick={() => setCreateModalOpen(true)} 
+                  className="mx-auto"
+                  size="lg"
+                >
+                  <Users className="mr-2 h-4 w-4" />
+                  Crear Mi Primer Personaje
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-medium text-muted-foreground">
+                    {selectedCharacterIds.length === 0 
+                      ? 'Selecciona al menos un personaje para continuar' 
+                      : `Has seleccionado ${selectedCharacterIds.length} ${selectedCharacterIds.length === 1 ? 'personaje' : 'personajes'}`
+                    }
+                  </h3>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCreateModalOpen(true)}
+                  >
+                    <Users className="mr-2 h-4 w-4" />
+                    Añadir Personaje
+                  </Button>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-h-[400px] overflow-y-auto p-2">
+                  {childProfiles.map((profile) => {
+                    const isSelected = selectedCharacterIds.includes(profile.id.toString());
+                    const hasRole = isSelected && characterDetails[profile.id.toString()]?.role;
+                    
+                    return (
+                      <div 
+                        key={profile.id} 
+                        className={`border rounded-lg transition-all ${
+                          isSelected
+                            ? "border-primary bg-primary/5 shadow-sm" 
+                            : "border-border hover:border-primary/50"
+                        }`}
+                      >
+                        <div 
+                          className="p-4 cursor-pointer"
+                          onClick={() => {
+                            const profileId = profile.id.toString();
+                            const newSelection = [...selectedCharacterIds];
+                            
+                            if (isSelected) {
+                              // Remover de la selección
+                              const index = newSelection.indexOf(profileId);
+                              if (index !== -1) {
+                                newSelection.splice(index, 1);
+                              }
+                            } else {
+                              // Añadir a la selección (máximo 5)
+                              if (newSelection.length < 5) {
+                                newSelection.push(profileId);
+                              }
+                            }
+                            
+                            setSelectedCharacterIds(newSelection);
+                          }}
+                        >
+                          <div className="flex justify-between items-start mb-2">
+                            <div className="flex items-center gap-2">
+                              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                                isSelected ? 'bg-primary text-white' : 'bg-muted'
+                              }`}>
+                                {profile.type === 'child' && <div className="text-sm font-bold">{profile.name.charAt(0)}</div>}
+                                {profile.type === 'adult' && <div className="text-sm font-bold">{profile.name.charAt(0)}</div>}
+                                {profile.type === 'pet' && <div className="text-sm font-bold">🐾</div>}
+                                {profile.type === 'teddy' && <div className="text-sm font-bold">🧸</div>}
+                                {profile.type === 'fantasy' && <div className="text-sm font-bold">✨</div>}
+                                {profile.type === 'other' && <div className="text-sm font-bold">{profile.name.charAt(0)}</div>}
+                              </div>
+                              <div>
+                                <p className="font-medium">{profile.name}</p>
+                                <p className="text-xs text-muted-foreground flex items-center gap-1">
+                                  {getRoleIcon(profile.id.toString())}
+                                  {hasRole ? getRoleLabel(profile.id.toString()) : (
+                                    <>
+                                      {profile.type === 'child' && 'Niño/a'}
+                                      {profile.type === 'adult' && 'Adulto'}
+                                      {profile.type === 'pet' && 'Mascota'}
+                                      {profile.type === 'teddy' && 'Peluche'}
+                                      {profile.type === 'fantasy' && 'Fantasía'}
+                                      {profile.type === 'other' && 'Otro'}
+                                      {profile.age && `, ${profile.age} años`}
+                                    </>
+                                  )}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          {isSelected && characterDetails[profile.id.toString()]?.specificTraits?.length > 0 && (
+                            <div className="mt-2 flex flex-wrap gap-1">
+                              {characterDetails[profile.id.toString()].specificTraits.slice(0, 3).map((trait, idx) => (
+                                <span key={idx} className="inline-block px-2 py-0.5 bg-primary/10 text-primary-foreground rounded-full text-xs">
+                                  {trait}
+                                </span>
+                              ))}
+                              {characterDetails[profile.id.toString()].specificTraits.length > 3 && (
+                                <span className="inline-block px-2 py-0.5 bg-muted text-muted-foreground rounded-full text-xs">
+                                  +{characterDetails[profile.id.toString()].specificTraits.length - 3}
+                                </span>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                        
+                        {isSelected && (
+                          <div className="border-t p-2 flex justify-end">
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              onClick={() => openDetailsModal(profile.id.toString())}
+                            >
+                              <Settings className="h-3.5 w-3.5 mr-1" />
+                              {hasRole ? 'Editar rol' : 'Configurar rol'}
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+                
+                {selectedCharacterIds.length > 0 && (
+                  <div className="bg-muted/50 p-4 rounded-lg">
+                    <h3 className="text-sm font-medium mb-2">Personajes seleccionados:</h3>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedCharacterIds.map((id) => {
+                        const character = childProfiles.find(c => c.id.toString() === id);
+                        if (!character) return null;
+                        
+                        return (
+                          <div 
+                            key={id}
+                            className="inline-flex items-center gap-1 bg-background border px-3 py-1 rounded-full text-sm"
+                          >
+                            {getRoleIcon(id)}
+                            <span>{character.name}</span>
+                            <button 
+                              className="ml-1 text-muted-foreground hover:text-foreground"
+                              onClick={() => {
+                                setSelectedCharacterIds(selectedCharacterIds.filter(cid => cid !== id));
+                              }}
+                            >
+                              ×
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+          
+          <DialogFooter className="flex justify-between">
+            <Button 
+              variant="outline" 
+              onClick={() => onOpenChange(false)}
+            >
+              Cancelar
+            </Button>
+            
+            <Button 
+              onClick={onNext} 
+              disabled={selectedCharacterIds.length === 0}
+            >
+              Continuar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Modal para crear un nuevo personaje */}
+      <CreateCharacterModal
+        isOpen={createModalOpen}
+        onOpenChange={setCreateModalOpen}
+        onCharacterCreated={handleCharacterCreated}
+      />
+      
+      {/* Modal para detalles específicos del personaje */}
+      {selectedCharacter && (
+        <CharacterDetailsModal
+          isOpen={detailsModalOpen}
+          onOpenChange={setDetailsModalOpen}
+          characterId={selectedCharacterForDetails!}
+          character={selectedCharacter}
+          storyDetails={characterDetails[selectedCharacterForDetails!] || { role: 'protagonist' }}
+          onUpdate={updateCharacterDetails}
+        />
+      )}
+    </>
   );
 }
 
@@ -434,7 +1037,7 @@ export default function CreateBook() {
   
   // Estado para los personajes
   const [selectedCharacterIds, setSelectedCharacterIds] = useState<string[]>([]);
-  const [characterDetails, setCharacterDetails] = useState<{[key: string]: any}>({});
+  const [characterDetails, setCharacterDetails] = useState<{[key: string]: CharacterStoryDetails}>({});
   
   // Estado para la plantilla
   const [selectedTemplate, setSelectedTemplate] = useState("adventure");
