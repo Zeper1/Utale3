@@ -1467,22 +1467,40 @@ function TechnicalSettingsModal({
   onComplete,
   form
 }: TechnicalSettingsModalProps) {
-  // Lógica del componente de configuración técnica
+  // Opciones de estilo de fuente con ejemplos
+  const fontStyles = [
+    { id: "casual", name: "Casual", sample: "ABCabc123", description: "Estilo relajado y amigable" },
+    { id: "elegant", name: "Elegante", sample: "ABCabc123", description: "Estilo refinado y sofisticado" },
+    { id: "handwritten", name: "Manuscrita", sample: "ABCabc123", description: "Parece escrito a mano" },
+    { id: "playful", name: "Juguetona", sample: "ABCabc123", description: "Divertida y para los más pequeños" },
+  ];
   
-  // Para simplificar el ejemplo, solo mostraremos un diálogo básico
+  // Opciones de estilo de ilustración
+  const illustrationStyles = [
+    { id: "acuarela", name: "Acuarela colorida", description: "Ilustraciones con efecto acuarela vibrante" },
+    { id: "digital", name: "Digital moderno", description: "Estilo digital contemporáneo" },
+    { id: "infantil", name: "Infantil", description: "Estilo sencillo y colorido para niños" },
+    { id: "comic", name: "Comic/Cartoon", description: "Estilo de cómic o dibujo animado" },
+    { id: "realista", name: "Ilustración realista", description: "Dibujos detallados y realistas" },
+    { id: "japonés", name: "Manga/Anime", description: "Estilo japonés" },
+  ];
+  
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px]">
+      <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Configuración Técnica</DialogTitle>
+          <DialogTitle className="text-xl flex items-center gap-2">
+            <Settings className="h-5 w-5 text-primary" />
+            Configuración Técnica
+          </DialogTitle>
           <DialogDescription>
-            Ajusta los detalles técnicos de tu libro
+            Ajusta los aspectos técnicos y estéticos de tu libro
           </DialogDescription>
         </DialogHeader>
         
-        <div className="py-4 space-y-6">
-          <div>
-            <p className="font-medium mb-2">Número de páginas:</p>
+        <div className="space-y-6 mt-4">
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Número de páginas</label>
             <div className="flex items-center space-x-4">
               <Button 
                 variant="outline" 
@@ -1496,7 +1514,9 @@ function TechnicalSettingsModal({
               >
                 -
               </Button>
-              <span className="w-10 text-center">{form.watch("pageCount") || 20}</span>
+              <div className="w-20 text-center border rounded-md py-1 font-medium">
+                {form.watch("pageCount") || 20}
+              </div>
               <Button 
                 variant="outline" 
                 size="sm"
@@ -1515,42 +1535,162 @@ function TechnicalSettingsModal({
             </p>
           </div>
           
-          <div>
-            <p className="font-medium mb-2">Estilo de Arte:</p>
-            <div className="grid grid-cols-3 gap-2">
-              {["acuarela", "digital", "infantil", "comic", "realista"].map((style) => (
-                <div 
-                  key={style} 
-                  className={`border rounded-lg p-2 cursor-pointer text-center text-sm ${
-                    form.watch("artStyle") === style 
-                      ? "border-primary bg-primary/5" 
-                      : "border-border hover:border-primary/50"
-                  }`}
-                  onClick={() => form.setValue("artStyle", style)}
-                >
-                  {style.charAt(0).toUpperCase() + style.slice(1)}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-5">
+              <div>
+                <label className="text-sm font-medium mb-2 block">Estilo de Arte</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {illustrationStyles.map((style) => (
+                    <div 
+                      key={style.id} 
+                      className={`border rounded-lg p-3 cursor-pointer text-sm transition-all ${
+                        form.watch("artStyle") === style.id 
+                          ? "border-primary bg-primary/5" 
+                          : "border-border hover:border-primary/30"
+                      }`}
+                      onClick={() => form.setValue("artStyle", style.id)}
+                    >
+                      <div className="flex items-center justify-between mb-1">
+                        <p className="font-medium">{style.name}</p>
+                        {form.watch("artStyle") === style.id && (
+                          <div className="h-4 w-4 bg-primary/20 rounded-full flex items-center justify-center">
+                            <Check className="h-3 w-3 text-primary" />
+                          </div>
+                        )}
+                      </div>
+                      <p className="text-xs text-muted-foreground">{style.description}</p>
+                    </div>
+                  ))}
                 </div>
-              ))}
+              </div>
+              
+              <div className="bg-muted/20 rounded-md p-3">
+                <div className="flex items-center gap-2 mb-2">
+                  <BookText className="h-4 w-4 text-primary" />
+                  <p className="text-sm font-medium">Vista previa conceptual</p>
+                </div>
+                <div className="w-full h-24 bg-primary/5 rounded-md flex items-center justify-center">
+                  <p className="text-xs text-muted-foreground">
+                    {illustrationStyles.find(s => s.id === form.watch("artStyle"))?.description || 
+                    "Selecciona un estilo para ver la descripción"}
+                  </p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="space-y-5">
+              <div>
+                <label className="text-sm font-medium mb-2 block">Estilo de texto</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {fontStyles.map(font => (
+                    <div 
+                      key={font.id}
+                      className={`border rounded-md p-3 cursor-pointer transition-all ${
+                        form.watch("fontStyle") === font.id ? 
+                        "border-primary bg-primary/5" : 
+                        "hover:border-primary/30"
+                      }`}
+                      onClick={() => form.setValue("fontStyle", font.id)}
+                    >
+                      <div className="flex items-center justify-between mb-1">
+                        <p className="font-medium text-sm">{font.name}</p>
+                        {form.watch("fontStyle") === font.id && (
+                          <div className="h-4 w-4 bg-primary/20 rounded-full flex items-center justify-center">
+                            <Check className="h-3 w-3 text-primary" />
+                          </div>
+                        )}
+                      </div>
+                      <p className="text-xs text-muted-foreground mb-1">{font.description}</p>
+                      <div className="bg-background p-1 rounded text-sm text-center">
+                        {font.sample}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              
+              <div>
+                <label className="text-sm font-medium mb-2 block">Formato del libro</label>
+                <div className="grid grid-cols-2 gap-2">
+                  <div 
+                    className={`border rounded-md p-3 cursor-pointer transition-all ${
+                      form.watch("format") === "digital" ? 
+                      "border-primary bg-primary/5" : 
+                      "hover:border-primary/30"
+                    }`}
+                    onClick={() => form.setValue("format", "digital")}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <p className="font-medium">Digital</p>
+                      {form.watch("format") === "digital" && (
+                        <div className="h-4 w-4 bg-primary/20 rounded-full flex items-center justify-center">
+                          <Check className="h-3 w-3 text-primary" />
+                        </div>
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground">PDF visualizable en cualquier dispositivo</p>
+                  </div>
+                  
+                  <div 
+                    className={`border rounded-md p-3 cursor-pointer transition-all ${
+                      form.watch("format") === "print" ? 
+                      "border-primary bg-primary/5" : 
+                      "hover:border-primary/30"
+                    }`}
+                    onClick={() => form.setValue("format", "print")}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <p className="font-medium">Impreso</p>
+                      {form.watch("format") === "print" && (
+                        <div className="h-4 w-4 bg-primary/20 rounded-full flex items-center justify-center">
+                          <Check className="h-3 w-3 text-primary" />
+                        </div>
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground">Solicitar impresión física a domicilio</p>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
           
           <div className="space-y-2">
-            <p className="font-medium">Instrucciones especiales (opcional):</p>
+            <label className="text-sm font-medium">Instrucciones especiales (opcional)</label>
             <textarea 
-              className="w-full p-2 border rounded-md" 
-              rows={3}
-              placeholder="¿Alguna indicación especial para la generación del libro?"
+              className="w-full p-3 border rounded-md min-h-[100px] text-sm" 
+              placeholder="Añade cualquier instrucción especial para la generación del libro, como elementos específicos que quieras incluir, temas que evitar, o aspectos del estilo visual..."
               value={form.watch("specialInstructions") || ""}
               onChange={(e) => form.setValue("specialInstructions", e.target.value)}
             />
+            <p className="text-xs text-muted-foreground">
+              Estas instrucciones serán consideradas durante la generación del contenido e ilustraciones.
+            </p>
+          </div>
+          
+          <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+            <div className="flex items-start gap-3">
+              <Info className="h-5 w-5 text-blue-500 flex-shrink-0 mt-0.5" />
+              <div>
+                <h3 className="text-sm font-medium text-blue-800">Sobre el proceso de generación</h3>
+                <p className="text-sm text-blue-600">
+                  La generación del libro completo puede tardar entre 3-5 minutos dependiendo de la longitud y complejidad. Recibirás una notificación cuando esté listo.
+                </p>
+              </div>
+            </div>
           </div>
         </div>
         
-        <DialogFooter className="flex justify-between">
-          <Button variant="outline" onClick={onPrevious}>
-            Atrás
+        <DialogFooter className="flex justify-between mt-6">
+          <Button 
+            variant="outline" 
+            onClick={onPrevious}
+          >
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Anterior
           </Button>
+          
           <Button onClick={onComplete}>
+            <Wand2 className="mr-2 h-4 w-4" />
             Generar Libro
           </Button>
         </DialogFooter>
