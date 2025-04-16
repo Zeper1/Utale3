@@ -14,16 +14,52 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Form } from "@/components/ui/form";
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Slider } from "@/components/ui/slider";
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from "@/components/ui/select";
+import { 
+  Tabs, 
+  TabsContent, 
+  TabsList, 
+  TabsTrigger 
+} from "@/components/ui/tabs";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { 
   Check, 
   ArrowRight, 
+  ArrowLeft,
   Loader2, 
   Users, 
   BookText,
+  BookOpen,
   Settings,
-  Wand2
+  Wand2,
+  Info,
+  ImagePlus
 } from "lucide-react";
 
 // Define el esquema de validación del formulario
@@ -139,12 +175,23 @@ function CharacterDetailsModal({
   storyDetails,
   onUpdate
 }: CharacterDetailsModalProps) {
-  // Estados para los campos editables
-  const [role, setRole] = useState<CharacterRole>(storyDetails?.role || 'protagonist');
-  const [traits, setTraits] = useState<string>(storyDetails?.specificTraits?.join(', ') || '');
-  const [background, setBackground] = useState<string>(storyDetails?.storyBackground || '');
-  const [abilities, setAbilities] = useState<string>(storyDetails?.specialAbilities?.join(', ') || '');
-  const [description, setDescription] = useState<string>(storyDetails?.customDescription || '');
+  // Estados para los campos editables usando useEffect para actualizarlos cuando cambia el personaje seleccionado
+  const [role, setRole] = useState<CharacterRole>('protagonist');
+  const [traits, setTraits] = useState<string>('');
+  const [background, setBackground] = useState<string>('');
+  const [abilities, setAbilities] = useState<string>('');
+  const [description, setDescription] = useState<string>('');
+  
+  // Actualizar los estados cuando cambia el personaje o se abre el modal
+  useEffect(() => {
+    if (isOpen && storyDetails) {
+      setRole(storyDetails.role || 'protagonist');
+      setTraits(storyDetails.specificTraits?.join(', ') || '');
+      setBackground(storyDetails.storyBackground || '');
+      setAbilities(storyDetails.specialAbilities?.join(', ') || '');
+      setDescription(storyDetails.customDescription || '');
+    }
+  }, [isOpen, characterId, storyDetails]);
   
   // Roles disponibles para un personaje
   const availableRoles: {value: CharacterRole, label: string, description: string, icon: React.ReactNode}[] = [
@@ -310,62 +357,109 @@ interface CreateCharacterModalProps {
   onCharacterCreated: () => void;
 }
 
+// Schema para crear personajes
+const createCharacterSchema = z.object({
+  name: z.string().min(2, {
+    message: "El nombre debe tener al menos 2 caracteres",
+  }),
+  type: z.string(),
+  age: z.union([z.number().min(0).max(150), z.string(), z.null()]).optional(),
+  gender: z.string().optional(),
+  physicalDescription: z.string().optional(),
+  personality: z.string().optional(),
+  likes: z.string().optional(),
+  dislikes: z.string().optional(),
+  interests: z.string().optional(),
+  avatarUrl: z.string().optional(),
+});
+
+type CreateCharacterFormValues = z.infer<typeof createCharacterSchema>;
+
 function CreateCharacterModal({
   isOpen,
   onOpenChange,
   onCharacterCreated
 }: CreateCharacterModalProps) {
-  // Estados para los campos del nuevo personaje
-  const [name, setName] = useState<string>('');
-  const [type, setType] = useState<string>('child');
-  const [age, setAge] = useState<string>('');
-  const [gender, setGender] = useState<string>('');
-  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const { toast } = useToast();
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [characterType, setCharacterType] = useState<string>('child');
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
   
-  // Tipos de personajes disponibles
-  const characterTypes = [
-    { value: 'child', label: 'Niño/a' },
-    { value: 'adult', label: 'Adulto' },
-    { value: 'pet', label: 'Mascota' },
-    { value: 'teddy', label: 'Peluche' },
-    { value: 'fantasy', label: 'Fantasía' },
-    { value: 'other', label: 'Otro' }
-  ];
+  // Formulario con validación
+  const form = useForm<CreateCharacterFormValues>({
+    resolver: zodResolver(createCharacterSchema),
+    defaultValues: {
+      name: "",
+      type: "child",
+      age: null,
+      gender: "",
+      physicalDescription: "",
+      personality: "",
+      likes: "",
+      dislikes: "",
+      interests: "",
+      avatarUrl: "",
+    },
+  });
+  
+  // Cambiar el tipo de personaje
+  const handleCharacterTypeChange = (value: string, onChange: (value: string) => void) => {
+    setCharacterType(value);
+    onChange(value);
+    
+    // Resetear algunos campos específicos cuando cambia el tipo
+    if (value !== 'child') {
+      form.setValue('gender', '');
+    }
+  };
+  
+  // Manejar cambio de imagen
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setImageFile(file);
+      
+      // Crear preview
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        if (e.target?.result) {
+          setImagePreview(e.target.result as string);
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
   
   // Limpiar el formulario
   const resetForm = () => {
-    setName('');
-    setType('child');
-    setAge('');
-    setGender('');
+    form.reset({
+      name: "",
+      type: "child",
+      age: null,
+      gender: "",
+      physicalDescription: "",
+      personality: "",
+      likes: "",
+      dislikes: "",
+      interests: "",
+      avatarUrl: "",
+    });
+    setCharacterType('child');
+    setImageFile(null);
+    setImagePreview(null);
     setIsSubmitting(false);
   };
   
   // Crear un nuevo personaje
-  const handleCreateCharacter = async () => {
-    if (!name.trim()) {
-      toast({
-        title: "Nombre requerido",
-        description: "Por favor introduce un nombre para el personaje",
-        variant: "destructive"
-      });
-      return;
-    }
-    
+  const onSubmit = async (data: CreateCharacterFormValues) => {
     try {
       setIsSubmitting(true);
       
-      // Preparar los datos para el nuevo personaje
-      const characterData = {
-        name: name.trim(),
-        type,
-        age: age ? parseInt(age) : null,
-        gender,
-      };
+      // TODO: Si hay imagen, subirla a Cloudinary y obtener la URL
       
       // Enviar la solicitud de creación
-      const response = await apiRequest('POST', '/api/characters', characterData);
+      const response = await apiRequest('POST', '/api/characters', data);
       
       if (!response.ok) {
         throw new Error("Error al crear el personaje");
@@ -374,7 +468,7 @@ function CreateCharacterModal({
       // Notificar éxito
       toast({
         title: "Personaje creado",
-        description: `Se ha creado el personaje "${name}" correctamente.`,
+        description: `Se ha creado el personaje "${data.name}" correctamente.`,
       });
       
       // Limpiar y cerrar
@@ -398,7 +492,7 @@ function CreateCharacterModal({
   
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !isSubmitting && onOpenChange(open)}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[650px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
@@ -407,111 +501,295 @@ function CreateCharacterModal({
             Crear Nuevo Personaje
           </DialogTitle>
           <DialogDescription>
-            Completa la información básica para crear un nuevo personaje
+            Completa la información para crear un nuevo personaje
           </DialogDescription>
         </DialogHeader>
         
-        <div className="py-4 space-y-5">
-          {/* Nombre del personaje */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Nombre del personaje *</label>
-            <input
-              type="text"
-              className="w-full px-3 py-2 border rounded-md"
-              placeholder="Introduce el nombre"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              required
-            />
-          </div>
-          
-          {/* Tipo de personaje */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Tipo de personaje</label>
-            <div className="grid grid-cols-3 gap-2">
-              {characterTypes.map((typeOption) => (
-                <div 
-                  key={typeOption.value}
-                  className={`px-3 py-2 text-center border rounded-md cursor-pointer text-sm ${
-                    type === typeOption.value
-                      ? 'border-primary bg-primary/5'
-                      : 'border-border hover:border-primary/30'
-                  }`}
-                  onClick={() => setType(typeOption.value)}
-                >
-                  {typeOption.label}
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 py-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-6">
+                <FormField
+                  control={form.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Nombre *</FormLabel>
+                      <FormControl>
+                        <Input 
+                          placeholder="Nombre del personaje" 
+                          {...field} 
+                          autoFocus
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="type"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Tipo de personaje</FormLabel>
+                      <Select 
+                        onValueChange={(value) => handleCharacterTypeChange(value, field.onChange)} 
+                        defaultValue={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecciona tipo" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="child">Niño/a</SelectItem>
+                          <SelectItem value="adult">Adulto</SelectItem>
+                          <SelectItem value="pet">Mascota</SelectItem>
+                          <SelectItem value="teddy">Juguete/Peluche</SelectItem>
+                          <SelectItem value="fantasy">Personaje fantástico</SelectItem>
+                          <SelectItem value="other">Otro</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                {characterType === 'child' || characterType === 'adult' ? (
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="age"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Edad</FormLabel>
+                          <FormControl>
+                            <Input 
+                              type="number" 
+                              placeholder="Edad" 
+                              min={0} 
+                              max={150}
+                              onChange={(e) => {
+                                const value = e.target.value === '' ? null : parseInt(e.target.value);
+                                field.onChange(value);
+                              }}
+                              value={field.value === null ? '' : field.value}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name="gender"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Género</FormLabel>
+                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Selecciona" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="masculino">Masculino</SelectItem>
+                              <SelectItem value="femenino">Femenino</SelectItem>
+                              <SelectItem value="otro">Otro</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                ) : null}
+                
+                <FormField
+                  control={form.control}
+                  name="physicalDescription"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Descripción física (Opcional)</FormLabel>
+                      <FormControl>
+                        <Textarea 
+                          placeholder={
+                            characterType === 'child' ? "Describe la apariencia física del niño/a" : 
+                            characterType === 'adult' ? "Describe la apariencia física del adulto" : 
+                            characterType === 'pet' ? "Describe cómo es físicamente la mascota" :
+                            characterType === 'teddy' ? "Describe cómo se ve este juguete/peluche" :
+                            characterType === 'fantasy' ? "Describe la apariencia de este ser fantástico" :
+                            "Describe la apariencia física del personaje"
+                          }
+                          className="resize-none min-h-[80px]" 
+                          {...field} 
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              
+              <div className="space-y-6">
+                <FormField
+                  control={form.control}
+                  name="personality"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Personalidad (Opcional)</FormLabel>
+                      <FormControl>
+                        <Textarea 
+                          placeholder={
+                            characterType === 'child' ? "¿Cómo es su personalidad? Tímido, aventurero, curioso..." : 
+                            characterType === 'adult' ? "¿Cómo es su personalidad? Divertido, serio, aventurero..." : 
+                            characterType === 'pet' ? "¿Cómo se comporta esta mascota? Juguetona, tranquila..." :
+                            characterType === 'teddy' ? "¿Qué personalidad tiene este juguete/peluche?" :
+                            characterType === 'fantasy' ? "¿Cómo es la personalidad de este ser fantástico?" :
+                            "Describe la personalidad del personaje"
+                          }
+                          className="resize-none min-h-[80px]" 
+                          {...field} 
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="likes"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Le gusta (Opcional)</FormLabel>
+                      <FormControl>
+                        <Textarea 
+                          placeholder={
+                            characterType === 'child' ? "¿Qué le gusta hacer? Jugar, dibujar, deportes..." : 
+                            characterType === 'adult' ? "¿Qué le gusta hacer? Hobbies, intereses..." : 
+                            characterType === 'pet' ? "Cosas que le gustan a la mascota..." :
+                            characterType === 'teddy' ? "¿Qué le gusta a este juguete/peluche?" :
+                            characterType === 'fantasy' ? "¿Qué le gusta a este ser fantástico?" :
+                            "¿Qué le gusta al personaje?"
+                          }
+                          className="resize-none min-h-[80px]" 
+                          {...field} 
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="dislikes"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>No le gusta (Opcional)</FormLabel>
+                      <FormControl>
+                        <Textarea 
+                          placeholder={
+                            characterType === 'child' ? "¿Qué no le gusta? Miedos, situaciones, comidas..." : 
+                            characterType === 'adult' ? "¿Qué no le gusta? Situaciones, comidas..." : 
+                            characterType === 'pet' ? "Cosas que no le gustan a la mascota..." :
+                            characterType === 'teddy' ? "¿Qué no le gusta a este juguete/peluche?" :
+                            characterType === 'fantasy' ? "¿Qué no le gusta a este ser fantástico?" :
+                            "¿Qué no le gusta al personaje?"
+                          }
+                          className="resize-none min-h-[80px]" 
+                          {...field} 
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <FormField
+                control={form.control}
+                name="interests"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Intereses/Favoritos (Opcional)</FormLabel>
+                    <FormControl>
+                      <Textarea 
+                        placeholder={
+                          characterType === 'child' ? "Juguetes favoritos, colores preferidos, comidas que le gustan..." : 
+                          characterType === 'adult' ? "Hobbies, pasatiempos, lugares favoritos..." : 
+                          characterType === 'pet' ? "Juguetes favoritos, actividades..." :
+                          characterType === 'teddy' ? "Lugares favoritos, actividades..." :
+                          characterType === 'fantasy' ? "¿Qué le interesa a este ser fantástico?" :
+                          "Intereses y cosas favoritas del personaje"
+                        }
+                        className="resize-none min-h-[80px]" 
+                        {...field} 
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <div className="space-y-4">
+                <FormLabel>Imagen (Opcional)</FormLabel>
+                <div className="flex items-center space-x-4">
+                  <div 
+                    className="w-24 h-24 border-2 border-dashed rounded-lg flex items-center justify-center overflow-hidden"
+                  >
+                    {imagePreview ? (
+                      <img 
+                        src={imagePreview} 
+                        alt="Preview" 
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <ImagePlus className="h-8 w-8 text-gray-400" />
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <Input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageChange}
+                      className="cursor-pointer"
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Sube una imagen que represente al personaje
+                    </p>
+                  </div>
                 </div>
-              ))}
-            </div>
-          </div>
-          
-          {/* Edad */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Edad</label>
-            <input
-              type="number"
-              className="w-full px-3 py-2 border rounded-md"
-              placeholder="Edad (opcional)"
-              value={age}
-              onChange={(e) => setAge(e.target.value)}
-              min="0"
-              max="150"
-            />
-          </div>
-          
-          {/* Género */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Género</label>
-            <div className="flex gap-4">
-              <div
-                className={`flex-1 px-3 py-2 text-center border rounded-md cursor-pointer ${
-                  gender === 'masculino' 
-                    ? 'border-primary bg-primary/5' 
-                    : 'border-border hover:border-primary/30'
-                }`}
-                onClick={() => setGender('masculino')}
-              >
-                Masculino
-              </div>
-              <div
-                className={`flex-1 px-3 py-2 text-center border rounded-md cursor-pointer ${
-                  gender === 'femenino' 
-                    ? 'border-primary bg-primary/5' 
-                    : 'border-border hover:border-primary/30'
-                }`}
-                onClick={() => setGender('femenino')}
-              >
-                Femenino
-              </div>
-              <div
-                className={`flex-1 px-3 py-2 text-center border rounded-md cursor-pointer ${
-                  gender === 'otro' 
-                    ? 'border-primary bg-primary/5' 
-                    : 'border-border hover:border-primary/30'
-                }`}
-                onClick={() => setGender('otro')}
-              >
-                Otro
               </div>
             </div>
-          </div>
-        </div>
-        
-        <DialogFooter className="flex justify-between">
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isSubmitting}>
-            Cancelar
-          </Button>
-          <Button onClick={handleCreateCharacter} disabled={isSubmitting}>
-            {isSubmitting ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Creando...
-              </>
-            ) : (
-              'Crear Personaje'
-            )}
-          </Button>
-        </DialogFooter>
+
+            <DialogFooter className="flex justify-between pt-4">
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => onOpenChange(false)} 
+                disabled={isSubmitting}
+              >
+                Cancelar
+              </Button>
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Creando...
+                  </>
+                ) : (
+                  'Crear Personaje'
+                )}
+              </Button>
+            </DialogFooter>
+          </form>
+        </Form>
       </DialogContent>
     </Dialog>
   );
@@ -835,76 +1113,337 @@ function StoryDetailsModal({
   setSelectedTemplate,
   form
 }: StoryDetailsModalProps) {
-  // Lógica del componente de detalles de historia
+  const selectedTemplateDetails = getTemplateDetails(selectedTemplate);
   
-  // Para simplificar el ejemplo, solo mostraremos un diálogo básico
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px]">
+      <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Detalles de la Historia</DialogTitle>
+          <DialogTitle className="text-xl flex items-center gap-2">
+            <BookOpen className="h-5 w-5 text-primary" />
+            Detalles de la Historia
+          </DialogTitle>
           <DialogDescription>
-            Elige la plantilla y ajusta los detalles de la historia
+            Personaliza tu historia o selecciona una plantilla predefinida
           </DialogDescription>
         </DialogHeader>
         
-        <div className="py-4">
-          <div className="grid grid-cols-2 gap-4 mb-6">
-            {["adventure", "science", "nature", "family"].map((templateId) => {
-              const templateName = {
-                adventure: "Aventura",
-                science: "Ciencia",
-                nature: "Naturaleza",
-                family: "Familia"
-              }[templateId];
+        <Tabs defaultValue="custom" className="mt-4">
+          <TabsList className="grid grid-cols-2">
+            <TabsTrigger value="custom">Personalizado</TabsTrigger>
+            <TabsTrigger value="templates">Plantillas</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="custom" className="space-y-6 mt-4">
+            <div className="space-y-6">
+              <FormField
+                control={form.control}
+                name="title"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Título del libro</FormLabel>
+                    <FormControl>
+                      <Input 
+                        placeholder="Introduce un título para el libro" 
+                        {...field} 
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
               
-              return (
-                <div 
-                  key={templateId} 
-                  className={`border rounded-lg p-4 cursor-pointer transition-all ${
-                    selectedTemplate === templateId 
-                      ? "border-primary bg-primary/5" 
-                      : "border-border hover:border-primary/50"
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="scenario"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Escenario</FormLabel>
+                      <FormControl>
+                        <Input 
+                          placeholder="Describe el lugar donde ocurrirá la historia" 
+                          {...field} 
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="era"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Época</FormLabel>
+                      <FormControl>
+                        <Input 
+                          placeholder="Medieval, actual, futurista, etc." 
+                          {...field} 
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="adventureType"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Tipo de aventura</FormLabel>
+                      <FormControl>
+                        <Input 
+                          placeholder="Búsqueda, misterio, viaje, etc." 
+                          {...field} 
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="moralValue"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Valor moral o lección</FormLabel>
+                      <FormControl>
+                        <Input 
+                          placeholder="¿Qué lección enseñará la historia?" 
+                          {...field} 
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              
+              <FormField
+                control={form.control}
+                name="fantasyLevel"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Nivel de fantasía</FormLabel>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-muted-foreground">Realista</span>
+                        <span className="text-sm text-muted-foreground">Muy fantástico</span>
+                      </div>
+                      <FormControl>
+                        <Slider
+                          min={1}
+                          max={10}
+                          step={1}
+                          value={[field.value]}
+                          onValueChange={(value) => field.onChange(value[0])}
+                        />
+                      </FormControl>
+                      <div className="text-center">
+                        <span className="text-sm font-medium">{field.value}/10</span>
+                      </div>
+                    </div>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="tone"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Tono de la historia</FormLabel>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                      {["Emocionante", "Optimista", "Divertido", "Educativo", "Dramático", "Misterioso", "Humorístico", "Inspirador"].map((tone) => (
+                        <div 
+                          key={tone}
+                          className={`px-3 py-2 border rounded-md text-sm text-center cursor-pointer ${
+                            field.value?.includes(tone) 
+                              ? "bg-primary/10 border-primary" 
+                              : "hover:bg-muted"
+                          }`}
+                          onClick={() => {
+                            const currentTones = field.value || [];
+                            const newTones = currentTones.includes(tone)
+                              ? currentTones.filter(t => t !== tone)
+                              : [...currentTones, tone];
+                            field.onChange(newTones);
+                          }}
+                        >
+                          {tone}
+                        </div>
+                      ))}
+                    </div>
+                    <FormDescription>
+                      Selecciona hasta 3 tonos para tu historia
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="genre"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Géneros principales</FormLabel>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                      {["Fantasía", "Aventura", "Ciencia", "Educativo", "Familiar", "Amistad", "Naturaleza", "Superación"].map((genre) => (
+                        <div 
+                          key={genre}
+                          className={`px-3 py-2 border rounded-md text-sm text-center cursor-pointer ${
+                            field.value?.includes(genre) 
+                              ? "bg-primary/10 border-primary" 
+                              : "hover:bg-muted"
+                          }`}
+                          onClick={() => {
+                            const currentGenres = field.value || [];
+                            const newGenres = currentGenres.includes(genre)
+                              ? currentGenres.filter(g => g !== genre)
+                              : [...currentGenres, genre];
+                            field.onChange(newGenres);
+                          }}
+                        >
+                          {genre}
+                        </div>
+                      ))}
+                    </div>
+                    <FormDescription>
+                      Selecciona hasta 3 géneros para tu historia
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="storyObjective"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Objetivo de la historia</FormLabel>
+                    <FormControl>
+                      <Textarea 
+                        placeholder="Describe el objetivo principal o mensaje de la historia..." 
+                        className="min-h-[80px]"
+                        {...field} 
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="templates" className="space-y-4 mt-4">
+            <div className="mb-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+              <div className="flex items-start gap-3">
+                <Info className="h-5 w-5 text-blue-500 mt-0.5" />
+                <div>
+                  <h3 className="text-sm font-medium text-blue-800">Plantillas predefinidas</h3>
+                  <p className="text-sm text-blue-600">
+                    Selecciona una plantilla para empezar rápidamente. Después de seleccionarla podrás personalizar todos los detalles.
+                  </p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {templates.map((template) => (
+                <Card 
+                  key={template.id} 
+                  className={`cursor-pointer transition-all duration-200 ${
+                    selectedTemplate === template.id 
+                      ? 'border-2 border-primary ring-2 ring-primary/20' 
+                      : 'hover:border-primary/50'
                   }`}
                   onClick={() => {
-                    setSelectedTemplate(templateId);
+                    setSelectedTemplate(template.id);
                     // Actualizar valores del formulario basados en la plantilla
-                    const templateDetails = getTemplateDetails(templateId);
+                    const templateDetails = getTemplateDetails(template.id);
                     Object.entries(templateDetails).forEach(([key, value]) => {
                       form.setValue(key, value);
                     });
                   }}
                 >
-                  <p className="font-medium">{templateName}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {templateId === "adventure" && "Búsqueda de tesoros y grandes aventuras"}
-                    {templateId === "science" && "Exploración y descubrimientos científicos"}
-                    {templateId === "nature" && "Conexión con la naturaleza y animales"}
-                    {templateId === "family" && "Historias de valores familiares"}
-                  </p>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-lg">{template.title}</CardTitle>
+                    <CardDescription>{template.description}</CardDescription>
+                  </CardHeader>
+                  
+                  {template.id !== "custom" && (
+                    <CardContent className="text-sm">
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="flex flex-col">
+                          <span className="font-medium">Escenario:</span>
+                          <span className="text-muted-foreground">{template.details.scenario}</span>
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="font-medium">Época:</span>
+                          <span className="text-muted-foreground">{template.details.era}</span>
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="font-medium">Valor moral:</span>
+                          <span className="text-muted-foreground">{template.details.moralValue}</span>
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="font-medium">Nivel fantasía:</span>
+                          <span className="text-muted-foreground">{template.details.fantasyLevel}/10</span>
+                        </div>
+                      </div>
+                    </CardContent>
+                  )}
+                </Card>
+              ))}
+            </div>
+            
+            {selectedTemplate !== "custom" && (
+              <div className="bg-primary/5 p-4 rounded-lg mt-6">
+                <h3 className="font-medium mb-2">Resumen de la plantilla seleccionada</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm"><span className="font-medium">Escenario:</span> {selectedTemplateDetails.scenario}</p>
+                    <p className="text-sm"><span className="font-medium">Época:</span> {selectedTemplateDetails.era}</p>
+                    <p className="text-sm"><span className="font-medium">Tipo de aventura:</span> {selectedTemplateDetails.adventureType}</p>
+                    <p className="text-sm">
+                      <span className="font-medium">Tono:</span> {selectedTemplateDetails.tone?.join(", ")}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm"><span className="font-medium">Valor moral:</span> {selectedTemplateDetails.moralValue}</p>
+                    <p className="text-sm"><span className="font-medium">Nivel de fantasía:</span> {selectedTemplateDetails.fantasyLevel}/10</p>
+                    <p className="text-sm">
+                      <span className="font-medium">Géneros:</span> {selectedTemplateDetails.genre?.join(", ")}
+                    </p>
+                    <p className="text-sm"><span className="font-medium">Estilo artístico:</span> {selectedTemplateDetails.artStyle}</p>
+                  </div>
                 </div>
-              );
-            })}
-          </div>
-          
-          <div className="space-y-2">
-            <p className="font-medium">Objetivo de la historia (opcional):</p>
-            <textarea 
-              className="w-full p-2 border rounded-md" 
-              rows={3}
-              placeholder="Describe el objetivo principal de la historia..."
-              value={form.watch("storyObjective") || ""}
-              onChange={(e) => form.setValue("storyObjective", e.target.value)}
-            />
-          </div>
-        </div>
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
         
-        <DialogFooter className="flex justify-between">
-          <Button variant="outline" onClick={onPrevious}>
-            Atrás
+        <DialogFooter className="flex justify-between mt-6">
+          <Button 
+            variant="outline" 
+            onClick={onPrevious}
+          >
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Anterior
           </Button>
+          
           <Button onClick={onNext}>
-            Continuar
+            Siguiente
+            <ArrowRight className="ml-2 h-4 w-4" />
           </Button>
         </DialogFooter>
       </DialogContent>
