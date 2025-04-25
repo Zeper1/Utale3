@@ -363,31 +363,35 @@ const createCharacterSchema = z.object({
     message: "El nombre debe tener al menos 2 caracteres",
   }),
   type: z.string(),
-  age: z.union([z.number(), z.string(), z.null()]).optional().superRefine((val, ctx) => {
-    // Si no hay valor, no validamos
-    if (val === null || val === undefined || val === '') return;
-    
-    // Convertir a número si viene como string
-    const numVal = typeof val === 'string' ? parseInt(val) : val;
-    
-    // Si no es un número válido, no validar
-    if (isNaN(numVal)) return;
-    
-    // Validación según el tipo de personaje
-    const personType = ctx.parent.type;
-    
-    if (personType === 'child' && (numVal < 1 || numVal > 18)) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "La edad para niños debe estar entre 1 y 18 años",
-      });
-    } else if (personType === 'adult' && (numVal < 18 || numVal > 99)) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "La edad para adultos debe estar entre 18 y 99 años",
-      });
-    }
-  }),
+  age: z.union([z.number(), z.string(), z.null()]).optional()
+    .superRefine((val, ctx) => {
+      // Si no hay valor, no validamos
+      if (val === null || val === undefined || val === '') return;
+      
+      // Convertir a número si viene como string
+      const numVal = typeof val === 'string' ? parseInt(val) : val;
+      
+      // Si no es un número válido, no validamos
+      if (isNaN(numVal)) return;
+      
+      // Obtenemos el tipo de personaje del contexto
+      const personType = ctx.path && Array.isArray(ctx.path) && ctx.path.length > 0 
+        ? ctx.data?.type // TypeScript no sabe que data contiene type
+        : null;
+      
+      // Validación según el tipo de personaje
+      if (personType === 'child' && (numVal < 1 || numVal > 18)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "La edad para niños debe estar entre 1 y 18 años",
+        });
+      } else if (personType === 'adult' && (numVal < 18 || numVal > 99)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "La edad para adultos debe estar entre 18 y 99 años",
+        });
+      }
+    }),
   gender: z.string().optional(),
   physicalDescription: z.string().optional(),
   personality: z.string().optional(),
@@ -853,12 +857,50 @@ function CharacterSelectionModal({
   const { toast } = useToast();
   
   // Función para refrescar la lista de personajes después de crear uno nuevo
-  const handleCharacterCreated = () => {
-    refetchProfiles();
+  const handleCharacterCreated = async () => {
+    // Refrescar la lista completa de personajes
+    await refetchProfiles();
+    
+    // Obtener el último personaje creado
+    const response = await apiRequest('GET', '/api/characters');
+    
+    if (response.ok) {
+      const characters = await response.json();
+      if (characters && characters.length > 0) {
+        // Conseguir el personaje más reciente (asumiendo que el último creado estará al principio o al final)
+        const latestCharacter = characters[characters.length - 1];
+        
+        // Seleccionar automáticamente el personaje recién creado
+        setSelectedCharacterIds((prev: string[]) => {
+          // Si ya está seleccionado, no hacemos nada
+          if (prev.includes(latestCharacter.id.toString())) {
+            return prev;
+          }
+          
+          // Agregarlo a la selección
+          return [...prev, latestCharacter.id.toString()];
+        });
+        
+        // Asignar automáticamente rol de protagonista si no hay otro protagonista
+        const hasProtagonist = Object.values(characterDetails).some(
+          detail => detail && detail.role === 'protagonist'
+        );
+        
+        if (!hasProtagonist) {
+          setCharacterDetails((prev: Record<string, CharacterStoryDetails>) => ({
+            ...prev,
+            [latestCharacter.id.toString()]: {
+              role: 'protagonist',
+              specificTraits: ['Valiente', 'Curioso']
+            }
+          }));
+        }
+      }
+    }
     
     toast({
       title: "Personaje creado",
-      description: "El nuevo personaje ahora está disponible para seleccionar"
+      description: "El personaje ha sido creado y seleccionado automáticamente",
     });
   };
   
