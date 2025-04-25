@@ -357,13 +357,37 @@ interface CreateCharacterModalProps {
   onCharacterCreated: () => void;
 }
 
-// Schema para crear personajes
+// Schema para crear personajes con validaciones por tipo
 const createCharacterSchema = z.object({
   name: z.string().min(2, {
     message: "El nombre debe tener al menos 2 caracteres",
   }),
   type: z.string(),
-  age: z.union([z.number().min(0).max(150), z.string(), z.null()]).optional(),
+  age: z.union([z.number(), z.string(), z.null()]).optional().superRefine((val, ctx) => {
+    // Si no hay valor, no validamos
+    if (val === null || val === undefined || val === '') return;
+    
+    // Convertir a número si viene como string
+    const numVal = typeof val === 'string' ? parseInt(val) : val;
+    
+    // Si no es un número válido, no validar
+    if (isNaN(numVal)) return;
+    
+    // Validación según el tipo de personaje
+    const personType = ctx.parent.type;
+    
+    if (personType === 'child' && (numVal < 1 || numVal > 18)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "La edad para niños debe estar entre 1 y 18 años",
+      });
+    } else if (personType === 'adult' && (numVal < 18 || numVal > 99)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "La edad para adultos debe estar entre 18 y 99 años",
+      });
+    }
+  }),
   gender: z.string().optional(),
   physicalDescription: z.string().optional(),
   personality: z.string().optional(),
@@ -1422,71 +1446,199 @@ function StoryDetailsModal({
               <FormField
                 control={form.control}
                 name="tone"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Tono de la historia</FormLabel>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
-                      {["Emocionante", "Optimista", "Divertido", "Educativo", "Dramático", "Misterioso", "Humorístico", "Inspirador"].map((tone) => (
-                        <div 
-                          key={tone}
-                          className={`px-3 py-2 border rounded-md text-sm text-center cursor-pointer ${
-                            field.value?.includes(tone) 
-                              ? "bg-primary/10 border-primary" 
-                              : "hover:bg-muted"
-                          }`}
-                          onClick={() => {
-                            const currentTones = field.value || [];
-                            const newTones = currentTones.includes(tone)
-                              ? currentTones.filter((t: string) => t !== tone)
-                              : [...currentTones, tone];
-                            field.onChange(newTones);
-                          }}
-                        >
-                          {tone}
+                render={({ field }) => {
+                  // Para manejar la opción personalizada
+                  const [customTone, setCustomTone] = useState("");
+                  const [showCustomField, setShowCustomField] = useState(false);
+                  
+                  // Determinar si ya tiene 3 seleccionados
+                  const hasMaxSelections = field.value?.length >= 3;
+                  
+                  return (
+                    <FormItem>
+                      <FormLabel>Tono de la historia</FormLabel>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                        {["Emocionante", "Optimista", "Divertido", "Educativo", "Dramático", "Misterioso", "Humorístico", "Inspirador", "Otro"].map((tone) => (
+                          <div 
+                            key={tone}
+                            className={`px-3 py-2 border rounded-md text-sm text-center cursor-pointer ${
+                              tone === "Otro" && showCustomField
+                                ? "bg-primary/10 border-primary"
+                                : tone !== "Otro" && field.value?.includes(tone)
+                                  ? "bg-primary/10 border-primary" 
+                                  : "hover:bg-muted"
+                            } ${
+                              hasMaxSelections && !field.value?.includes(tone) && tone !== "Otro"
+                                ? "opacity-50 cursor-not-allowed"
+                                : ""
+                            }`}
+                            onClick={() => {
+                              if (tone === "Otro") {
+                                setShowCustomField(!showCustomField);
+                                return;
+                              }
+                              
+                              const currentTones = field.value || [];
+                              
+                              // Si ya está seleccionado, quitarlo
+                              if (currentTones.includes(tone)) {
+                                field.onChange(currentTones.filter((t: string) => t !== tone));
+                                return;
+                              }
+                              
+                              // Si no está seleccionado y ya hay 3, no hacer nada
+                              if (currentTones.length >= 3) {
+                                return;
+                              }
+                              
+                              // Añadirlo a la selección
+                              field.onChange([...currentTones, tone]);
+                            }}
+                          >
+                            {tone}
+                          </div>
+                        ))}
+                      </div>
+                      
+                      {showCustomField && (
+                        <div className="mt-2">
+                          <Input 
+                            placeholder="Escribe tu propio tono..."
+                            value={customTone}
+                            onChange={(e) => setCustomTone(e.target.value)}
+                            className="mb-2"
+                          />
+                          <Button 
+                            type="button" 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => {
+                              if (!customTone.trim()) return;
+                              
+                              const currentTones = field.value || [];
+                              
+                              // Si ya hay 3 elementos, reemplazar el último
+                              if (currentTones.length >= 3) {
+                                field.onChange([...currentTones.slice(0, 2), customTone]);
+                              } else {
+                                field.onChange([...currentTones, customTone]);
+                              }
+                              
+                              setCustomTone("");
+                            }}
+                            disabled={!customTone.trim()}
+                          >
+                            Añadir
+                          </Button>
                         </div>
-                      ))}
-                    </div>
-                    <FormDescription>
-                      Selecciona hasta 3 tonos para tu historia
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
+                      )}
+                      
+                      <FormDescription>
+                        Selecciona hasta 3 tonos para tu historia
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  );
+                }}
               />
               
               <FormField
                 control={form.control}
                 name="genre"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Géneros principales</FormLabel>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
-                      {["Fantasía", "Aventura", "Ciencia", "Educativo", "Familiar", "Amistad", "Naturaleza", "Superación"].map((genre) => (
-                        <div 
-                          key={genre}
-                          className={`px-3 py-2 border rounded-md text-sm text-center cursor-pointer ${
-                            field.value?.includes(genre) 
-                              ? "bg-primary/10 border-primary" 
-                              : "hover:bg-muted"
-                          }`}
-                          onClick={() => {
-                            const currentGenres = field.value || [];
-                            const newGenres = currentGenres.includes(genre)
-                              ? currentGenres.filter((g: string) => g !== genre)
-                              : [...currentGenres, genre];
-                            field.onChange(newGenres);
-                          }}
-                        >
-                          {genre}
+                render={({ field }) => {
+                  // Para manejar la opción personalizada
+                  const [customGenre, setCustomGenre] = useState("");
+                  const [showCustomField, setShowCustomField] = useState(false);
+                  
+                  // Determinar si ya tiene 3 seleccionados
+                  const hasMaxSelections = field.value?.length >= 3;
+                  
+                  return (
+                    <FormItem>
+                      <FormLabel>Géneros principales</FormLabel>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                        {["Fantasía", "Aventura", "Ciencia", "Educativo", "Familiar", "Amistad", "Naturaleza", "Superación", "Otro"].map((genre) => (
+                          <div 
+                            key={genre}
+                            className={`px-3 py-2 border rounded-md text-sm text-center cursor-pointer ${
+                              genre === "Otro" && showCustomField
+                                ? "bg-primary/10 border-primary"
+                                : genre !== "Otro" && field.value?.includes(genre)
+                                  ? "bg-primary/10 border-primary" 
+                                  : "hover:bg-muted"
+                            } ${
+                              hasMaxSelections && !field.value?.includes(genre) && genre !== "Otro"
+                                ? "opacity-50 cursor-not-allowed"
+                                : ""
+                            }`}
+                            onClick={() => {
+                              if (genre === "Otro") {
+                                setShowCustomField(!showCustomField);
+                                return;
+                              }
+                              
+                              const currentGenres = field.value || [];
+                              
+                              // Si ya está seleccionado, quitarlo
+                              if (currentGenres.includes(genre)) {
+                                field.onChange(currentGenres.filter((g: string) => g !== genre));
+                                return;
+                              }
+                              
+                              // Si no está seleccionado y ya hay 3, no hacer nada
+                              if (currentGenres.length >= 3) {
+                                return;
+                              }
+                              
+                              // Añadirlo a la selección
+                              field.onChange([...currentGenres, genre]);
+                            }}
+                          >
+                            {genre}
+                          </div>
+                        ))}
+                      </div>
+                      
+                      {showCustomField && (
+                        <div className="mt-2">
+                          <Input 
+                            placeholder="Escribe tu propio género..."
+                            value={customGenre}
+                            onChange={(e) => setCustomGenre(e.target.value)}
+                            className="mb-2"
+                          />
+                          <Button 
+                            type="button" 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => {
+                              if (!customGenre.trim()) return;
+                              
+                              const currentGenres = field.value || [];
+                              
+                              // Si ya hay 3 elementos, reemplazar el último
+                              if (currentGenres.length >= 3) {
+                                field.onChange([...currentGenres.slice(0, 2), customGenre]);
+                              } else {
+                                field.onChange([...currentGenres, customGenre]);
+                              }
+                              
+                              setCustomGenre("");
+                            }}
+                            disabled={!customGenre.trim()}
+                          >
+                            Añadir
+                          </Button>
                         </div>
-                      ))}
-                    </div>
-                    <FormDescription>
-                      Selecciona hasta 3 géneros para tu historia
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
+                      )}
+                      
+                      <FormDescription>
+                        Selecciona hasta 3 géneros para tu historia
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  );
+                }}
               />
               
               <FormField
