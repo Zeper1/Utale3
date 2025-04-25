@@ -1915,12 +1915,22 @@ export default function CreateBook() {
   // Convertir a array tipado
   const childProfiles = childProfilesData as any[];
   
-  // Preseleccionar un personaje si viene en la URL
+  // Preseleccionar un personaje si viene en la URL y asignarle rol de protagonista
   useEffect(() => {
     if (preselectedCharacterId && !selectedCharacterIds.includes(preselectedCharacterId)) {
+      // Añadirlo a la selección
       setSelectedCharacterIds(prevIds => [...prevIds, preselectedCharacterId]);
+      
+      // Asignarle automáticamente el rol de protagonista
+      setCharacterDetails(prevDetails => ({
+        ...prevDetails,
+        [preselectedCharacterId]: {
+          role: 'protagonist',
+          specificTraits: ['Valiente', 'Curioso']
+        }
+      }));
     }
-  }, [preselectedCharacterId]);
+  }, [preselectedCharacterId, childProfiles]);
   
   // Función para navegar entre pasos
   const goToStep = (step: number) => {
