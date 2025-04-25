@@ -819,10 +819,23 @@ function CharacterSelectionModal({
     });
   };
   
+  // Query para obtener personajes
+  const { data: characters, refetch: refetchProfiles } = useQuery({
+    queryKey: ['/api/characters'],
+    enabled: isOpen
+  });
+  
+  // Hook para mostrar notificaciones
+  const { toast } = useToast();
+  
   // Función para refrescar la lista de personajes después de crear uno nuevo
   const handleCharacterCreated = () => {
-    // Invalidar la caché de React Query para forzar una recarga
-    window.location.reload(); // Forzar recarga para garantizar datos actualizados
+    refetchProfiles();
+    
+    toast({
+      title: "Personaje creado",
+      description: "El nuevo personaje ahora está disponible para seleccionar"
+    });
   };
   
   // Obtener el personaje seleccionado para editar detalles
@@ -1076,16 +1089,7 @@ function CharacterSelectionModal({
       <CreateCharacterModal
         isOpen={createModalOpen}
         onOpenChange={setCreateModalOpen}
-        onCharacterCreated={() => {
-          // Refrescar la lista de personajes 
-          refetchProfiles();
-          
-          // Mostrar notificación
-          toast({
-            title: "Personaje creado",
-            description: "El nuevo personaje ahora está disponible para seleccionar",
-          });
-        }}
+        onCharacterCreated={handleCharacterCreated}
       />
       
       {/* Modal para detalles específicos del personaje */}
@@ -1631,10 +1635,10 @@ function TechnicalSettingsModal({
 }: TechnicalSettingsModalProps) {
   // Opciones de estilo de fuente con ejemplos
   const fontStyles = [
-    { id: "casual", name: "Casual", sample: "ABCabc123", description: "Estilo relajado y amigable" },
-    { id: "elegant", name: "Elegante", sample: "ABCabc123", description: "Estilo refinado y sofisticado" },
-    { id: "handwritten", name: "Manuscrita", sample: "ABCabc123", description: "Parece escrito a mano" },
-    { id: "playful", name: "Juguetona", sample: "ABCabc123", description: "Divertida y para los más pequeños" },
+    { id: "casual", name: "Casual", sample: "Había una vez", description: "Estilo relajado y amigable", className: "font-sans" },
+    { id: "elegant", name: "Elegante", sample: "Había una vez", description: "Estilo refinado y sofisticado", className: "font-serif" },
+    { id: "handwritten", name: "Manuscrita", sample: "Había una vez", description: "Parece escrito a mano", className: "italic" },
+    { id: "playful", name: "Juguetona", sample: "Había una vez", description: "Divertida y para los más pequeños", className: "font-bold" },
   ];
   
   // Opciones de estilo de ilustración
@@ -1764,7 +1768,7 @@ function TechnicalSettingsModal({
                         )}
                       </div>
                       <p className="text-xs text-muted-foreground mb-1">{font.description}</p>
-                      <div className="bg-background p-1 rounded text-sm text-center">
+                      <div className={`bg-background p-1 rounded text-sm text-center ${font.className}`}>
                         {font.sample}
                       </div>
                     </div>
@@ -1795,20 +1799,13 @@ function TechnicalSettingsModal({
                   </div>
                   
                   <div 
-                    className={`border rounded-md p-3 cursor-pointer transition-all ${
-                      form.watch("format") === "print" ? 
-                      "border-primary bg-primary/5" : 
-                      "hover:border-primary/30"
-                    }`}
-                    onClick={() => form.setValue("format", "print")}
+                    className={`border rounded-md p-3 transition-all opacity-60 bg-muted/40`}
                   >
                     <div className="flex items-center justify-between mb-1">
-                      <p className="font-medium">Impreso</p>
-                      {form.watch("format") === "print" && (
-                        <div className="h-4 w-4 bg-primary/20 rounded-full flex items-center justify-center">
-                          <Check className="h-3 w-3 text-primary" />
-                        </div>
-                      )}
+                      <div className="flex items-center gap-1">
+                        <p className="font-medium">Impreso</p>
+                        <span className="bg-amber-100 text-amber-800 text-[10px] px-1.5 py-0.5 rounded-full">Próximamente</span>
+                      </div>
                     </div>
                     <p className="text-xs text-muted-foreground">Solicitar impresión física a domicilio</p>
                   </div>
