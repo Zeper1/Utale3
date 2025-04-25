@@ -374,22 +374,26 @@ const createCharacterSchema = z.object({
       // Si no es un número válido, no validamos
       if (isNaN(numVal)) return;
       
-      // Obtenemos el tipo de personaje del contexto
-      const personType = ctx.path && Array.isArray(ctx.path) && ctx.path.length > 0 
-        ? ctx.data?.type // TypeScript no sabe que data contiene type
-        : null;
-      
-      // Validación según el tipo de personaje
-      if (personType === 'child' && (numVal < 1 || numVal > 18)) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: "La edad para niños debe estar entre 1 y 18 años",
-        });
-      } else if (personType === 'adult' && (numVal < 18 || numVal > 99)) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: "La edad para adultos debe estar entre 18 y 99 años",
-        });
+      try {
+        // Intentamos obtener el campo type del formulario actual
+        const formValue = ctx.parent as Record<string, unknown>;
+        const personType = formValue.type as string;
+        
+        // Validación según el tipo de personaje
+        if (personType === 'child' && (numVal < 1 || numVal > 18)) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "La edad para niños debe estar entre 1 y 18 años",
+          });
+        } else if (personType === 'adult' && (numVal < 18 || numVal > 99)) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "La edad para adultos debe estar entre 18 y 99 años",
+          });
+        }
+      } catch (e) {
+        // Si hay algún error en la validación, lo ignoramos
+        console.warn("Error al validar edad:", e);
       }
     }),
   gender: z.string().optional(),
@@ -861,41 +865,46 @@ function CharacterSelectionModal({
     // Refrescar la lista completa de personajes
     await refetchProfiles();
     
-    // Obtener el último personaje creado
-    const response = await apiRequest('GET', '/api/characters');
-    
-    if (response.ok) {
-      const characters = await response.json();
-      if (characters && characters.length > 0) {
-        // Conseguir el personaje más reciente (asumiendo que el último creado estará al principio o al final)
-        const latestCharacter = characters[characters.length - 1];
-        
-        // Seleccionar automáticamente el personaje recién creado
-        setSelectedCharacterIds((prev: string[]) => {
-          // Si ya está seleccionado, no hacemos nada
-          if (prev.includes(latestCharacter.id.toString())) {
-            return prev;
-          }
+    try {
+      // Obtener el último personaje creado
+      const response = await apiRequest('GET', '/api/characters');
+      
+      if (response.ok) {
+        const characters = await response.json();
+        if (characters && characters.length > 0) {
+          // Conseguir el personaje más reciente (asumiendo que el último creado estará al principio o al final)
+          const latestCharacter = characters[characters.length - 1];
           
-          // Agregarlo a la selección
-          return [...prev, latestCharacter.id.toString()];
-        });
-        
-        // Asignar automáticamente rol de protagonista si no hay otro protagonista
-        const hasProtagonist = Object.values(characterDetails).some(
-          detail => detail && detail.role === 'protagonist'
-        );
-        
-        if (!hasProtagonist) {
-          setCharacterDetails((prev: Record<string, CharacterStoryDetails>) => ({
-            ...prev,
-            [latestCharacter.id.toString()]: {
-              role: 'protagonist',
-              specificTraits: ['Valiente', 'Curioso']
+          // Seleccionar automáticamente el personaje recién creado
+          setSelectedCharacterIds((ids) => {
+            // Si ya está seleccionado, no hacemos nada
+            if (ids.includes(latestCharacter.id.toString())) {
+              return ids;
             }
-          }));
+            
+            // Agregarlo a la selección
+            return [...ids, latestCharacter.id.toString()];
+          });
+          
+          // Asignar automáticamente rol de protagonista si no hay otro protagonista
+          const hasProtagonist = Object.values(characterDetails).some(
+            detail => detail && detail.role === 'protagonist'
+          );
+          
+          if (!hasProtagonist) {
+            setCharacterDetails((details) => {
+              const updatedDetails = { ...details };
+              updatedDetails[latestCharacter.id.toString()] = {
+                role: 'protagonist',
+                specificTraits: ['Valiente', 'Curioso']
+              };
+              return updatedDetails;
+            });
+          }
         }
       }
+    } catch (error) {
+      console.error("Error al obtener los personajes:", error);
     }
     
     toast({
@@ -1067,19 +1076,23 @@ function CharacterSelectionModal({
                             </div>
                           </div>
                           
-                          {isSelected && characterDetails[profile.id.toString()] && characterDetails[profile.id.toString()].specificTraits && characterDetails[profile.id.toString()].specificTraits.length > 0 && (
-                            <div className="mt-2 flex flex-wrap gap-1">
-                              {characterDetails[profile.id.toString()].specificTraits.slice(0, 3).map((trait, idx) => (
-                                <span key={idx} className="inline-block px-2 py-0.5 bg-primary/10 text-primary-foreground rounded-full text-xs">
-                                  {trait}
-                                </span>
-                              ))}
-                              {characterDetails[profile.id.toString()].specificTraits.length > 3 && (
-                                <span className="inline-block px-2 py-0.5 bg-muted text-muted-foreground rounded-full text-xs">
-                                  +{characterDetails[profile.id.toString()].specificTraits.length - 3}
-                                </span>
-                              )}
-                            </div>
+                          {isSelected && 
+                            characterDetails[profile.id.toString()] && 
+                            characterDetails[profile.id.toString()]?.specificTraits && 
+                            Array.isArray(characterDetails[profile.id.toString()]?.specificTraits) && 
+                            characterDetails[profile.id.toString()]?.specificTraits.length > 0 && (
+                              <div className="mt-2 flex flex-wrap gap-1">
+                                {characterDetails[profile.id.toString()]?.specificTraits?.slice(0, 3).map((trait, idx) => (
+                                  <span key={idx} className="inline-block px-2 py-0.5 bg-primary/10 text-primary-foreground rounded-full text-xs">
+                                    {trait}
+                                  </span>
+                                ))}
+                                {(characterDetails[profile.id.toString()]?.specificTraits?.length || 0) > 3 && (
+                                  <span className="inline-block px-2 py-0.5 bg-muted text-muted-foreground rounded-full text-xs">
+                                    +{(characterDetails[profile.id.toString()]?.specificTraits?.length || 0) - 3}
+                                  </span>
+                                )}
+                              </div>
                           )}
                         </div>
                         
