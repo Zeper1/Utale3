@@ -1115,6 +1115,40 @@ function StoryDetailsModal({
 }: StoryDetailsModalProps) {
   const selectedTemplateDetails = getTemplateDetails(selectedTemplate);
   
+  // Definición de plantillas disponibles
+  const templates = [
+    { 
+      id: "custom", 
+      title: "Personalizado", 
+      description: "Crea una historia completamente personalizada desde cero",
+      details: {}
+    },
+    { 
+      id: "adventure", 
+      title: "Aventura fantástica", 
+      description: "Una emocionante aventura en un reino mágico",
+      details: getTemplateDetails("adventure")
+    },
+    { 
+      id: "science", 
+      title: "Exploración espacial", 
+      description: "Un viaje educativo por el espacio exterior",
+      details: getTemplateDetails("science")
+    },
+    { 
+      id: "nature", 
+      title: "Naturaleza encantada", 
+      description: "Descubrimiento y respeto por la naturaleza",
+      details: getTemplateDetails("nature")
+    },
+    { 
+      id: "family", 
+      title: "Valores familiares", 
+      description: "Una historia sobre cooperación y lazos familiares",
+      details: getTemplateDetails("family")
+    }
+  ];
+  
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
