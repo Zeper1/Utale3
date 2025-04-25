@@ -1885,6 +1885,7 @@ export default function CreateBook() {
   // Determinar si hay un personaje preseleccionado (de la URL)
   const urlParams = new URLSearchParams(location.search.toString());
   const preselectedCharacterId = urlParams.get('character') || urlParams.get('characterId');
+  console.log("ID de personaje preseleccionado:", preselectedCharacterId);
   
   // Formulario con validación
   const form = useForm<BookFormValues>({
@@ -1917,20 +1918,28 @@ export default function CreateBook() {
   
   // Preseleccionar un personaje si viene en la URL y asignarle rol de protagonista
   useEffect(() => {
-    if (preselectedCharacterId && !selectedCharacterIds.includes(preselectedCharacterId)) {
-      // Añadirlo a la selección
-      setSelectedCharacterIds(prevIds => [...prevIds, preselectedCharacterId]);
+    if (preselectedCharacterId && childProfiles && childProfiles.length > 0) {
+      console.log("Aplicando preselección y rol de protagonista para:", preselectedCharacterId);
       
-      // Asignarle automáticamente el rol de protagonista
-      setCharacterDetails(prevDetails => ({
-        ...prevDetails,
-        [preselectedCharacterId]: {
-          role: 'protagonist',
-          specificTraits: ['Valiente', 'Curioso']
-        }
-      }));
+      // Verificar que el ID existe en los perfiles
+      const characterExists = childProfiles.some(c => c.id.toString() === preselectedCharacterId);
+      
+      if (characterExists) {
+        // Añadirlo a la selección (reemplazando cualquier selección previa)
+        setSelectedCharacterIds([preselectedCharacterId]);
+        
+        // Asignarle automáticamente el rol de protagonista
+        setCharacterDetails({
+          [preselectedCharacterId]: {
+            role: 'protagonist',
+            specificTraits: ['Valiente', 'Curioso']
+          }
+        });
+      } else {
+        console.warn("El personaje preseleccionado no existe:", preselectedCharacterId);
+      }
     }
-  }, [preselectedCharacterId, childProfiles]);
+  }, [preselectedCharacterId, childProfiles.length]);
   
   // Función para navegar entre pasos
   const goToStep = (step: number) => {
