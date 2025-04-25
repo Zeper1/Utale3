@@ -988,16 +988,16 @@ function CharacterSelectionModal({
                             </div>
                           </div>
                           
-                          {isSelected && characterDetails[profile.id.toString()]?.specificTraits?.length > 0 && (
+                          {isSelected && characterDetails[profile.id.toString()] && characterDetails[profile.id.toString()].specificTraits && characterDetails[profile.id.toString()].specificTraits.length > 0 && (
                             <div className="mt-2 flex flex-wrap gap-1">
-                              {characterDetails[profile.id.toString()]?.specificTraits?.slice(0, 3).map((trait, idx) => (
+                              {characterDetails[profile.id.toString()].specificTraits.slice(0, 3).map((trait, idx) => (
                                 <span key={idx} className="inline-block px-2 py-0.5 bg-primary/10 text-primary-foreground rounded-full text-xs">
                                   {trait}
                                 </span>
                               ))}
-                              {(characterDetails[profile.id.toString()]?.specificTraits?.length || 0) > 3 && (
+                              {characterDetails[profile.id.toString()].specificTraits.length > 3 && (
                                 <span className="inline-block px-2 py-0.5 bg-muted text-muted-foreground rounded-full text-xs">
-                                  +{(characterDetails[profile.id.toString()]?.specificTraits?.length || 0) - 3}
+                                  +{characterDetails[profile.id.toString()].specificTraits.length - 3}
                                 </span>
                               )}
                             </div>
@@ -1250,12 +1250,40 @@ function StoryDetailsModal({
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Época</FormLabel>
-                      <FormControl>
-                        <Input 
-                          placeholder="Medieval, actual, futurista, etc." 
-                          {...field} 
-                        />
-                      </FormControl>
+                      <div className="space-y-2">
+                        <Select
+                          value={field.value}
+                          onValueChange={(value) => {
+                            field.onChange(value);
+                          }}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecciona una época" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="Medieval fantástico">Medieval fantástico</SelectItem>
+                            <SelectItem value="Actualidad">Actualidad</SelectItem>
+                            <SelectItem value="Futuro cercano">Futuro cercano</SelectItem>
+                            <SelectItem value="Futuro lejano">Futuro lejano</SelectItem>
+                            <SelectItem value="Prehistoria">Prehistoria</SelectItem>
+                            <SelectItem value="Época victoriana">Época victoriana</SelectItem>
+                            <SelectItem value="Antiguo Egipto">Antiguo Egipto</SelectItem>
+                            <SelectItem value="Época pirata">Época pirata</SelectItem>
+                            <SelectItem value="otro">Otra época...</SelectItem>
+                          </SelectContent>
+                        </Select>
+
+                        {field.value === "otro" && (
+                          <Input 
+                            placeholder="Describe la época de la historia" 
+                            value={field.value === "otro" ? "" : field.value}
+                            onChange={(e) => field.onChange(e.target.value)}
+                            className="mt-2"
+                          />
+                        )}
+                      </div>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -1269,12 +1297,40 @@ function StoryDetailsModal({
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Tipo de aventura</FormLabel>
-                      <FormControl>
-                        <Input 
-                          placeholder="Búsqueda, misterio, viaje, etc." 
-                          {...field} 
-                        />
-                      </FormControl>
+                      <div className="space-y-2">
+                        <Select
+                          value={field.value}
+                          onValueChange={(value) => {
+                            field.onChange(value);
+                          }}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecciona un tipo de aventura" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="Búsqueda del tesoro">Búsqueda del tesoro</SelectItem>
+                            <SelectItem value="Rescate">Rescate</SelectItem>
+                            <SelectItem value="Exploración">Exploración</SelectItem>
+                            <SelectItem value="Resolver un misterio">Resolver un misterio</SelectItem>
+                            <SelectItem value="Aprendizaje">Aprendizaje</SelectItem>
+                            <SelectItem value="Superar desafíos">Superar desafíos</SelectItem>
+                            <SelectItem value="Viaje interior">Viaje interior</SelectItem>
+                            <SelectItem value="Ayudar a otros">Ayudar a otros</SelectItem>
+                            <SelectItem value="otro">Otro tipo...</SelectItem>
+                          </SelectContent>
+                        </Select>
+
+                        {field.value === "otro" && (
+                          <Input 
+                            placeholder="Describe el tipo de aventura" 
+                            value={field.value === "otro" ? "" : field.value}
+                            onChange={(e) => field.onChange(e.target.value)}
+                            className="mt-2"
+                          />
+                        )}
+                      </div>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -1286,12 +1342,44 @@ function StoryDetailsModal({
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Valor moral o lección</FormLabel>
-                      <FormControl>
-                        <Input 
-                          placeholder="¿Qué lección enseñará la historia?" 
-                          {...field} 
-                        />
-                      </FormControl>
+                      <div className="space-y-2">
+                        <Select
+                          value={field.value}
+                          onValueChange={(value) => {
+                            field.onChange(value);
+                          }}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecciona un valor moral para la historia" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="Amistad">Amistad</SelectItem>
+                            <SelectItem value="Generosidad">Generosidad</SelectItem>
+                            <SelectItem value="Respeto">Respeto</SelectItem>
+                            <SelectItem value="Honestidad">Honestidad</SelectItem>
+                            <SelectItem value="Perseverancia">Perseverancia</SelectItem>
+                            <SelectItem value="Cooperación">Cooperación</SelectItem>
+                            <SelectItem value="Responsabilidad">Responsabilidad</SelectItem>
+                            <SelectItem value="Humildad">Humildad</SelectItem>
+                            <SelectItem value="Valentía">Valentía</SelectItem>
+                            <SelectItem value="Tolerancia">Tolerancia</SelectItem>
+                            <SelectItem value="Respeto por la naturaleza">Respeto por la naturaleza</SelectItem>
+                            <SelectItem value="Empatía">Empatía</SelectItem>
+                            <SelectItem value="otro">Otro valor...</SelectItem>
+                          </SelectContent>
+                        </Select>
+
+                        {field.value === "otro" && (
+                          <Input 
+                            placeholder="Describe el valor moral o lección de la historia" 
+                            value={field.value === "otro" ? "" : field.value}
+                            onChange={(e) => field.onChange(e.target.value)}
+                            className="mt-2"
+                          />
+                        )}
+                      </div>
                       <FormMessage />
                     </FormItem>
                   )}
