@@ -1076,7 +1076,16 @@ function CharacterSelectionModal({
       <CreateCharacterModal
         isOpen={createModalOpen}
         onOpenChange={setCreateModalOpen}
-        onCharacterCreated={handleCharacterCreated}
+        onCharacterCreated={() => {
+          // Refrescar la lista de personajes 
+          refetchProfiles();
+          
+          // Mostrar notificación
+          toast({
+            title: "Personaje creado",
+            description: "El nuevo personaje ahora está disponible para seleccionar",
+          });
+        }}
       />
       
       {/* Modal para detalles específicos del personaje */}
@@ -1196,12 +1205,40 @@ function StoryDetailsModal({
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Escenario</FormLabel>
-                      <FormControl>
-                        <Input 
-                          placeholder="Describe el lugar donde ocurrirá la historia" 
-                          {...field} 
-                        />
-                      </FormControl>
+                      <div className="space-y-2">
+                        <Select
+                          value={field.value}
+                          onValueChange={(value) => {
+                            field.onChange(value);
+                          }}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecciona un escenario" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="Reino mágico">Reino mágico</SelectItem>
+                            <SelectItem value="Ciudad moderna">Ciudad moderna</SelectItem>
+                            <SelectItem value="Bosque encantado">Bosque encantado</SelectItem>
+                            <SelectItem value="Espacio exterior">Espacio exterior</SelectItem>
+                            <SelectItem value="Océano profundo">Océano profundo</SelectItem>
+                            <SelectItem value="Montañas">Montañas</SelectItem>
+                            <SelectItem value="Isla desierta">Isla desierta</SelectItem>
+                            <SelectItem value="Mundo prehistórico">Mundo prehistórico</SelectItem>
+                            <SelectItem value="otro">Otro escenario...</SelectItem>
+                          </SelectContent>
+                        </Select>
+
+                        {field.value === "otro" && (
+                          <Input 
+                            placeholder="Describe el lugar donde ocurrirá la historia" 
+                            value={field.value === "otro" ? "" : field.value}
+                            onChange={(e) => field.onChange(e.target.value)}
+                            className="mt-2"
+                          />
+                        )}
+                      </div>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -1762,7 +1799,7 @@ export default function CreateBook() {
   
   // Determinar si hay un personaje preseleccionado (de la URL)
   const urlParams = new URLSearchParams(location.search.toString());
-  const preselectedCharacterId = urlParams.get('character');
+  const preselectedCharacterId = urlParams.get('character') || urlParams.get('characterId');
   
   // Formulario con validación
   const form = useForm<BookFormValues>({
@@ -1786,7 +1823,7 @@ export default function CreateBook() {
   });
   
   // Cargar los perfiles de personajes
-  const { data: childProfilesData = [], isLoading: isLoadingProfiles } = useQuery({
+  const { data: childProfilesData = [], isLoading: isLoadingProfiles, refetch: refetchProfiles } = useQuery({
     queryKey: ['/api/users/1/characters'], // Esta es la ruta correcta para obtener los personajes del usuario
   });
   
