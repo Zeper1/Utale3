@@ -821,7 +821,8 @@ function CharacterSelectionModal({
   
   // Función para refrescar la lista de personajes después de crear uno nuevo
   const handleCharacterCreated = () => {
-    // La recarga se hará automáticamente a través de React Query
+    // Invalidar la caché de React Query para forzar una recarga
+    window.location.reload(); // Forzar recarga para garantizar datos actualizados
   };
   
   // Obtener el personaje seleccionado para editar detalles
@@ -989,14 +990,14 @@ function CharacterSelectionModal({
                           
                           {isSelected && characterDetails[profile.id.toString()]?.specificTraits?.length > 0 && (
                             <div className="mt-2 flex flex-wrap gap-1">
-                              {characterDetails[profile.id.toString()].specificTraits.slice(0, 3).map((trait, idx) => (
+                              {characterDetails[profile.id.toString()]?.specificTraits?.slice(0, 3).map((trait, idx) => (
                                 <span key={idx} className="inline-block px-2 py-0.5 bg-primary/10 text-primary-foreground rounded-full text-xs">
                                   {trait}
                                 </span>
                               ))}
-                              {characterDetails[profile.id.toString()].specificTraits.length > 3 && (
+                              {(characterDetails[profile.id.toString()]?.specificTraits?.length || 0) > 3 && (
                                 <span className="inline-block px-2 py-0.5 bg-muted text-muted-foreground rounded-full text-xs">
-                                  +{characterDetails[profile.id.toString()].specificTraits.length - 3}
+                                  +{(characterDetails[profile.id.toString()]?.specificTraits?.length || 0) - 3}
                                 </span>
                               )}
                             </div>
@@ -1162,6 +1163,7 @@ function StoryDetailsModal({
           </DialogDescription>
         </DialogHeader>
         
+        <Form {...form}>
         <Tabs defaultValue="custom" className="mt-4">
           <TabsList className="grid grid-cols-2">
             <TabsTrigger value="custom">Personalizado</TabsTrigger>
@@ -1306,7 +1308,7 @@ function StoryDetailsModal({
                           onClick={() => {
                             const currentTones = field.value || [];
                             const newTones = currentTones.includes(tone)
-                              ? currentTones.filter(t => t !== tone)
+                              ? currentTones.filter((t: string) => t !== tone)
                               : [...currentTones, tone];
                             field.onChange(newTones);
                           }}
@@ -1341,7 +1343,7 @@ function StoryDetailsModal({
                           onClick={() => {
                             const currentGenres = field.value || [];
                             const newGenres = currentGenres.includes(genre)
-                              ? currentGenres.filter(g => g !== genre)
+                              ? currentGenres.filter((g: string) => g !== genre)
                               : [...currentGenres, genre];
                             field.onChange(newGenres);
                           }}
@@ -1465,6 +1467,7 @@ function StoryDetailsModal({
             )}
           </TabsContent>
         </Tabs>
+        </Form>
         
         <DialogFooter className="flex justify-between mt-6">
           <Button 
@@ -1532,7 +1535,8 @@ function TechnicalSettingsModal({
           </DialogDescription>
         </DialogHeader>
         
-        <div className="space-y-6 mt-4">
+        <Form {...form}>
+          <div className="space-y-6 mt-4">
           <div className="space-y-2">
             <label className="text-sm font-medium">Número de páginas</label>
             <div className="flex items-center space-x-4">
@@ -1713,6 +1717,7 @@ function TechnicalSettingsModal({
             </div>
           </div>
         </div>
+        </Form>
         
         <DialogFooter className="flex justify-between mt-6">
           <Button 
