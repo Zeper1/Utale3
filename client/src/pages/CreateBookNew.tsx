@@ -862,55 +862,91 @@ function CharacterSelectionModal({
   
   // Función para refrescar la lista de personajes después de crear uno nuevo
   const handleCharacterCreated = async () => {
-    // Refrescar la lista completa de personajes
-    await refetchProfiles();
+    console.log("Actualizando lista de personajes después de creación");
     
     try {
-      // Obtener el último personaje creado
-      const response = await apiRequest('GET', '/api/characters');
+      // Refrescar la lista completa de personajes
+      const refreshResult = await refetchProfiles();
+      console.log("Lista refrescada, obteniendo todos los personajes");
+      
+      // Llamar directamente a la API para obtener la lista actualizada
+      const response = await apiRequest('GET', '/api/users/1/characters');
       
       if (response.ok) {
         const characters = await response.json();
+        console.log("Personajes obtenidos:", characters.length);
+        
         if (characters && characters.length > 0) {
-          // Conseguir el personaje más reciente (asumiendo que el último creado estará al principio o al final)
+          // Conseguir el personaje más reciente (el último de la lista)
           const latestCharacter = characters[characters.length - 1];
+          console.log("Último personaje creado:", latestCharacter);
           
-          // Seleccionar automáticamente el personaje recién creado
-          setSelectedCharacterIds((ids) => {
-            // Si ya está seleccionado, no hacemos nada
-            if (ids.includes(latestCharacter.id.toString())) {
-              return ids;
+          if (latestCharacter && latestCharacter.id) {
+            const characterId = latestCharacter.id.toString();
+            
+            // Seleccionar automáticamente el personaje recién creado
+            setSelectedCharacterIds((prevIds: string[]) => {
+              // Si ya está seleccionado, no hacemos nada
+              if (prevIds.includes(characterId)) {
+                return prevIds;
+              }
+              
+              console.log("Añadiendo personaje a la selección:", characterId);
+              // Agregarlo a la selección
+              return [...prevIds, characterId];
+            });
+            
+            // Asignar automáticamente rol de protagonista si no hay otro protagonista
+            const hasProtagonist = Object.values(characterDetails).some(
+              detail => detail && detail.role === 'protagonist'
+            );
+            
+            if (!hasProtagonist) {
+              console.log("Asignando rol de protagonista al nuevo personaje");
+              setCharacterDetails(prevDetails => ({
+                ...prevDetails,
+                [characterId]: {
+                  role: 'protagonist',
+                  specificTraits: ['Valiente', 'Curioso'],
+                  storyBackground: '',
+                  specialAbilities: [],
+                  customDescription: ''
+                }
+              }));
+            } else {
+              console.log("Ya existe un protagonista, asignando rol secundario");
+              setCharacterDetails(prevDetails => ({
+                ...prevDetails,
+                [characterId]: {
+                  role: 'secondary',
+                  specificTraits: ['Amigable', 'Leal'],
+                  storyBackground: '',
+                  specialAbilities: [],
+                  customDescription: ''
+                }
+              }));
             }
             
-            // Agregarlo a la selección
-            return [...ids, latestCharacter.id.toString()];
-          });
-          
-          // Asignar automáticamente rol de protagonista si no hay otro protagonista
-          const hasProtagonist = Object.values(characterDetails).some(
-            detail => detail && detail.role === 'protagonist'
-          );
-          
-          if (!hasProtagonist) {
-            setCharacterDetails((details) => {
-              const updatedDetails = { ...details };
-              updatedDetails[latestCharacter.id.toString()] = {
-                role: 'protagonist',
-                specificTraits: ['Valiente', 'Curioso']
-              };
-              return updatedDetails;
+            toast({
+              title: "Personaje añadido",
+              description: `Se ha añadido "${latestCharacter.name}" a tu selección.`,
             });
           }
         }
+      } else {
+        console.warn("No se pudieron obtener los personajes actualizados");
+        toast({
+          title: "Personaje creado",
+          description: "El personaje ha sido creado, pero no se pudo añadir automáticamente. Por favor, selecciónalo manualmente.",
+        });
       }
     } catch (error) {
       console.error("Error al obtener los personajes:", error);
+      toast({
+        title: "Personaje creado",
+        description: "El personaje ha sido creado, pero hubo un problema al seleccionarlo automáticamente.",
+      });
     }
-    
-    toast({
-      title: "Personaje creado",
-      description: "El personaje ha sido creado y seleccionado automáticamente",
-    });
   };
   
   // Obtener el personaje seleccionado para editar detalles
@@ -2132,21 +2168,30 @@ export default function CreateBook() {
       const characterExists = childProfiles.some(c => c.id.toString() === preselectedCharacterId);
       
       if (characterExists) {
+        console.log("Personaje encontrado, configurando como protagonista");
+        
         // Añadirlo a la selección (reemplazando cualquier selección previa)
         setSelectedCharacterIds([preselectedCharacterId]);
         
         // Asignarle automáticamente el rol de protagonista
-        setCharacterDetails({
+        setCharacterDetails(prevDetails => ({
+          ...prevDetails,
           [preselectedCharacterId]: {
             role: 'protagonist',
-            specificTraits: ['Valiente', 'Curioso']
+            specificTraits: ['Valiente', 'Curioso'],
+            storyBackground: '',
+            specialAbilities: [],
+            customDescription: ''
           }
-        });
+        }));
+        
+        // También actualizar el formulario
+        form.setValue('characterIds', [preselectedCharacterId]);
       } else {
         console.warn("El personaje preseleccionado no existe:", preselectedCharacterId);
       }
     }
-  }, [preselectedCharacterId, childProfiles.length]);
+  }, [preselectedCharacterId, childProfiles, form]);
   
   // Función para navegar entre pasos
   const goToStep = (step: number) => {
