@@ -1593,6 +1593,34 @@ function StoryDetailsModal({
                       
                       {showCustomField && (
                         <div className="mt-2">
+                          <div className="mb-2">
+                            <p className="text-sm text-muted-foreground mb-1">Tonos personalizados añadidos:</p>
+                            <div className="flex flex-wrap gap-1">
+                              {field.value?.filter(tone => 
+                                !["Emocionante", "Optimista", "Divertido", "Educativo", "Dramático", "Misterioso", "Humorístico", "Inspirador", "Otro"].includes(tone)
+                              ).map((customTone, idx) => (
+                                <div key={idx} className="bg-primary/10 border border-primary/30 rounded-md text-sm px-2 py-1 flex items-center gap-1">
+                                  {customTone}
+                                  <button
+                                    type="button"
+                                    className="h-4 w-4 rounded-full bg-primary/20 flex items-center justify-center"
+                                    onClick={() => {
+                                      const currentTones = field.value || [];
+                                      field.onChange(currentTones.filter(t => t !== customTone));
+                                    }}
+                                  >
+                                    <span className="text-[10px] text-primary">×</span>
+                                  </button>
+                                </div>
+                              ))}
+                              {field.value?.filter(tone => 
+                                !["Emocionante", "Optimista", "Divertido", "Educativo", "Dramático", "Misterioso", "Humorístico", "Inspirador", "Otro"].includes(tone)
+                              ).length === 0 && (
+                                <span className="text-xs text-muted-foreground">Ninguno añadido todavía</span>
+                              )}
+                            </div>
+                          </div>
+                          
                           <Input 
                             placeholder="Escribe tu propio tono..."
                             value={customTone}
@@ -1608,14 +1636,23 @@ function StoryDetailsModal({
                               
                               const currentTones = field.value || [];
                               
-                              // Si ya hay 3 elementos, reemplazar el último
+                              // Si ya hay 3 elementos, mostrar un toast y no hacer nada
                               if (currentTones.length >= 3) {
-                                field.onChange([...currentTones.slice(0, 2), customTone]);
-                              } else {
-                                field.onChange([...currentTones, customTone]);
+                                toast({
+                                  title: "Máximo alcanzado",
+                                  description: "Solo puedes seleccionar hasta 3 tonos. Elimina alguno para añadir otro.",
+                                  variant: "destructive",
+                                });
+                                return;
                               }
                               
+                              // Añadirlo a la selección
+                              field.onChange([...currentTones, customTone]);
                               setCustomTone("");
+                              toast({
+                                title: "Tono añadido",
+                                description: `Se ha añadido "${customTone}" a la selección.`,
+                              });
                             }}
                             disabled={!customTone.trim()}
                           >
@@ -1692,6 +1729,34 @@ function StoryDetailsModal({
                       
                       {showCustomField && (
                         <div className="mt-2">
+                          <div className="mb-2">
+                            <p className="text-sm text-muted-foreground mb-1">Géneros personalizados añadidos:</p>
+                            <div className="flex flex-wrap gap-1">
+                              {field.value?.filter(genre => 
+                                !["Fantasía", "Aventura", "Ciencia", "Educativo", "Familiar", "Amistad", "Naturaleza", "Superación", "Otro"].includes(genre)
+                              ).map((customGenre, idx) => (
+                                <div key={idx} className="bg-primary/10 border border-primary/30 rounded-md text-sm px-2 py-1 flex items-center gap-1">
+                                  {customGenre}
+                                  <button
+                                    type="button"
+                                    className="h-4 w-4 rounded-full bg-primary/20 flex items-center justify-center"
+                                    onClick={() => {
+                                      const currentGenres = field.value || [];
+                                      field.onChange(currentGenres.filter(g => g !== customGenre));
+                                    }}
+                                  >
+                                    <span className="text-[10px] text-primary">×</span>
+                                  </button>
+                                </div>
+                              ))}
+                              {field.value?.filter(genre => 
+                                !["Fantasía", "Aventura", "Ciencia", "Educativo", "Familiar", "Amistad", "Naturaleza", "Superación", "Otro"].includes(genre)
+                              ).length === 0 && (
+                                <span className="text-xs text-muted-foreground">Ninguno añadido todavía</span>
+                              )}
+                            </div>
+                          </div>
+                          
                           <Input 
                             placeholder="Escribe tu propio género..."
                             value={customGenre}
@@ -1707,14 +1772,23 @@ function StoryDetailsModal({
                               
                               const currentGenres = field.value || [];
                               
-                              // Si ya hay 3 elementos, reemplazar el último
+                              // Si ya hay 3 elementos, mostrar un toast y no hacer nada
                               if (currentGenres.length >= 3) {
-                                field.onChange([...currentGenres.slice(0, 2), customGenre]);
-                              } else {
-                                field.onChange([...currentGenres, customGenre]);
+                                toast({
+                                  title: "Máximo alcanzado",
+                                  description: "Solo puedes seleccionar hasta 3 géneros. Elimina alguno para añadir otro.",
+                                  variant: "destructive",
+                                });
+                                return;
                               }
                               
+                              // Añadirlo a la selección
+                              field.onChange([...currentGenres, customGenre]);
                               setCustomGenre("");
+                              toast({
+                                title: "Género añadido",
+                                description: `Se ha añadido "${customGenre}" a la selección.`,
+                              });
                             }}
                             disabled={!customGenre.trim()}
                           >
