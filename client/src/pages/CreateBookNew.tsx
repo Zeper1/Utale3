@@ -866,36 +866,25 @@ function CharacterSelectionModal({
           // Añadir a la selección inmediatamente
           setSelectedCharacterIds(prevIds => [...prevIds, characterId]);
           
-          // Asignar automáticamente rol de protagonista si no hay otro protagonista
+          // En lugar de asignar automáticamente un rol y rasgos,
+          // solo asignamos un rol vacío y dejamos que el usuario defina los detalles
+          
+          // Verificar si hay protagonista solo para mostrar información en consola
           const hasProtagonist = Object.values(characterDetails).some(
             detail => detail && detail.role === 'protagonist'
           );
           
           if (!hasProtagonist) {
-            console.log("Asignando rol de protagonista al nuevo personaje");
-            setCharacterDetails(prevDetails => ({
-              ...prevDetails,
-              [characterId]: {
-                role: 'protagonist',
-                specificTraits: ['Valiente', 'Curioso'],
-                storyBackground: '',
-                specialAbilities: [],
-                customDescription: ''
-              }
-            }));
+            console.log("Se sugiere asignar el rol de protagonista al nuevo personaje");
           } else {
-            console.log("Ya existe un protagonista, asignando rol secundario");
-            setCharacterDetails(prevDetails => ({
-              ...prevDetails,
-              [characterId]: {
-                role: 'secondary',
-                specificTraits: ['Amigable', 'Leal'],
-                storyBackground: '',
-                specialAbilities: [],
-                customDescription: ''
-              }
-            }));
+            console.log("Ya existe un protagonista, se sugiere otro rol");
           }
+          
+          // Mostrar toast sugiriendo configurar el rol
+          toast({
+            title: "Personaje añadido",
+            description: "Puedes configurar el rol y detalles del personaje para la historia haciendo clic en 'Configurar rol'.",
+          });
           
           toast({
             title: "Personaje añadido",
@@ -949,36 +938,23 @@ function CharacterSelectionModal({
               return [...prevIds, characterId];
             });
             
-            // Asignar automáticamente rol de protagonista si no hay otro protagonista
+            // En lugar de asignar automáticamente un rol y rasgos,
+            // solo mostramos información en consola
             const hasProtagonist = Object.values(characterDetails).some(
               detail => detail && detail.role === 'protagonist'
             );
             
             if (!hasProtagonist) {
-              console.log("Asignando rol de protagonista al nuevo personaje");
-              setCharacterDetails(prevDetails => ({
-                ...prevDetails,
-                [characterId]: {
-                  role: 'protagonist',
-                  specificTraits: ['Valiente', 'Curioso'],
-                  storyBackground: '',
-                  specialAbilities: [],
-                  customDescription: ''
-                }
-              }));
+              console.log("Se sugiere asignar el rol de protagonista al nuevo personaje");
             } else {
-              console.log("Ya existe un protagonista, asignando rol secundario");
-              setCharacterDetails(prevDetails => ({
-                ...prevDetails,
-                [characterId]: {
-                  role: 'secondary',
-                  specificTraits: ['Amigable', 'Leal'],
-                  storyBackground: '',
-                  specialAbilities: [],
-                  customDescription: ''
-                }
-              }));
+              console.log("Ya existe un protagonista, se sugiere asignar otro rol");
             }
+            
+            // Mostrar toast sugiriendo configurar el rol
+            toast({
+              title: "Personaje añadido",
+              description: "Puedes configurar el rol y detalles del personaje para la historia haciendo clic en 'Configurar rol'.",
+            });
             
             toast({
               title: "Personaje añadido",
@@ -1127,6 +1103,14 @@ function CharacterSelectionModal({
                               // Añadir a la selección (máximo 5)
                               if (newSelection.length < 5) {
                                 newSelection.push(profileId);
+                              } else {
+                                // Mostrar mensaje si ya hay 5 personajes seleccionados
+                                toast({
+                                  title: "Máximo alcanzado",
+                                  description: "No puedes seleccionar más de 5 personajes para una historia.",
+                                  variant: "destructive"
+                                });
+                                return; // Salir sin cambiar la selección
                               }
                             }
                             
