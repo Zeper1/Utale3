@@ -871,10 +871,7 @@ function CharacterSelectionModal({
     console.log("Actualizando lista de personajes después de creación", newCharacter);
     
     try {
-      // Refrescar la lista completa de personajes para mantener actualizada la UI
-      await refetchProfiles();
-      
-      // Si tenemos el nuevo personaje directamente del modal
+      // Si tenemos el nuevo personaje directamente del modal, lo procesamos primero
       if (newCharacter && newCharacter.id) {
         console.log("Usando el personaje recién creado:", newCharacter);
         const characterId = newCharacter.id.toString();
@@ -883,7 +880,7 @@ function CharacterSelectionModal({
         if (!selectedCharacterIds.includes(characterId)) {
           console.log("Añadiendo personaje a la selección:", characterId);
           
-          // Añadir a la selección
+          // Añadir a la selección inmediatamente
           setSelectedCharacterIds(prevIds => [...prevIds, characterId]);
           
           // Asignar automáticamente rol de protagonista si no hay otro protagonista
@@ -925,8 +922,23 @@ function CharacterSelectionModal({
           console.log("El personaje ya está seleccionado:", characterId);
         }
         
+        // Antes de salir, asegurarnos de que el personaje esté en la lista local
+        if (!childProfiles.some(profile => profile.id === newCharacter.id)) {
+          console.log("Actualizando la lista local con el nuevo personaje");
+          // Actualizar manualmente la lista local sin esperar refresco
+          const updatedProfiles = [...childProfiles, newCharacter];
+          // @ts-ignore - Ignorar error de tipado ya que estamos manipulando directamente los datos de la query
+          childProfilesData.push(newCharacter);
+        }
+        
+        // Refrescar la lista completa de personajes para mantener actualizada la UI
+        // pero no esperamos a que termine para continuar
+        refetchProfiles();
         return;
       }
+      
+      // Refrescar la lista completa de personajes para mantener actualizada la UI
+      await refetchProfiles();
       
       // Flujo alternativo (de respaldo) si no se recibió el personaje
       console.log("No se recibió el personaje, buscando el último creado");

@@ -165,10 +165,10 @@ const Footer = () => {
   );
   
   return (
-    <React.Fragment>
+    <div className="footer-container">
       {footerSection}
       {privacyDialog}
-    </React.Fragment>
+    </div>
   );
 };
 

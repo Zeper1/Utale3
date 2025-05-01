@@ -1,0 +1,25 @@
+ID de personaje preseleccionado: null
+Warning: Invalid prop &#x60;data-replit-metadata&#x60; supplied to &#x60;React.Fragment&#x60;. React.Fragment can only have &#x60;key&#x60; and &#x60;children&#x60; props.
+    at Footer (https://9a4be3e4-ed4a-4556-8b5a-dfeb6e6da0cc-00-z7uk6srnch2t.worf.replit.dev/src/components/Footer.tsx:34:21)
+    at div
+    at Router
+    at AuthProvider (https://9a4be3e4-ed4a-4556-8b5a-dfeb6e6da0cc-00-z7uk6srnch2t.worf.replit.dev/src/hooks/useAuth.ts:16:32)
+    at QueryClientProvider (https://9a4be3e4-ed4a-4556-8b5a-dfeb6e6da0cc-00-z7uk6srnch2t.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=3c84afdb:2881:3)
+    at App
+ID de personaje preseleccionado: null
+Warning: Invalid prop &#x60;data-replit-metadata&#x60; supplied to &#x60;React.Fragment&#x60;. React.Fragment can only have &#x60;key&#x60; and &#x60;children&#x60; props.
+    at Footer (https://9a4be3e4-ed4a-4556-8b5a-dfeb6e6da0cc-00-z7uk6srnch2t.worf.replit.dev/src/components/Footer.tsx:34:21)
+    at div
+    at Router
+    at AuthProvider (https://9a4be3e4-ed4a-4556-8b5a-dfeb6e6da0cc-00-z7uk6srnch2t.worf.replit.dev/src/hooks/useAuth.ts:16:32)
+    at QueryClientProvider (https://9a4be3e4-ed4a-4556-8b5a-dfeb6e6da0cc-00-z7uk6srnch2t.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=3c84afdb:2881:3)
+    at App
+ID de personaje preseleccionado: null
+Warning: Invalid prop &#x60;data-replit-metadata&#x60; supplied to &#x60;React.Fragment&#x60;. React.Fragment can only have &#x60;key&#x60; and &#x60;children&#x60; props.
+    at Footer (https://9a4be3e4-ed4a-4556-8b5a-dfeb6e6da0cc-00-z7uk6srnch2t.worf.replit.dev/src/components/Footer.tsx:34:21)
+    at div
+    at Router
+    at AuthProvider (https://9a4be3e4-ed4a-4556-8b5a-dfeb6e6da0cc-00-z7uk6srnch2t.worf.replit.dev/src/hooks/useAuth.ts:16:32)
+    at QueryClientProvider (https://9a4be3e4-ed4a-4556-8b5a-dfeb6e6da0cc-00-z7uk6srnch2t.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=3c84afdb:2881:3)
+    at App
+ID de personaje preseleccionado: null
