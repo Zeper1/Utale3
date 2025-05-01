@@ -378,44 +378,7 @@ const createCharacterSchema = z.object({
     message: "El nombre debe tener al menos 2 caracteres",
   }),
   type: z.string(),
-  age: z.union([z.number(), z.string(), z.null()]).optional()
-    .superRefine((val, ctx) => {
-      // Si no hay valor, no validamos
-      if (val === null || val === undefined || val === '') return;
-      
-      // Convertir a número si viene como string
-      const numVal = typeof val === 'string' ? parseInt(val) : val;
-      
-      // Si no es un número válido, no validamos
-      if (isNaN(numVal)) return;
-      
-      try {
-        // Recuperar el objeto de datos del formulario directamente desde form.getValues() en lugar de ctx.parent
-        const formData = getFormDataFromContext(ctx);
-        
-        // Si no podemos obtener el tipo, no hacemos validación
-        if (!formData || !formData.type) return;
-        
-        const personType = formData.type as string;
-        console.log("Validando edad para tipo:", personType, "edad:", numVal);
-        
-        // Validación según el tipo de personaje
-        if (personType === 'child' && (numVal < 1 || numVal > 18)) {
-          ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            message: "La edad para niños debe estar entre 1 y 18 años",
-          });
-        } else if (personType === 'adult' && (numVal < 18 || numVal > 99)) {
-          ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            message: "La edad para adultos debe estar entre 18 y 99 años",
-          });
-        }
-      } catch (e) {
-        // Si hay algún error en la validación, lo ignoramos
-        console.warn("Error al validar edad:", e);
-      }
-    }),
+  age: z.union([z.number(), z.string(), z.null()]).optional(),
   gender: z.string().optional(),
   physicalDescription: z.string().optional(),
   personality: z.string().optional(),
@@ -945,9 +908,8 @@ function CharacterSelectionModal({
         // Antes de salir, asegurarnos de que el personaje esté en la lista local
         if (!childProfiles.some(profile => profile.id === newCharacter.id)) {
           console.log("Actualizando la lista local con el nuevo personaje");
-          // Solo actualizamos el array local de perfiles que ya tenemos en memoria
-          const updatedProfiles = [...childProfiles, newCharacter];
-          // No es necesario modificar childProfilesData directamente
+          // Actualizar directamente los childProfiles locales para la renderización inmediata
+          childProfiles.push(newCharacter);
         }
         
         // Refrescar la lista completa de personajes para mantener actualizada la UI
