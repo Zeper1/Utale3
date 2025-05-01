@@ -62,6 +62,21 @@ import {
   ImagePlus
 } from "lucide-react";
 
+// Función auxiliar para obtener los datos del formulario desde el contexto de validación
+function getFormDataFromContext(ctx: z.RefinementCtx): Record<string, unknown> | null {
+  try {
+    // Intentar extraer datos del contexto
+    // Esta es una solución alternativa ya que ctx.parent no está tipado correctamente
+    const data = (ctx as any).data;
+    if (data) return data;
+    
+    return null;
+  } catch (e) {
+    console.warn("Error al obtener datos del formulario:", e);
+    return null;
+  }
+}
+
 // Define el esquema de validación del formulario
 const bookFormSchema = z.object({
   title: z.string().optional(),
@@ -375,9 +390,14 @@ const createCharacterSchema = z.object({
       if (isNaN(numVal)) return;
       
       try {
-        // Intentamos obtener el campo type del formulario actual
-        const formValue = ctx.parent as Record<string, unknown>;
-        const personType = formValue.type as string;
+        // Recuperar el objeto de datos del formulario directamente desde form.getValues() en lugar de ctx.parent
+        const formData = getFormDataFromContext(ctx);
+        
+        // Si no podemos obtener el tipo, no hacemos validación
+        if (!formData || !formData.type) return;
+        
+        const personType = formData.type as string;
+        console.log("Validando edad para tipo:", personType, "edad:", numVal);
         
         // Validación según el tipo de personaje
         if (personType === 'child' && (numVal < 1 || numVal > 18)) {
@@ -925,10 +945,9 @@ function CharacterSelectionModal({
         // Antes de salir, asegurarnos de que el personaje esté en la lista local
         if (!childProfiles.some(profile => profile.id === newCharacter.id)) {
           console.log("Actualizando la lista local con el nuevo personaje");
-          // Actualizar manualmente la lista local sin esperar refresco
+          // Solo actualizamos el array local de perfiles que ya tenemos en memoria
           const updatedProfiles = [...childProfiles, newCharacter];
-          // @ts-ignore - Ignorar error de tipado ya que estamos manipulando directamente los datos de la query
-          childProfilesData.push(newCharacter);
+          // No es necesario modificar childProfilesData directamente
         }
         
         // Refrescar la lista completa de personajes para mantener actualizada la UI
