@@ -867,15 +867,69 @@ function CharacterSelectionModal({
   const { toast } = useToast();
   
   // Función para refrescar la lista de personajes después de crear uno nuevo
-  const handleCharacterCreated = async () => {
-    console.log("Actualizando lista de personajes después de creación");
+  const handleCharacterCreated = async (newCharacter?: any) => {
+    console.log("Actualizando lista de personajes después de creación", newCharacter);
     
     try {
-      // Refrescar la lista completa de personajes
-      const refreshResult = await refetchProfiles();
-      console.log("Lista refrescada, obteniendo todos los personajes");
+      // Refrescar la lista completa de personajes para mantener actualizada la UI
+      await refetchProfiles();
       
-      // Llamar directamente a la API para obtener la lista actualizada
+      // Si tenemos el nuevo personaje directamente del modal
+      if (newCharacter && newCharacter.id) {
+        console.log("Usando el personaje recién creado:", newCharacter);
+        const characterId = newCharacter.id.toString();
+        
+        // Verificar si ya está en la selección
+        if (!selectedCharacterIds.includes(characterId)) {
+          console.log("Añadiendo personaje a la selección:", characterId);
+          
+          // Añadir a la selección
+          setSelectedCharacterIds(prevIds => [...prevIds, characterId]);
+          
+          // Asignar automáticamente rol de protagonista si no hay otro protagonista
+          const hasProtagonist = Object.values(characterDetails).some(
+            detail => detail && detail.role === 'protagonist'
+          );
+          
+          if (!hasProtagonist) {
+            console.log("Asignando rol de protagonista al nuevo personaje");
+            setCharacterDetails(prevDetails => ({
+              ...prevDetails,
+              [characterId]: {
+                role: 'protagonist',
+                specificTraits: ['Valiente', 'Curioso'],
+                storyBackground: '',
+                specialAbilities: [],
+                customDescription: ''
+              }
+            }));
+          } else {
+            console.log("Ya existe un protagonista, asignando rol secundario");
+            setCharacterDetails(prevDetails => ({
+              ...prevDetails,
+              [characterId]: {
+                role: 'secondary',
+                specificTraits: ['Amigable', 'Leal'],
+                storyBackground: '',
+                specialAbilities: [],
+                customDescription: ''
+              }
+            }));
+          }
+          
+          toast({
+            title: "Personaje añadido",
+            description: `Se ha añadido "${newCharacter.name}" a tu selección.`,
+          });
+        } else {
+          console.log("El personaje ya está seleccionado:", characterId);
+        }
+        
+        return;
+      }
+      
+      // Flujo alternativo (de respaldo) si no se recibió el personaje
+      console.log("No se recibió el personaje, buscando el último creado");
       const response = await apiRequest('GET', '/api/users/1/characters');
       
       if (response.ok) {
@@ -891,7 +945,7 @@ function CharacterSelectionModal({
             const characterId = latestCharacter.id.toString();
             
             // Seleccionar automáticamente el personaje recién creado
-            setSelectedCharacterIds((prevIds: string[]) => {
+            setSelectedCharacterIds(prevIds => {
               // Si ya está seleccionado, no hacemos nada
               if (prevIds.includes(characterId)) {
                 return prevIds;
