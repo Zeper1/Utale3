@@ -1279,6 +1279,7 @@ function StoryDetailsModal({
   setSelectedTemplate,
   form
 }: StoryDetailsModalProps) {
+  const { toast } = useToast();
   const selectedTemplateDetails = getTemplateDetails(selectedTemplate);
   
   // Definición de plantillas disponibles
@@ -1987,6 +1988,7 @@ function TechnicalSettingsModal({
   onComplete,
   form
 }: TechnicalSettingsModalProps) {
+  const { toast } = useToast();
   // Opciones de estilo de fuente con ejemplos
   const fontStyles = [
     { id: "casual", name: "Casual", sample: "Había una vez", description: "Estilo relajado y amigable", className: "font-sans" },
