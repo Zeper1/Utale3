@@ -354,7 +354,7 @@ function CharacterDetailsModal({
 interface CreateCharacterModalProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
-  onCharacterCreated: () => void;
+  onCharacterCreated: (newCharacter?: any) => void;
 }
 
 // Schema para crear personajes con validaciones por tipo
@@ -490,12 +490,18 @@ function CreateCharacterModal({
       
       // TODO: Si hay imagen, subirla a Cloudinary y obtener la URL
       
-      // Enviar la solicitud de creación
-      const response = await apiRequest('POST', '/api/characters', data);
+      // Enviar la solicitud de creación (usando el endpoint correcto)
+      const response = await apiRequest('POST', '/api/profiles', {
+        ...data,
+        userId: 1 // TODO: Obtener el userId del contexto de autenticación
+      });
       
       if (!response.ok) {
         throw new Error("Error al crear el personaje");
       }
+      
+      // Obtener el personaje recién creado de la respuesta
+      const newCharacter = await response.json();
       
       // Notificar éxito
       toast({
@@ -507,8 +513,8 @@ function CreateCharacterModal({
       resetForm();
       onOpenChange(false);
       
-      // Notificar al componente padre para que actualice la lista
-      onCharacterCreated();
+      // Notificar al componente padre para que actualice la lista y pasar el nuevo personaje
+      onCharacterCreated(newCharacter);
       
     } catch (error) {
       console.error("Error al crear personaje:", error);
