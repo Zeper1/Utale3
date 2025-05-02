@@ -18,6 +18,7 @@ import { z } from "zod";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import BookLibrary from "@/components/BookLibrary";
+import { BookDraft } from "@/components/BookProgressBar";
 import { 
   BookOpen, 
   User, 
@@ -32,7 +33,10 @@ import {
   Loader2,
   Upload,
   Camera,
-  Trash
+  Trash,
+  Clock,
+  FileEdit,
+  Play
 } from "lucide-react";
 
 // Form schema for character creation
@@ -110,6 +114,37 @@ export default function Dashboard() {
     queryKey: ['/api/users', user?.id, 'books'],
     queryFn: () => apiRequest('GET', `/api/users/${user?.id}/books`).then(res => res.json()),
     enabled: !!user?.id,
+  });
+
+  // Fetch book drafts
+  const {
+    data: bookDrafts = [],
+    isLoading: draftsLoading,
+    error: draftsError
+  } = useQuery({
+    queryKey: ['/api/book-drafts'],
+    queryFn: () => apiRequest('GET', '/api/book-drafts').then(res => res.json()),
+    enabled: !!user?.id,
+  });
+
+  // Delete draft mutation
+  const deleteDraft = useMutation({
+    mutationFn: (draftId: number) => 
+      apiRequest('DELETE', `/api/book-drafts/${draftId}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/book-drafts'] });
+      toast({
+        title: "Borrador eliminado",
+        description: "El borrador ha sido eliminado exitosamente.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error al eliminar borrador",
+        description: "Hubo un error al eliminar el borrador. Por favor, inténtalo de nuevo.",
+        variant: "destructive",
+      });
+    }
   });
 
 
@@ -375,6 +410,10 @@ export default function Dashboard() {
           <TabsTrigger value="books" className="flex items-center gap-2">
             <BookOpen className="h-4 w-4" />
             Mis Libros
+          </TabsTrigger>
+          <TabsTrigger value="drafts" className="flex items-center gap-2">
+            <FileEdit className="h-4 w-4" />
+            Borradores
           </TabsTrigger>
 
         </TabsList>
