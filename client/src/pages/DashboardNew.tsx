@@ -45,7 +45,7 @@ import {
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
 import { 
-  User, Users, BookOpen, Book, Plus, Package, Loader2, MessageCircle, 
+  User, Users, BookOpen, Book, Plus, Loader2, MessageCircle, 
   Pencil, Trash2, MoreHorizontal, Camera, Upload, FileText, Download,
   CheckCircle, Clock, XCircle, AlertCircle, ExternalLink
 } from "lucide-react";
@@ -127,16 +127,7 @@ export default function Dashboard() {
     enabled: !!user?.id,
   });
 
-  // Fetch orders
-  const {
-    data: orders = [],
-    isLoading: ordersLoading,
-    error: ordersError
-  } = useQuery({
-    queryKey: ['/api/users', user?.id, 'orders'],
-    queryFn: () => apiRequest('GET', `/api/users/${user?.id}/orders`).then(res => res.json()),
-    enabled: !!user?.id,
-  });
+
 
   // Create character profile mutation
   const createProfile = useMutation({
@@ -378,7 +369,7 @@ export default function Dashboard() {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
         <div>
           <h1 className="text-3xl font-bold">Mi panel</h1>
-          <p className="text-gray-600">Gestiona perfiles, libros y pedidos en un solo lugar</p>
+          <p className="text-gray-600">Gestiona perfiles y libros en un solo lugar</p>
         </div>
         <div className="flex gap-4">
           <Button onClick={() => goToCreateBook()} className="flex items-center gap-2">
@@ -402,10 +393,7 @@ export default function Dashboard() {
             <BookOpen className="h-4 w-4" />
             Mis Libros
           </TabsTrigger>
-          <TabsTrigger value="orders" className="flex items-center gap-2">
-            <Package className="h-4 w-4" />
-            Pedidos
-          </TabsTrigger>
+
         </TabsList>
 
         {/* Profiles Tab */}
@@ -713,162 +701,7 @@ export default function Dashboard() {
           )}
         </TabsContent>
 
-        {/* Orders Tab */}
-        <TabsContent value="orders" className="space-y-6">
-          {ordersLoading ? (
-            <div className="flex justify-center py-12">
-              <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div>
-            </div>
-          ) : ordersError ? (
-            <Card>
-              <CardContent className="pt-6">
-                <p className="text-red-500">Error al cargar los pedidos. Por favor, inténtalo de nuevo más tarde.</p>
-              </CardContent>
-            </Card>
-          ) : orders.length === 0 ? (
-            <Card>
-              <CardContent className="pt-6 flex flex-col items-center text-center py-12">
-                <div className="bg-primary-50 p-4 rounded-full mb-4">
-                  <Package className="h-8 w-8 text-primary" />
-                </div>
-                <h3 className="text-xl font-semibold mb-2">No hay pedidos</h3>
-                <p className="text-gray-600 mb-6 max-w-md">
-                  Aquí aparecerán tus pedidos de libros físicos una vez que los solicites.
-                </p>
-                <Button onClick={() => setLocation('/subscription')}>
-                  <ExternalLink className="h-4 w-4 mr-2" /> Ver planes
-                </Button>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="space-y-6">
-              {orders.map((order: any) => (
-                <Card key={order.id}>
-                  <CardHeader>
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <CardTitle>
-                          Pedido #{order.id}
-                        </CardTitle>
-                        <CardDescription>
-                          Realizado el {new Date(order.createdAt).toLocaleDateString()}
-                        </CardDescription>
-                      </div>
-                      <div className="flex items-center">
-                        {order.status === 'completed' ? (
-                          <div className="flex items-center px-3 py-1 rounded-full bg-green-50 text-green-700">
-                            <CheckCircle className="h-4 w-4 mr-1" />
-                            <span className="text-sm font-medium">Entregado</span>
-                          </div>
-                        ) : order.status === 'processing' ? (
-                          <div className="flex items-center px-3 py-1 rounded-full bg-amber-50 text-amber-700">
-                            <Clock className="h-4 w-4 mr-1" />
-                            <span className="text-sm font-medium">En proceso</span>
-                          </div>
-                        ) : order.status === 'cancelled' ? (
-                          <div className="flex items-center px-3 py-1 rounded-full bg-red-50 text-red-700">
-                            <XCircle className="h-4 w-4 mr-1" />
-                            <span className="text-sm font-medium">Cancelado</span>
-                          </div>
-                        ) : (
-                          <div className="flex items-center px-3 py-1 rounded-full bg-blue-50 text-blue-700">
-                            <AlertCircle className="h-4 w-4 mr-1" />
-                            <span className="text-sm font-medium">Pendiente</span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      <div className="border rounded-lg overflow-hidden">
-                        <div className="divide-y">
-                          {order.items?.map((item: any, index: number) => (
-                            <div key={index} className="flex items-center p-4">
-                              <div className="h-16 w-12 bg-gray-100 rounded flex-shrink-0 mr-4">
-                                {item.imageUrl ? (
-                                  <img 
-                                    src={item.imageUrl} 
-                                    alt={item.name} 
-                                    className="h-full w-full object-cover"
-                                  />
-                                ) : (
-                                  <div className="h-full w-full flex items-center justify-center">
-                                    <Book className="h-6 w-6 text-gray-400" />
-                                  </div>
-                                )}
-                              </div>
-                              <div className="flex-1">
-                                <h4 className="font-medium">{item.name}</h4>
-                                <p className="text-sm text-gray-500">
-                                  {item.description || 'Libro personalizado'}
-                                </p>
-                              </div>
-                              <div className="text-right">
-                                <p className="font-medium">{item.amount ? `${(item.amount / 100).toFixed(2)}€` : 'Incluido'}</p>
-                                <p className="text-sm text-gray-500">x{item.quantity || 1}</p>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                      
-                      <div className="flex justify-between pt-4 border-t">
-                        <div>
-                          <p className="font-medium">Información de envío</p>
-                          <div className="text-sm text-gray-600 mt-1">
-                            <p>{order.shippingAddress?.name}</p>
-                            <p>{order.shippingAddress?.address}</p>
-                            <p>{order.shippingAddress?.city}, {order.shippingAddress?.postalCode}</p>
-                            <p>{order.shippingAddress?.country}</p>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <p className="font-medium">Resumen</p>
-                          <div className="text-sm mt-1">
-                            <div className="flex justify-between">
-                              <span className="text-gray-600">Subtotal:</span>
-                              <span>{order.amount ? `${(order.amount / 100).toFixed(2)}€` : '-'}</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-gray-600">Envío:</span>
-                              <span>{order.shippingAmount ? `${(order.shippingAmount / 100).toFixed(2)}€` : 'Gratis'}</span>
-                            </div>
-                            <div className="flex justify-between font-medium mt-1">
-                              <span>Total:</span>
-                              <span>{order.totalAmount ? `${(order.totalAmount / 100).toFixed(2)}€` : '-'}</span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                  {order.trackingNumber && (
-                    <CardFooter className="border-t">
-                      <div className="w-full">
-                        <p className="text-sm font-medium mb-2">Seguimiento de envío</p>
-                        <div className="flex justify-between items-center">
-                          <p className="text-sm text-gray-600">
-                            Número de seguimiento: <span className="font-mono font-medium">{order.trackingNumber}</span>
-                          </p>
-                          {order.trackingUrl && (
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              onClick={() => window.open(order.trackingUrl, '_blank')}
-                            >
-                              <ExternalLink className="h-4 w-4 mr-2" /> Seguir envío
-                            </Button>
-                          )}
-                        </div>
-                      </div>
-                    </CardFooter>
-                  )}
-                </Card>
-              ))}
-            </div>
-          )}
-        </TabsContent>
+
       </Tabs>
       
       {/* New Profile Dialog */}
