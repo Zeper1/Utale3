@@ -102,49 +102,97 @@ type BookFormValues = z.infer<typeof bookFormSchema>;
 function getTemplateDetails(templateId: string) {
   // Plantillas predefinidas
   const templates: Record<string, any> = {
-    adventure: {
-      scenario: "Un reino mágico",
-      era: "Medieval fantástico",
-      adventureType: "Búsqueda del tesoro",
-      tone: ["Emocionante", "Optimista"],
-      moralValue: "Valor y amistad",
+    fairy_tale: {
+      scenario: "Un reino de fantasía con castillos y bosques mágicos",
+      era: "Época medieval fantástica",
+      adventureType: "Búsqueda mágica y superación de desafíos",
+      tone: ["Mágico", "Inspirador", "Optimista"],
+      moralValue: "Valentía y bondad",
+      fantasyLevel: 9,
+      genre: ["Cuento de hadas", "Fantasía", "Aventura"],
+      artStyle: "ilustración clásica de cuento",
+      storyObjective: "Enseñar que con valentía y bondad se pueden superar hasta los desafíos más difíciles"
+    },
+    space_adventure: {
+      scenario: "Una galaxia lejana con planetas inexplorados",
+      era: "Futuro interplanetario",
+      adventureType: "Exploración espacial y descubrimiento",
+      tone: ["Emocionante", "Educativo", "Maravilloso"],
+      moralValue: "Curiosidad y trabajo en equipo",
+      fantasyLevel: 7,
+      genre: ["Ciencia ficción", "Aventura espacial", "Educativo"],
+      artStyle: "digital moderno con colores vivos",
+      storyObjective: "Fomentar la curiosidad científica y el espíritu de exploración"
+    },
+    enchanted_forest: {
+      scenario: "Un bosque mágico lleno de criaturas encantadas",
+      era: "Actual con elementos mágicos",
+      adventureType: "Descubrimiento y protección de la naturaleza",
+      tone: ["Tranquilo", "Mágico", "Educativo"],
+      moralValue: "Respeto por el medio ambiente y los animales",
       fantasyLevel: 8,
-      genre: ["Fantasía", "Aventura"],
-      artStyle: "acuarela",
+      genre: ["Fantasía", "Educativo", "Ecológico"],
+      artStyle: "acuarela detallada con elementos naturales",
+      storyObjective: "Enseñar la importancia de proteger nuestro entorno natural"
     },
-    science: {
-      scenario: "Espacio exterior",
-      era: "Futuro lejano",
-      adventureType: "Exploración espacial",
-      tone: ["Educativo", "Inspirador"],
-      moralValue: "Curiosidad y conocimiento",
-      fantasyLevel: 5,
-      genre: ["Ciencia ficción", "Educativo"],
-      artStyle: "digital",
-    },
-    nature: {
-      scenario: "Bosque encantado",
+    family_adventure: {
+      scenario: "Hogar familiar y vecindario",
       era: "Actual",
-      adventureType: "Descubrimiento de la naturaleza",
-      tone: ["Tranquilo", "Reflexivo"],
-      moralValue: "Respeto por la naturaleza",
+      adventureType: "Situaciones cotidianas con desafíos familiares",
+      tone: ["Emotivo", "Divertido", "Reconfortante"],
+      moralValue: "Unión familiar y cooperación",
+      fantasyLevel: 3,
+      genre: ["Cotidiano", "Familiar", "Humor"],
+      artStyle: "ilustración cálida y simple",
+      storyObjective: "Fortalecer los lazos familiares y valorar el tiempo juntos"
+    },
+    underwater_world: {
+      scenario: "Un reino submarino con ciudades de coral",
+      era: "Atemporal en las profundidades del océano",
+      adventureType: "Descubrimiento de tesoros submarinos",
+      tone: ["Fascinante", "Educativo", "Sorprendente"],
+      moralValue: "Adaptación y respeto a la diversidad",
+      fantasyLevel: 8,
+      genre: ["Aventura submarina", "Fantasía", "Educativo"],
+      artStyle: "acuarela con tonos azules y verdes vibrantes",
+      storyObjective: "Descubrir la belleza de los océanos y la importancia de preservarlos"
+    },
+    superhero_adventure: {
+      scenario: "Una ciudad moderna con superhéroes cotidianos",
+      era: "Actual con elementos fantásticos",
+      adventureType: "Desarrollar superpoderes y salvar el día",
+      tone: ["Inspirador", "Divertido", "Emocionante"],
+      moralValue: "Responsabilidad y ayuda a los demás",
+      fantasyLevel: 7,
+      genre: ["Superhéroes", "Aventura", "Humor"],
+      artStyle: "cómic moderno y colorido",
+      storyObjective: "Mostrar que todos podemos ser héroes ayudando a los demás"
+    },
+    time_travel: {
+      scenario: "Viajes a través de diferentes períodos históricos",
+      era: "Múltiples épocas históricas",
+      adventureType: "Exploración histórica y corrección de eventos",
+      tone: ["Educativo", "Emocionante", "Reflexivo"],
+      moralValue: "Aprendizaje de la historia y consecuencias de nuestras acciones",
       fantasyLevel: 6,
-      genre: ["Naturaleza", "Educativo"],
-      artStyle: "naturalista",
+      genre: ["Viaje en el tiempo", "Histórico", "Educativo"],
+      artStyle: "ilustraciones detalladas con precisión histórica",
+      storyObjective: "Aprender sobre acontecimientos históricos de forma divertida y significativa"
     },
-    family: {
-      scenario: "Hogar familiar",
-      era: "Actual",
-      adventureType: "Aprendizaje de valores",
-      tone: ["Emotivo", "Divertido"],
-      moralValue: "Familia y cooperación",
-      fantasyLevel: 4,
-      genre: ["Cotidiano", "Familiar"],
-      artStyle: "infantil",
+    magical_school: {
+      scenario: "Una escuela especial donde se aprende magia",
+      era: "Actual con elementos mágicos ocultos",
+      adventureType: "Aprendizaje de habilidades mágicas y amistad",
+      tone: ["Misterioso", "Divertido", "Inspirador"],
+      moralValue: "Amistad y superación personal",
+      fantasyLevel: 8,
+      genre: ["Fantasía escolar", "Magia", "Amistad"],
+      artStyle: "estilo mágico con detalles de elementos escolares",
+      storyObjective: "Mostrar la importancia de la amistad y el esfuerzo en el aprendizaje"
     }
   };
   
-  return templates[templateId] || templates.adventure;
+  return templates[templateId] || templates.fairy_tale;
 }
 
 // Definición de los roles de personajes
@@ -1285,34 +1333,52 @@ function StoryDetailsModal({
   // Definición de plantillas disponibles
   const templates = [
     { 
-      id: "custom", 
-      title: "Personalizado", 
-      description: "Crea una historia completamente personalizada desde cero",
-      details: {}
+      id: "fairy_tale", 
+      title: "Cuento de Hadas", 
+      description: "Una mágica aventura en un reino de fantasía con castillos y bosques encantados",
+      details: getTemplateDetails("fairy_tale")
     },
     { 
-      id: "adventure", 
-      title: "Aventura fantástica", 
-      description: "Una emocionante aventura en un reino mágico",
-      details: getTemplateDetails("adventure")
+      id: "space_adventure", 
+      title: "Aventura Espacial", 
+      description: "Un emocionante viaje por galaxias y planetas inexplorados",
+      details: getTemplateDetails("space_adventure")
     },
     { 
-      id: "science", 
-      title: "Exploración espacial", 
-      description: "Un viaje educativo por el espacio exterior",
-      details: getTemplateDetails("science")
+      id: "enchanted_forest", 
+      title: "Bosque Encantado", 
+      description: "Un mágico recorrido por un bosque lleno de criaturas y plantas fantásticas",
+      details: getTemplateDetails("enchanted_forest")
     },
     { 
-      id: "nature", 
-      title: "Naturaleza encantada", 
-      description: "Descubrimiento y respeto por la naturaleza",
-      details: getTemplateDetails("nature")
+      id: "family_adventure", 
+      title: "Aventuras Familiares", 
+      description: "Historias cotidianas sobre la importancia de los lazos familiares",
+      details: getTemplateDetails("family_adventure")
     },
     { 
-      id: "family", 
-      title: "Valores familiares", 
-      description: "Una historia sobre cooperación y lazos familiares",
-      details: getTemplateDetails("family")
+      id: "underwater_world", 
+      title: "Mundo Submarino", 
+      description: "Expedición a las profundidades del océano con ciudades de coral y tesoros ocultos",
+      details: getTemplateDetails("underwater_world")
+    },
+    { 
+      id: "superhero_adventure", 
+      title: "Superhéroes", 
+      description: "Descubre superpoderes y aprende a usarlos para ayudar a los demás",
+      details: getTemplateDetails("superhero_adventure")
+    },
+    { 
+      id: "time_travel", 
+      title: "Viaje en el Tiempo", 
+      description: "Aventuras a través de diferentes épocas históricas con aprendizajes fascinantes",
+      details: getTemplateDetails("time_travel")
+    },
+    { 
+      id: "magical_school", 
+      title: "Escuela de Magia", 
+      description: "Experiencias mágicas en una escuela donde se aprenden habilidades especiales",
+      details: getTemplateDetails("magical_school")
     }
   ];
   
@@ -1330,13 +1396,12 @@ function StoryDetailsModal({
         </DialogHeader>
         
         <Form {...form}>
-        <Tabs defaultValue="custom" className="mt-4">
-          <TabsList className="grid grid-cols-2">
-            <TabsTrigger value="custom">Personalizado</TabsTrigger>
-            <TabsTrigger value="templates">Plantillas</TabsTrigger>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-4">
+          <TabsList className="grid grid-cols-1">
+            <TabsTrigger value="templates">Plantillas Predefinidas</TabsTrigger>
           </TabsList>
           
-          <TabsContent value="custom" className="space-y-6 mt-4">
+          <TabsContent value="details" className="space-y-6 mt-4">
             <div className="space-y-6">
               <FormField
                 control={form.control}
