@@ -89,7 +89,7 @@ const Header = () => {
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 group">
             <div className="text-primary animate-float bg-white rounded-full p-2 shadow-lg border-4 border-primary-200 group-hover:scale-110 transition-transform">
-              <BookOpen className="h-8 w-8" />
+              <img src="/images/utale-logo.png" alt="Utale Logo" className="h-8 w-8" />
             </div>
             <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
               Utale
@@ -241,7 +241,7 @@ const Header = () => {
             </SheetTrigger>
             <SheetContent>
               <div className="flex items-center gap-2 mb-6">
-                <BookOpen className="h-6 w-6 text-primary" />
+                <img src="/images/utale-logo.png" alt="Utale Logo" className="h-6 w-6 text-primary" />
                 <h2 className="text-xl font-bold text-primary">Utale</h2>
               </div>
               
