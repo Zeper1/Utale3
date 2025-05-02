@@ -1991,14 +1991,26 @@ function StoryDetailsModal({
                       : 'hover:border-primary/50'
                   }`}
                   onClick={() => {
+                    // Seleccionar la plantilla y guardar su ID
                     setSelectedTemplate(template.id);
-                    // Actualizar valores del formulario basados en la plantilla
-                    const templateDetails = getTemplateDetails(template.id);
-                    Object.entries(templateDetails).forEach(([key, value]) => {
-                      form.setValue(key, value);
-                    });
-                    // Cambiar a la pestaña de personalizado automáticamente
+                    
+                    // Cambiar primero a la pestaña personalizado para asegurar que el formulario esté visible
                     setActiveTab("custom");
+                    
+                    // Pequeño delay para asegurar que la pestaña ya cambió antes de actualizar los valores
+                    setTimeout(() => {
+                      // Actualizar valores del formulario basados en la plantilla
+                      const templateDetails = getTemplateDetails(template.id);
+                      Object.entries(templateDetails).forEach(([key, value]) => {
+                        form.setValue(key, value);
+                      });
+                      
+                      // Notificar al usuario
+                      toast({
+                        title: "Plantilla aplicada",
+                        description: `Se ha aplicado la plantilla "${template.title}". Ahora puedes personalizar los detalles.`,
+                      });
+                    }, 50);
                   }}
                 >
                   <CardHeader className="pb-2">
