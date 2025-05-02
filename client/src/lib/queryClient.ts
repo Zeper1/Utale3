@@ -16,11 +16,33 @@ export async function apiRequest(
   // Si data es FormData, no establecemos Content-Type para que el navegador lo maneje
   const isFormData = data instanceof FormData;
   
+  // Obtener usuario del localStorage si existe
+  let firebaseUid = null;
+  let userId = null;
+  try {
+    // Intentar obtener las credenciales almacenadas en localStorage
+    const storedUser = localStorage.getItem('utale_user');
+    if (storedUser) {
+      const parsedUser = JSON.parse(storedUser);
+      if (parsedUser.firebaseUid) {
+        firebaseUid = parsedUser.firebaseUid;
+      }
+      if (parsedUser.id) {
+        userId = parsedUser.id;
+      }
+    }
+  } catch (e) {
+    console.error("Error al obtener credentials de localStorage:", e);
+  }
+  
   const res = await fetch(url, {
     method,
     headers: {
       // Si no es FormData y hay datos, establecer Content-Type como application/json
       ...(data && !isFormData ? { "Content-Type": "application/json" } : {}),
+      // Añadir cabeceras de autenticación si están disponibles
+      ...(firebaseUid ? { "X-Firebase-UID": firebaseUid } : {}),
+      ...(userId ? { "Authorization": `Bearer ${userId}` } : {}),
       // Mezclar con headers adicionales si se proporcionan
       ...(options?.headers || {})
     },

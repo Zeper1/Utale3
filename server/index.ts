@@ -68,6 +68,52 @@ app.use((req, res, next) => {
   next();
 });
 
+// Middleware para extraer información de autenticación del JWT o ID de Firebase
+// y adjuntarla como req.user para que los endpoints puedan utilizarla
+app.use(async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    // Verificar si hay un encabezado de autorización
+    const authHeader = req.headers.authorization;
+    
+    // Verificar si hay un encabezado 'x-firebase-uid'
+    const firebaseUid = req.headers['x-firebase-uid'] as string;
+    
+    // Extraer token de la cabecera 'Authorization'
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      // Extraer el token (sin 'Bearer ')
+      const token = authHeader.substring(7);
+      
+      // Aquí normalmente verificaríamos el token, pero por ahora solo buscamos usuario por ID
+      // Esto es una simplificación
+      const userId = parseInt(token);
+      if (!isNaN(userId)) {
+        const { storage } = await import("./storage");
+        const user = await storage.getUser(userId);
+        if (user) {
+          (req as any).user = user; // Asignamos el usuario a req.user
+        }
+      }
+    } 
+    // O intentar usar el ID de Firebase si está disponible
+    else if (firebaseUid) {
+      const { storage } = await import("./storage");
+      const user = await storage.getUserByFirebaseId(firebaseUid);
+      if (user) {
+        (req as any).user = user; // Asignamos el usuario a req.user
+      }
+    }
+    
+    // Si no hay autenticación, continuamos sin req.user
+    next();
+  } catch (error) {
+    serverLogger.error("Error en el middleware de autenticación", {
+      error: error instanceof Error ? error.stack : String(error)
+    });
+    // Continuar sin establecer req.user en caso de error
+    next();
+  }
+});
+
 (async () => {
   // Verificar la conexión a la base de datos antes de iniciar el servidor
   try {
