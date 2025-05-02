@@ -2359,7 +2359,7 @@ export default function CreateBook() {
   
   // Determinar si hay un personaje preseleccionado (de la URL)
   const urlParams = new URLSearchParams(location.search.toString());
-  const preselectedCharacterId = urlParams.get('character') || urlParams.get('characterId');
+  const preselectedCharacterId = urlParams.get('characterId') || urlParams.get('character');
   console.log("ID de personaje preseleccionado:", preselectedCharacterId);
   
   // Formulario con validación
