@@ -95,6 +95,7 @@ const bookFormSchema = z.object({
   pageCount: z.number().min(10).max(40),
   storyObjective: z.string().optional(),
   specialInstructions: z.string().optional(),
+  fontStyle: z.string().optional(),
 });
 
 // Tipo inferido para usar en useForm
@@ -2440,7 +2441,8 @@ export default function CreateBook() {
       artStyle: "",
       pageCount: 20,
       storyObjective: "",
-      specialInstructions: ""
+      specialInstructions: "",
+      fontStyle: "casual"
     },
   });
   
@@ -2569,11 +2571,77 @@ export default function CreateBook() {
   // se hayan cargado los perfiles
   }, [preselectedCharacterId, childProfiles, form, isLoadingProfiles]);
   
+  // Efecto para el guardado automático
+  useEffect(() => {
+    if (!autoSaveEnabled || currentStep === 0) return;
+    
+    // Configurar un temporizador para guardar el progreso automáticamente
+    const autoSaveTimer = setTimeout(() => {
+      // No guardar en el primer paso si no hay personajes seleccionados
+      if (currentStep === 1 && selectedCharacterIds.length === 0) return;
+      
+      console.log("Guardando automáticamente el progreso...");
+      saveDraftProgress();
+    }, 30000); // Guardar cada 30 segundos
+    
+    // Limpiar el temporizador al desmontar el componente
+    return () => clearTimeout(autoSaveTimer);
+  }, [currentStep, selectedCharacterIds, form, autoSaveEnabled]);
+  
+  // Efecto para cargar un borrador existente si se proporciona un ID
+  useEffect(() => {
+    if (draftId && loadedDraft) {
+      console.log("Cargando borrador desde URL:", draftId);
+      handleLoadDraft(loadedDraft);
+    }
+  }, [draftId, loadedDraft]);
+  
+  // Función para guardar el progreso actual como borrador
+  const saveDraftProgress = async () => {
+    if (!autoSaveEnabled) return;
+    
+    // Obtener los valores actuales del formulario
+    const formValues = form.getValues();
+    
+    // Crear o actualizar el objeto del borrador
+    const draft: BookDraft = {
+      ...bookDraft,
+      userId: 1, // Se podría obtener del contexto de autenticación
+      step: currentStep,
+      characterIds: selectedCharacterIds.map(id => parseInt(id)),
+      themeId: formValues.themeId ? parseInt(formValues.themeId) : undefined,
+      storyDetails: {
+        title: formValues.title,
+        theme: formValues.themeId,
+        description: "", // No tenemos campo para esto aún
+        ageRange: "", // No tenemos campo para esto aún
+        complexity: "", // No tenemos campo para esto aún
+        length: formValues.pageCount ? formValues.pageCount.toString() : "20",
+        tone: formValues.tone ? formValues.tone.join(", ") : "",
+        style: formValues.artStyle,
+        subject: formValues.adventureType,
+        setting: `${formValues.scenario} - ${formValues.era}`,
+        additionalDetails: formValues.storyObjective
+      },
+      fontStyle: formValues.fontStyle,
+    };
+    
+    try {
+      // Ejecutar la mutación
+      await saveDraftMutation.mutateAsync(draft);
+    } catch (error) {
+      console.error("Error al guardar el borrador:", error);
+    }
+  };
+
   // Función para navegar entre pasos
   const goToStep = (step: number) => {
     setCharacterSelectionOpen(step === 1);
     setStoryDetailsOpen(step === 2);
     setTechnicalSettingsOpen(step === 3);
+    
+    // Actualizar el paso actual
+    setCurrentStep(step);
     
     // Actualizar los IDs de personajes en el formulario
     if (step === 1) {
@@ -2585,27 +2653,35 @@ export default function CreateBook() {
       // Conservar los IDs de personajes seleccionados
       const currentCharacterIds = form.getValues('characterIds');
       
-      // Reiniciar el formulario con valores vacíos
-      form.reset({
-        title: "",
-        characterIds: currentCharacterIds,
-        themeId: "1",
-        scenario: "",
-        era: "",
-        adventureType: "",
-        tone: [],
-        moralValue: "",
-        fantasyLevel: 5,
-        genre: [],
-        artStyle: "",
-        pageCount: 20,
-        storyObjective: "",
-        specialInstructions: ""
-      });
-      
-      // Asegurarse de que se inicie en la pestaña "custom"
-      setStoryTabActive("custom");
-      setSelectedTemplate("custom");
+      // Reiniciar el formulario con valores vacíos solo si no estamos cargando un borrador
+      if (!bookDraft) {
+        form.reset({
+          title: "",
+          characterIds: currentCharacterIds,
+          themeId: "1",
+          scenario: "",
+          era: "",
+          adventureType: "",
+          tone: [],
+          moralValue: "",
+          fantasyLevel: 5,
+          genre: [],
+          artStyle: "",
+          pageCount: 20,
+          storyObjective: "",
+          specialInstructions: "",
+          fontStyle: "casual"
+        });
+        
+        // Asegurarse de que se inicie en la pestaña "custom"
+        setStoryTabActive("custom");
+        setSelectedTemplate("custom");
+      }
+    }
+    
+    // Guardar el progreso cuando cambiamos de paso
+    if (step > 1) { // No guardamos en el paso 1 inicial
+      saveDraftProgress();
     }
   };
   
@@ -2697,8 +2773,79 @@ export default function CreateBook() {
     );
   }
   
+  // Función para cargar un borrador
+  const handleLoadDraft = (draft: BookDraft) => {
+    console.log("Cargando borrador:", draft);
+    setBookDraft(draft);
+    
+    // Establecer el paso actual
+    setCurrentStep(draft.step || 1);
+    
+    // Cargar los datos del borrador
+    if (draft.characterIds && draft.characterIds.length > 0) {
+      const charIds = draft.characterIds.map(id => id.toString());
+      setSelectedCharacterIds(charIds);
+      form.setValue('characterIds', charIds);
+    }
+    
+    // Si el borrador tiene detalles de historia, actualizar el formulario
+    if (draft.storyDetails) {
+      if (draft.storyDetails.title) form.setValue('title', draft.storyDetails.title);
+      if (draft.storyDetails.theme) form.setValue('themeId', draft.storyDetails.theme);
+      if (draft.storyDetails.subject) form.setValue('adventureType', draft.storyDetails.subject);
+      if (draft.storyDetails.style) form.setValue('artStyle', draft.storyDetails.style);
+      if (draft.storyDetails.tone) {
+        const tones = draft.storyDetails.tone.split(",").map(t => t.trim());
+        form.setValue('tone', tones);
+      }
+      if (draft.storyDetails.length) {
+        const pageCount = parseInt(draft.storyDetails.length);
+        if (!isNaN(pageCount)) form.setValue('pageCount', pageCount);
+      }
+      if (draft.storyDetails.setting) {
+        const [scenario, era] = draft.storyDetails.setting.split('-').map(s => s.trim());
+        if (scenario) form.setValue('scenario', scenario);
+        if (era) form.setValue('era', era);
+      }
+      if (draft.storyDetails.additionalDetails) {
+        form.setValue('storyObjective', draft.storyDetails.additionalDetails);
+      }
+    }
+    
+    // Si el borrador tiene estilo de fuente, actualizarlo
+    if (draft.fontStyle) {
+      form.setValue('fontStyle', draft.fontStyle as any);
+    }
+    
+    // Ir al paso correspondiente
+    goToStep(draft.step || 1);
+    
+    toast({
+      title: "Borrador cargado",
+      description: "Se ha cargado el borrador correctamente. Puedes continuar desde donde lo dejaste.",
+    });
+  };
+  
+  // Función para guardar un borrador
+  const handleSaveDraft = () => {
+    saveDraftProgress();
+  };
+
   return (
     <>
+      {/* Barra de progreso de creación del libro */}
+      <div className="fixed top-16 left-0 right-0 z-50 bg-background border-b">
+        <div className="container py-2">
+          <BookProgressBar
+            currentStep={currentStep}
+            totalSteps={3}
+            bookDraft={bookDraft}
+            onLoadDraft={handleLoadDraft}
+            onSaveDraft={handleSaveDraft}
+          />
+        </div>
+      </div>
+      
       {/* Modales del asistente */}
       <CharacterSelectionModal
         childProfiles={childProfiles}
