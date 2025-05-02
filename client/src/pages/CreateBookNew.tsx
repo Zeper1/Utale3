@@ -2452,6 +2452,82 @@ export default function CreateBook() {
   // Convertir a array tipado
   const childProfiles = childProfilesData as any[];
   
+  // Consulta para cargar un borrador si se proporciona un ID
+  const { data: loadedDraft, isLoading: isLoadingDraft } = useQuery({
+    queryKey: ['/api/book-drafts', draftId],
+    queryFn: () => apiRequest('GET', `/api/book-drafts/${draftId}`).then(res => res.json()),
+    enabled: !!draftId,
+    onSuccess: (data) => {
+      console.log("Borrador cargado:", data);
+      // Actualizar el estado con los datos del borrador
+      setBookDraft(data);
+      setCurrentStep(data.step || 1);
+      
+      // Si el borrador tiene datos de personajes, actualizarlos
+      if (data.characterIds && data.characterIds.length > 0) {
+        const charIds = data.characterIds.map(id => id.toString());
+        setSelectedCharacterIds(charIds);
+        
+        // También actualizar el formulario
+        form.setValue('characterIds', charIds);
+      }
+      
+      // Si el borrador tiene detalles de historia, actualizar el formulario
+      if (data.storyDetails) {
+        Object.entries(data.storyDetails).forEach(([key, value]) => {
+          if (value !== undefined && value !== null) {
+            form.setValue(key as any, value);
+          }
+        });
+      }
+      
+      // Si el borrador tiene estilo de fuente, actualizarlo
+      if (data.fontStyle) {
+        form.setValue('fontStyle', data.fontStyle);
+      }
+      
+      // Abrir el modal correspondiente según el paso actual
+      goToStep(data.step || 1);
+    },
+    onError: (error) => {
+      console.error("Error al cargar el borrador:", error);
+      toast({
+        title: "Error al cargar el borrador",
+        description: "No se pudo cargar el borrador solicitado. Por favor, inténtalo de nuevo.",
+        variant: "destructive",
+      });
+    }
+  });
+  
+  // Mutación para guardar o actualizar borradores
+  const saveDraftMutation = useMutation({
+    mutationFn: (draft: BookDraft) => {
+      const method = draft.id ? "PUT" : "POST";
+      const url = draft.id ? `/api/book-drafts/${draft.id}` : "/api/book-drafts";
+      return apiRequest(method, url, draft).then(res => res.json());
+    },
+    onSuccess: (savedDraft) => {
+      console.log("Borrador guardado:", savedDraft);
+      setBookDraft(savedDraft);
+      
+      // Invalidar la consulta de borradores para actualizar la lista en el Dashboard
+      queryClient.invalidateQueries({ queryKey: ['/api/book-drafts'] });
+      
+      toast({
+        title: "Progreso guardado",
+        description: "Tu borrador ha sido guardado correctamente.",
+      });
+    },
+    onError: (error) => {
+      console.error("Error al guardar el borrador:", error);
+      toast({
+        title: "Error al guardar",
+        description: "No se pudo guardar tu progreso. Por favor, inténtalo de nuevo.",
+        variant: "destructive",
+      });
+    }
+  });
+  
   // Preseleccionar un personaje si viene en la URL y asignarle rol de protagonista
   // Este useEffect se ejecuta cuando carga la página o cambian los perfiles
   useEffect(() => {
