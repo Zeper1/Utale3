@@ -702,6 +702,127 @@ export default function Dashboard() {
             </>
           )}
         </TabsContent>
+        
+        {/* Drafts Tab */}
+        <TabsContent value="drafts" className="space-y-6">
+          {draftsLoading ? (
+            <div className="flex justify-center py-12">
+              <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div>
+            </div>
+          ) : draftsError ? (
+            <Card>
+              <CardContent className="pt-6">
+                <p className="text-red-500">Error al cargar los borradores. Por favor, inténtalo de nuevo más tarde.</p>
+              </CardContent>
+            </Card>
+          ) : bookDrafts.length === 0 ? (
+            <Card>
+              <CardContent className="pt-6 flex flex-col items-center text-center py-12">
+                <div className="bg-primary-50 p-4 rounded-full mb-4">
+                  <FileEdit className="h-8 w-8 text-primary" />
+                </div>
+                <h3 className="text-xl font-semibold mb-2">No tienes borradores guardados</h3>
+                <p className="text-gray-600 mb-6 max-w-md">
+                  Los borradores se crean automáticamente al comenzar un nuevo libro.
+                  Esto te permite continuar desde donde lo dejaste.
+                </p>
+                <Button onClick={goToCreateBook}>
+                  <Plus className="h-4 w-4 mr-2" /> Comenzar un libro
+                </Button>
+              </CardContent>
+            </Card>
+          ) : (
+            <>
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold">Tus borradores</h2>
+                <Button onClick={goToCreateBook} variant="outline" className="flex items-center gap-2">
+                  <Plus className="h-4 w-4" /> Nuevo libro
+                </Button>
+              </div>
+              
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {bookDrafts.map((draft: BookDraft) => (
+                  <Card key={draft.id} className="overflow-hidden">
+                    <CardHeader className="bg-primary-50 pb-4">
+                      <div className="flex items-start gap-4">
+                        <div className="h-12 w-12 rounded-full flex items-center justify-center bg-primary/10">
+                          <Clock className="h-6 w-6 text-primary" />
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex justify-between items-start">
+                            <CardTitle>
+                              {draft.storyDetails?.title || "Borrador sin título"}
+                            </CardTitle>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8">
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem
+                                  onClick={() => {
+                                    if (confirm("¿Estás seguro de que quieres eliminar este borrador?")) {
+                                      deleteDraft.mutate(draft.id);
+                                    }
+                                  }}
+                                  className="text-red-600 cursor-pointer"
+                                >
+                                  <Trash className="mr-2 h-4 w-4" />
+                                  <span>Eliminar borrador</span>
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
+                          <CardDescription>
+                            {draft.updatedAt ? new Date(draft.updatedAt).toLocaleDateString() : "Fecha desconocida"} • Paso {draft.step} de 3
+                          </CardDescription>
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="pt-4">
+                      <div className="space-y-3">
+                        {draft.characterIds && draft.characterIds.length > 0 && (
+                          <div>
+                            <p className="text-sm font-medium">Personajes</p>
+                            <p className="text-sm text-gray-600">
+                              {draft.characterIds.length} personaje(s) seleccionado(s)
+                            </p>
+                          </div>
+                        )}
+                        {draft.storyDetails?.theme && (
+                          <div>
+                            <p className="text-sm font-medium">Tema</p>
+                            <p className="text-sm text-gray-600">
+                              {draft.storyDetails.theme}
+                            </p>
+                          </div>
+                        )}
+                        {draft.storyDetails?.description && (
+                          <div>
+                            <p className="text-sm font-medium">Descripción</p>
+                            <p className="text-sm text-gray-600 line-clamp-2">
+                              {draft.storyDetails.description}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    </CardContent>
+                    <CardFooter className="flex gap-2 border-t pt-4">
+                      <Button 
+                        onClick={() => setLocation(`/create-book?draft=${draft.id}`)}
+                        className="flex-1 gap-1"
+                      >
+                        <Play className="h-4 w-4" />
+                        Continuar
+                      </Button>
+                    </CardFooter>
+                  </Card>
+                ))}
+              </div>
+            </>
+          )}
+        </TabsContent>
 
 
       </Tabs>
