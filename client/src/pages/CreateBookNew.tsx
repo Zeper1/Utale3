@@ -892,37 +892,44 @@ function CharacterSelectionModal({
   // Este useEffect se ejecuta cuando se abre el modal y hay un personaje preseleccionado
   useEffect(() => {
     if (isOpen && preselectedCharacterId && childProfiles.length > 0) {
-      console.log("Modal abierto con personaje preseleccionado:", preselectedCharacterId);
+      console.log("[CharacterSelectionModal] Modal abierto con personaje preseleccionado:", preselectedCharacterId);
       
-      // Verificar si el personaje ya está seleccionado
-      if (!selectedCharacterIds.includes(preselectedCharacterId)) {
-        console.log("Añadiendo personaje preseleccionado a la selección");
+      // Verificar si el personaje existe
+      const characterExists = childProfiles.some(c => c.id.toString() === preselectedCharacterId);
+      
+      if (characterExists) {
+        console.log("[CharacterSelectionModal] Personaje encontrado en la lista de perfiles");
         
-        // Verificar si el personaje existe
-        const characterExists = childProfiles.some(c => c.id.toString() === preselectedCharacterId);
-        
-        if (characterExists) {
+        // Verificar si el personaje ya está seleccionado
+        if (!selectedCharacterIds.includes(preselectedCharacterId)) {
+          console.log("[CharacterSelectionModal] Añadiendo personaje preseleccionado a la selección");
+          
           // Añadir a la selección
           setSelectedCharacterIds([preselectedCharacterId]);
-          
-          // Verificar si ya tiene un rol asignado
-          if (!characterDetails[preselectedCharacterId]?.role) {
-            // Asignarle automáticamente el rol de protagonista
-            const newDetails = {...characterDetails};
-            newDetails[preselectedCharacterId] = {
-              role: 'protagonist' as CharacterRole,
-              specificTraits: ['Valiente', 'Curioso'],
-              storyBackground: '',
-              specialAbilities: [],
-              customDescription: ''
-            };
-            console.log("Asignando rol de protagonista automáticamente");
-            setCharacterDetails(newDetails);
-          }
+        } else {
+          console.log("[CharacterSelectionModal] El personaje ya está en la selección");
         }
+        
+        // Independientemente de si ya estaba seleccionado, asignarle rol si no tiene
+        if (!characterDetails[preselectedCharacterId]?.role) {
+          console.log("[CharacterSelectionModal] Asignando rol de protagonista");
+          const newDetails = {...characterDetails};
+          newDetails[preselectedCharacterId] = {
+            role: 'protagonist' as CharacterRole,
+            specificTraits: ['Valiente', 'Curioso'],
+            storyBackground: '',
+            specialAbilities: [],
+            customDescription: ''
+          };
+          setCharacterDetails(newDetails);
+        } else {
+          console.log("[CharacterSelectionModal] El personaje ya tiene rol:", characterDetails[preselectedCharacterId]?.role);
+        }
+      } else {
+        console.log("[CharacterSelectionModal] El personaje preseleccionado no existe en la lista de perfiles");
       }
     }
-  }, [isOpen, preselectedCharacterId, childProfiles]);
+  }, [isOpen, preselectedCharacterId, childProfiles, selectedCharacterIds, characterDetails]);
   
   // Query para obtener personajes
   const { data: characters, refetch: refetchProfiles } = useQuery({
@@ -2396,11 +2403,17 @@ export default function CreateBook() {
   const [storyTabActive, setStoryTabActive] = useState("custom");
   
   // Determinar si hay un personaje preseleccionado (de la URL)
-  const urlParams = new URLSearchParams(location.search.toString());
-  const rawCharacterId = urlParams.get('characterId') || urlParams.get('character');
+  // Usar window.location.search directamente para acceder a los parámetros de la URL
+  const urlSearchParams = new URLSearchParams(window.location.search);
+  const rawCharacterId = urlSearchParams.get('characterId') || urlSearchParams.get('character');
+  
   // Asegurarse de que siempre sea string para mantener consistencia
   const preselectedCharacterId = rawCharacterId ? rawCharacterId.toString() : null;
-  console.log("ID de personaje preseleccionado:", preselectedCharacterId, "tipo:", typeof preselectedCharacterId);
+  
+  console.log("URL completa:", window.location.href);
+  console.log("Parámetros de búsqueda:", window.location.search);
+  console.log("ID de personaje extraído de URL:", rawCharacterId);
+  console.log("ID de personaje preseleccionado (final):", preselectedCharacterId);
   
   // Formulario con validación
   const form = useForm<BookFormValues>({
@@ -2467,7 +2480,10 @@ export default function CreateBook() {
         console.warn("El personaje preseleccionado no existe:", preselectedCharacterId);
       }
     }
-  }, [preselectedCharacterId, childProfiles, form, characterSelectionOpen]);
+  // Eliminar characterSelectionOpen para evitar que se reejecutte cada vez que se abre/cierra
+  // y agregar una verificación adicional de isLoadingProfiles para que sólo se ejecute cuando
+  // se hayan cargado los perfiles
+  }, [preselectedCharacterId, childProfiles, form, isLoadingProfiles]);
   
   // Función para navegar entre pasos
   const goToStep = (step: number) => {
