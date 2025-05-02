@@ -1416,7 +1416,7 @@ function StoryDetailsModal({
                   // Función para limpiar todos los campos del formulario
                   form.reset({
                     title: "",
-                    characterIds: selectedCharacterIds,
+                    characterIds: form.getValues("characterIds"),
                     themeId: "1",
                     scenario: "",
                     era: "",
@@ -2434,6 +2434,34 @@ export default function CreateBook() {
     // Actualizar los IDs de personajes en el formulario
     if (step === 1) {
       form.setValue('characterIds', selectedCharacterIds);
+    }
+    
+    // Si vamos del paso 1 al 2, reiniciar los valores del formulario excepto los characterIds
+    if (step === 2) {
+      // Conservar los IDs de personajes seleccionados
+      const currentCharacterIds = form.getValues('characterIds');
+      
+      // Reiniciar el formulario con valores vacíos
+      form.reset({
+        title: "",
+        characterIds: currentCharacterIds,
+        themeId: "1",
+        scenario: "",
+        era: "",
+        adventureType: "",
+        tone: [],
+        moralValue: "",
+        fantasyLevel: 5,
+        genre: [],
+        artStyle: "",
+        pageCount: 20,
+        storyObjective: "",
+        specialInstructions: ""
+      });
+      
+      // Asegurarse de que se inicie en la pestaña "custom"
+      setStoryTabActive("custom");
+      setSelectedTemplate("custom");
     }
   };
   
