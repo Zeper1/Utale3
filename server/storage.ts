@@ -81,6 +81,13 @@ export interface IStorage {
   createBookDelivery(delivery: InsertBookDelivery): Promise<BookDelivery>;
   updateBookDeliveryStatus(id: number, status: string): Promise<BookDelivery | undefined>;
   markDeliveryEmailSent(id: number): Promise<BookDelivery | undefined>;
+  
+  // Book draft operations
+  getUserBookDrafts(userId: number): Promise<BookDraft[]>;
+  getBookDraft(id: number): Promise<BookDraft | undefined>;
+  saveBookDraft(draftData: InsertBookDraft): Promise<BookDraft>;
+  updateBookDraft(id: number, draftData: Partial<BookDraft>): Promise<BookDraft | undefined>;
+  deleteBookDraft(id: number): Promise<boolean>;
 }
 
 // Importamos la implementación de DatabaseStorage

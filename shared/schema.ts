@@ -339,3 +339,41 @@ export type InsertSubscription = z.infer<typeof insertSubscriptionSchema>;
 
 export type BookDelivery = typeof bookDeliveries.$inferSelect;
 export type InsertBookDelivery = z.infer<typeof insertBookDeliverySchema>;
+
+// Borradores de libros con estado de progreso
+export const bookDrafts = pgTable(
+  "book_drafts",
+  {
+    id: serial("id").primaryKey(),
+    userId: integer("user_id").notNull().references(() => users.id),
+    title: text("title").default("Borrador sin título"),
+    
+    // Tracking de progreso (0-100)
+    progressPercent: integer("progress_percent").default(0),
+    currentStep: integer("current_step").default(1),
+    
+    // Estado general
+    lastUpdated: timestamp("last_updated").defaultNow(),
+    created: timestamp("created").defaultNow(),
+    status: text("status").default("in_progress"), // in_progress, completed, abandoned
+    
+    // Datos por etapas
+    characterSelectionComplete: boolean("character_selection_complete").default(false),
+    storyDetailsComplete: boolean("story_details_complete").default(false),
+    technicalSettingsComplete: boolean("technical_settings_complete").default(false),
+    
+    // Datos guardados (JSON)
+    selectedCharacterIds: text("selected_character_ids").array(),
+    characterDetails: jsonb("character_details").default({}),
+    formData: jsonb("form_data").default({}),
+  }
+);
+
+export const insertBookDraftSchema = createInsertSchema(bookDrafts).omit({
+  id: true,
+  created: true,
+  lastUpdated: true,
+});
+
+export type BookDraft = typeof bookDrafts.$inferSelect;
+export type InsertBookDraft = z.infer<typeof insertBookDraftSchema>;

@@ -11,7 +11,8 @@ import {
   orders, type Order, type InsertOrder,
   subscriptions, type Subscription, type InsertSubscription,
   subscriptionTiers, type SubscriptionTier, type InsertSubscriptionTier,
-  bookDeliveries, type BookDelivery, type InsertBookDelivery
+  bookDeliveries, type BookDelivery, type InsertBookDelivery,
+  bookDrafts, type BookDraft, type InsertBookDraft
 } from "@shared/schema";
 import { log } from "./vite";
 
