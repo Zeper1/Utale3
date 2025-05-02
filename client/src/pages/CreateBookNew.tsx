@@ -889,6 +889,41 @@ function CharacterSelectionModal({
     });
   };
   
+  // Este useEffect se ejecuta cuando se abre el modal y hay un personaje preseleccionado
+  useEffect(() => {
+    if (isOpen && preselectedCharacterId && childProfiles.length > 0) {
+      console.log("Modal abierto con personaje preseleccionado:", preselectedCharacterId);
+      
+      // Verificar si el personaje ya está seleccionado
+      if (!selectedCharacterIds.includes(preselectedCharacterId)) {
+        console.log("Añadiendo personaje preseleccionado a la selección");
+        
+        // Verificar si el personaje existe
+        const characterExists = childProfiles.some(c => c.id.toString() === preselectedCharacterId);
+        
+        if (characterExists) {
+          // Añadir a la selección
+          setSelectedCharacterIds([preselectedCharacterId]);
+          
+          // Verificar si ya tiene un rol asignado
+          if (!characterDetails[preselectedCharacterId]?.role) {
+            // Asignarle automáticamente el rol de protagonista
+            const newDetails = {...characterDetails};
+            newDetails[preselectedCharacterId] = {
+              role: 'protagonist' as CharacterRole,
+              specificTraits: ['Valiente', 'Curioso'],
+              storyBackground: '',
+              specialAbilities: [],
+              customDescription: ''
+            };
+            console.log("Asignando rol de protagonista automáticamente");
+            setCharacterDetails(newDetails);
+          }
+        }
+      }
+    }
+  }, [isOpen, preselectedCharacterId, childProfiles]);
+  
   // Query para obtener personajes
   const { data: characters, refetch: refetchProfiles } = useQuery({
     queryKey: ['/api/characters'],
@@ -2339,6 +2374,9 @@ export default function CreateBook() {
   const { toast } = useToast();
   const [location, setLocation] = useLocation();
   
+  // Imprimir la URL actual para debugging
+  console.log("URL actual completa:", window.location.href);
+  
   // Estado para los componentes modales - El primero abierto por defecto
   const [characterSelectionOpen, setCharacterSelectionOpen] = useState(true);
   const [storyDetailsOpen, setStoryDetailsOpen] = useState(false);
@@ -2359,8 +2397,10 @@ export default function CreateBook() {
   
   // Determinar si hay un personaje preseleccionado (de la URL)
   const urlParams = new URLSearchParams(location.search.toString());
-  const preselectedCharacterId = urlParams.get('characterId') || urlParams.get('character');
-  console.log("ID de personaje preseleccionado:", preselectedCharacterId);
+  const rawCharacterId = urlParams.get('characterId') || urlParams.get('character');
+  // Asegurarse de que siempre sea string para mantener consistencia
+  const preselectedCharacterId = rawCharacterId ? rawCharacterId.toString() : null;
+  console.log("ID de personaje preseleccionado:", preselectedCharacterId, "tipo:", typeof preselectedCharacterId);
   
   // Formulario con validación
   const form = useForm<BookFormValues>({
@@ -2410,20 +2450,16 @@ export default function CreateBook() {
         setSelectedCharacterIds([preselectedCharacterId]);
         
         // Asignarle automáticamente el rol de protagonista
-        setCharacterDetails(prevDetails => {
-          const updatedDetails = {
-            ...prevDetails,
-            [preselectedCharacterId]: {
-              role: 'protagonist',
-              specificTraits: ['Valiente', 'Curioso'],
-              storyBackground: '',
-              specialAbilities: [],
-              customDescription: ''
-            }
-          };
-          console.log("Detalles de personaje actualizados:", updatedDetails);
-          return updatedDetails;
-        });
+        const newDetails = {...characterDetails};
+        newDetails[preselectedCharacterId] = {
+          role: 'protagonist' as CharacterRole,
+          specificTraits: ['Valiente', 'Curioso'],
+          storyBackground: '',
+          specialAbilities: [],
+          customDescription: ''
+        };
+        console.log("Detalles de personaje actualizados:", newDetails);
+        setCharacterDetails(newDetails);
         
         // También actualizar el formulario
         form.setValue('characterIds', [preselectedCharacterId]);
