@@ -54,7 +54,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           if (response.ok) {
             const userData = await response.json();
             
-            setUser({
+            const userInfo = {
               id: userData.id,
               email: firebaseUser.email || "",
               username: userData.username || "",
@@ -62,7 +62,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               firebaseUid: firebaseUser.uid,
               stripeCustomerId: userData.stripeCustomerId,
               stripeSubscriptionId: userData.stripeSubscriptionId,
-            });
+            };
+            
+            // Guardar información del usuario en localStorage para las peticiones de API
+            try {
+              localStorage.setItem('utale_user', JSON.stringify(userInfo));
+            } catch (e) {
+              console.error("Error guardando datos de usuario en localStorage:", e);
+            }
+            
+            setUser(userInfo);
           } else {
             console.error("Error en respuesta del servidor:", await response.text());
             setUser(null);
@@ -124,6 +133,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setLoading(true);
     try {
       await firebaseSignOut(auth);
+      
+      // Limpiar información de usuario en localStorage
+      try {
+        localStorage.removeItem('utale_user');
+      } catch (e) {
+        console.error("Error al limpiar datos de usuario de localStorage:", e);
+      }
+      
       setUser(null);
     } catch (error) {
       console.error("Error signing out:", error);

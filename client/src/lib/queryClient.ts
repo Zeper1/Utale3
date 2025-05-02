@@ -61,8 +61,38 @@ export const getQueryFn: <T>(options: {
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
+    // Obtener usuario del localStorage si existe
+    let firebaseUid = null;
+    let userId = null;
+    try {
+      // Intentar obtener las credenciales almacenadas en localStorage
+      const storedUser = localStorage.getItem('utale_user');
+      if (storedUser) {
+        const parsedUser = JSON.parse(storedUser);
+        if (parsedUser.firebaseUid) {
+          firebaseUid = parsedUser.firebaseUid;
+        }
+        if (parsedUser.id) {
+          userId = parsedUser.id;
+        }
+      }
+    } catch (e) {
+      console.error("Error al obtener credentials de localStorage:", e);
+    }
+    
+    const headers: Record<string, string> = {};
+    
+    // Añadir cabeceras de autenticación si están disponibles
+    if (firebaseUid) {
+      headers["X-Firebase-UID"] = firebaseUid;
+    }
+    if (userId) {
+      headers["Authorization"] = `Bearer ${userId}`;
+    }
+    
     const res = await fetch(queryKey[0] as string, {
       credentials: "include",
+      headers
     });
 
     if (unauthorizedBehavior === "returnNull" && res.status === 401) {
