@@ -8,7 +8,8 @@ import {
   insertOrderSchema,
   insertSubscriptionSchema,
   insertSubscriptionTierSchema,
-  insertBookDeliverySchema
+  insertBookDeliverySchema,
+  insertBookDraftSchema
 } from "@shared/schema";
 import { getPriceTier, getRecommendedTiers } from "@shared/pricing";
 import OpenAI from "openai";

@@ -708,4 +708,75 @@ export class DatabaseStorage implements IStorage {
       throw error;
     }
   }
+
+  /******************************
+   * OPERACIONES DE BORRADORES DE LIBROS
+   ******************************/
+  
+  async getUserBookDrafts(userId: number): Promise<BookDraft[]> {
+    try {
+      return await db.select().from(bookDrafts)
+        .where(eq(bookDrafts.userId, userId))
+        .orderBy(desc(bookDrafts.lastUpdated));
+    } catch (error) {
+      log(`Error en getUserBookDrafts: ${error instanceof Error ? error.message : String(error)}`, 'database');
+      throw error;
+    }
+  }
+
+  async getBookDraft(id: number): Promise<BookDraft | undefined> {
+    try {
+      const result = await db.select().from(bookDrafts).where(eq(bookDrafts.id, id)).limit(1);
+      return result.length > 0 ? result[0] : undefined;
+    } catch (error) {
+      log(`Error en getBookDraft: ${error instanceof Error ? error.message : String(error)}`, 'database');
+      throw error;
+    }
+  }
+
+  async saveBookDraft(draftData: InsertBookDraft): Promise<BookDraft> {
+    try {
+      const now = new Date();
+      const [draft] = await db.insert(bookDrafts).values({
+        ...draftData,
+        lastUpdated: now
+      }).returning();
+      
+      return draft;
+    } catch (error) {
+      log(`Error en saveBookDraft: ${error instanceof Error ? error.message : String(error)}`, 'database');
+      throw error;
+    }
+  }
+
+  async updateBookDraft(id: number, draftData: Partial<BookDraft>): Promise<BookDraft | undefined> {
+    try {
+      const now = new Date();
+      const [updatedDraft] = await db.update(bookDrafts)
+        .set({
+          ...draftData,
+          lastUpdated: now
+        })
+        .where(eq(bookDrafts.id, id))
+        .returning();
+        
+      return updatedDraft;
+    } catch (error) {
+      log(`Error en updateBookDraft: ${error instanceof Error ? error.message : String(error)}`, 'database');
+      throw error;
+    }
+  }
+
+  async deleteBookDraft(id: number): Promise<boolean> {
+    try {
+      const result = await db.delete(bookDrafts)
+        .where(eq(bookDrafts.id, id))
+        .returning({ id: bookDrafts.id });
+      
+      return result.length > 0;
+    } catch (error) {
+      log(`Error en deleteBookDraft: ${error instanceof Error ? error.message : String(error)}`, 'database');
+      throw error;
+    }
+  }
 }
