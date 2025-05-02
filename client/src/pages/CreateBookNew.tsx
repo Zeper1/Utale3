@@ -1401,11 +1401,12 @@ function StoryDetailsModal({
         
         <Form {...form}>
         <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-4">
-          <TabsList className="grid grid-cols-1">
-            <TabsTrigger value="templates">Plantillas Predefinidas</TabsTrigger>
+          <TabsList className="grid grid-cols-2">
+            <TabsTrigger value="custom">Personalizado</TabsTrigger>
+            <TabsTrigger value="templates">Plantillas</TabsTrigger>
           </TabsList>
           
-          <TabsContent value="details" className="space-y-6 mt-4">
+          <TabsContent value="custom" className="space-y-6 mt-4">
             <div className="space-y-6">
               <FormField
                 control={form.control}
@@ -2308,7 +2309,7 @@ export default function CreateBook() {
   
   // Estado para la plantilla y la pestaña activa
   const [selectedTemplate, setSelectedTemplate] = useState("fairy_tale");
-  const [storyTabActive, setStoryTabActive] = useState("templates");
+  const [storyTabActive, setStoryTabActive] = useState("custom");
   
   // Determinar si hay un personaje preseleccionado (de la URL)
   const urlParams = new URLSearchParams(location.search.toString());
