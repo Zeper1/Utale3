@@ -1962,6 +1962,8 @@ function StoryDetailsModal({
                     Object.entries(templateDetails).forEach(([key, value]) => {
                       form.setValue(key, value);
                     });
+                    // Cambiar a la pestaña de detalles automáticamente
+                    setActiveTab("details");
                   }}
                 >
                   <CardHeader className="pb-2">
