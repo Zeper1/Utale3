@@ -59,7 +59,8 @@ import {
   Settings,
   Wand2,
   Info,
-  ImagePlus
+  ImagePlus,
+  RefreshCw
 } from "lucide-react";
 
 // Función auxiliar para obtener los datos del formulario desde el contexto de validación
@@ -1407,6 +1408,39 @@ function StoryDetailsModal({
           </TabsList>
           
           <TabsContent value="custom" className="space-y-6 mt-4">
+            <div className="flex justify-end mb-4">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => {
+                  // Función para limpiar todos los campos del formulario
+                  form.reset({
+                    title: "",
+                    characterIds: selectedCharacterIds,
+                    themeId: "1",
+                    scenario: "",
+                    era: "",
+                    adventureType: "",
+                    tone: [],
+                    moralValue: "",
+                    fantasyLevel: 5,
+                    genre: [],
+                    artStyle: "",
+                    pageCount: 20,
+                    storyObjective: "",
+                    specialInstructions: ""
+                  });
+                  toast({
+                    title: "Formulario reiniciado",
+                    description: "Se han borrado todos los datos del formulario.",
+                  });
+                }}
+                className="text-xs flex items-center gap-1"
+              >
+                <RefreshCw className="h-3 w-3" />
+                Borrar datos
+              </Button>
+            </div>
             <div className="space-y-6">
               <FormField
                 control={form.control}
@@ -1963,8 +1997,8 @@ function StoryDetailsModal({
                     Object.entries(templateDetails).forEach(([key, value]) => {
                       form.setValue(key, value);
                     });
-                    // Cambiar a la pestaña de detalles automáticamente
-                    setActiveTab("details");
+                    // Cambiar a la pestaña de personalizado automáticamente
+                    setActiveTab("custom");
                   }}
                 >
                   <CardHeader className="pb-2">
@@ -2323,14 +2357,14 @@ export default function CreateBook() {
       title: "",
       characterIds: [],
       themeId: "1",
-      scenario: "Un reino mágico",
-      era: "Medieval fantástico",
-      adventureType: "Búsqueda del tesoro",
-      tone: ["Emocionante", "Optimista"],
-      moralValue: "Valor y amistad",
-      fantasyLevel: 8,
-      genre: ["Fantasía", "Aventura"],
-      artStyle: "acuarela",
+      scenario: "",
+      era: "",
+      adventureType: "",
+      tone: [],
+      moralValue: "",
+      fantasyLevel: 5,
+      genre: [],
+      artStyle: "",
       pageCount: 20,
       storyObjective: "",
       specialInstructions: ""
