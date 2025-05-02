@@ -763,7 +763,9 @@ export default function Dashboard() {
                                 <DropdownMenuItem
                                   onClick={() => {
                                     if (confirm("¿Estás seguro de que quieres eliminar este borrador?")) {
-                                      deleteDraft.mutate(draft.id);
+                                      if (draft.id) {
+                                        deleteDraft.mutate(draft.id);
+                                      }
                                     }
                                   }}
                                   className="text-red-600 cursor-pointer"
@@ -810,7 +812,11 @@ export default function Dashboard() {
                     </CardContent>
                     <CardFooter className="flex gap-2 border-t pt-4">
                       <Button 
-                        onClick={() => setLocation(`/create-book?draft=${draft.id}`)}
+                        onClick={() => {
+                          if (draft.id) {
+                            setLocation(`/create-book?draftId=${draft.id}`)
+                          }
+                        }}
                         className="flex-1 gap-1"
                       >
                         <Play className="h-4 w-4" />

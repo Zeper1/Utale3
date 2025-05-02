@@ -2709,15 +2709,10 @@ export default function CreateBook() {
           additionalDetails: safeFormValues.storyObjective
         },
         fontStyle: safeFormValues.fontStyle,
-        // Añadir campos obligatorios que podrían faltar
-        progressPercent: bookDraft?.progressPercent || 0,
+        // Actualizar campos calculados
         lastUpdated: new Date().toISOString(),
-        created: bookDraft?.created || new Date().toISOString(),
-        status: "in_progress",
-        characterSelectionComplete: currentStep > 1,
-        storyDetailsComplete: currentStep > 2,
-        technicalSettingsComplete: currentStep > 3,
-        formData: safeFormValues
+        createdAt: bookDraft?.createdAt ? new Date(bookDraft.createdAt) : new Date(),
+        status: "in_progress"
       };
       
       // Ejecutar la mutación sin await para evitar bloquear la UI
