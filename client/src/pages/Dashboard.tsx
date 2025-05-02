@@ -112,16 +112,7 @@ export default function Dashboard() {
     enabled: !!user?.id,
   });
 
-  // Fetch orders
-  const {
-    data: orders = [],
-    isLoading: ordersLoading,
-    error: ordersError
-  } = useQuery({
-    queryKey: ['/api/users', user?.id, 'orders'],
-    queryFn: () => apiRequest('GET', `/api/users/${user?.id}/orders`).then(res => res.json()),
-    enabled: !!user?.id,
-  });
+
 
   // Create character profile mutation
   const createProfile = useMutation({
@@ -361,7 +352,7 @@ export default function Dashboard() {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
         <div>
           <h1 className="text-3xl font-bold">Mi panel</h1>
-          <p className="text-gray-600">Gestiona perfiles, libros y pedidos en un solo lugar</p>
+          <p className="text-gray-600">Gestiona perfiles y libros en un solo lugar</p>
         </div>
         <div className="flex gap-4">
           <Button onClick={goToCreateBook} className="flex items-center gap-2">
@@ -385,10 +376,7 @@ export default function Dashboard() {
             <BookOpen className="h-4 w-4" />
             Mis Libros
           </TabsTrigger>
-          <TabsTrigger value="orders" className="flex items-center gap-2">
-            <Package className="h-4 w-4" />
-            Pedidos
-          </TabsTrigger>
+
         </TabsList>
 
         {/* Profiles Tab */}
@@ -676,93 +664,7 @@ export default function Dashboard() {
           )}
         </TabsContent>
 
-        {/* Orders Tab */}
-        <TabsContent value="orders" className="space-y-6">
-          {ordersLoading ? (
-            <div className="flex justify-center py-12">
-              <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div>
-            </div>
-          ) : ordersError ? (
-            <Card>
-              <CardContent className="pt-6">
-                <p className="text-red-500">Error al cargar los pedidos. Por favor, inténtalo de nuevo más tarde.</p>
-              </CardContent>
-            </Card>
-          ) : orders.length === 0 ? (
-            <Card>
-              <CardContent className="pt-6 flex flex-col items-center text-center py-12">
-                <div className="bg-primary-50 p-4 rounded-full mb-4">
-                  <Package className="h-8 w-8 text-primary" />
-                </div>
-                <h3 className="text-xl font-semibold mb-2">Aún no hay pedidos</h3>
-                <p className="text-gray-600 mb-6 max-w-md">
-                  Después de crear tu libro personalizado, puedes hacer un pedido para obtener una copia impresa o descarga digital.
-                </p>
-                <Button onClick={goToCreateBook}>
-                  <Plus className="h-4 w-4 mr-2" /> Crea un libro primero
-                </Button>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="space-y-4">
-              {orders.map((order: any) => {
-                const book = books.find((b: any) => b.id === order.bookId);
-                return (
-                  <Card key={order.id}>
-                    <CardContent className="p-6">
-                      <div className="flex flex-col md:flex-row justify-between gap-4">
-                        <div className="flex gap-4">
-                          <div className="h-20 w-16 bg-gray-100 rounded flex items-center justify-center flex-shrink-0">
-                            {book?.previewImage ? (
-                              <img 
-                                src={book.previewImage} 
-                                alt={book?.title || "Portada del libro"} 
-                                className="h-full w-full object-cover rounded"
-                              />
-                            ) : (
-                              <BookOpen className="h-8 w-8 text-gray-400" />
-                            )}
-                          </div>
-                          <div>
-                            <h3 className="font-semibold">{book?.title || "Libro personalizado"}</h3>
-                            <p className="text-sm text-gray-600">
-                              {book?.format || "Formato desconocido"} • Pedido #{order.id}
-                            </p>
-                            <p className="text-sm text-gray-500">
-                              Pedido el {new Date(order.createdAt).toLocaleDateString()}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex flex-col items-end">
-                          <div className="flex items-center gap-2">
-                            <span className="font-medium">${(order.amount / 100).toFixed(2)}</span>
-                            <span className={`px-2 py-1 text-xs rounded-full ${
-                              order.status === 'completed' ? 'bg-green-100 text-green-800' :
-                              order.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                              'bg-gray-100 text-gray-800'
-                            }`}>
-                              {order.status === 'completed' ? 'Completado' : 
-                              order.status === 'pending' ? 'Pendiente' : 
-                              order.status.charAt(0).toUpperCase() + order.status.slice(1)}
-                            </span>
-                          </div>
-                          <div className="flex gap-2 mt-2">
-                            <Button variant="outline" size="sm">
-                              Seguir pedido
-                            </Button>
-                            <Button variant="ghost" size="sm">
-                              Detalles
-                            </Button>
-                          </div>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            </div>
-          )}
-        </TabsContent>
+
       </Tabs>
 
       {/* Create Profile Dialog */}
