@@ -883,7 +883,12 @@ function CharacterSelectionModal({
   isOpen,
   onOpenChange,
   characterDetails,
-  setCharacterDetails
+  setCharacterDetails,
+  currentStep,
+  totalSteps,
+  bookDraft,
+  onLoadDraft,
+  onSaveDraft
 }: CharacterSelectionModalProps) {
   // Estados para los modales adicionales
   const [createModalOpen, setCreateModalOpen] = useState<boolean>(false);
@@ -1133,6 +1138,16 @@ function CharacterSelectionModal({
             <DialogDescription>
               Elige entre 1 y 5 personajes para tu historia y asígnales roles
             </DialogDescription>
+            {/* Barra de progreso integrada en el modal */}
+            <div className="mt-4">
+              <BookProgressBar
+                currentStep={currentStep}
+                totalSteps={totalSteps}
+                bookDraft={bookDraft}
+                onLoadDraft={onLoadDraft}
+                onSaveDraft={onSaveDraft}
+              />
+            </div>
           </DialogHeader>
           
           <div className="py-4">
@@ -1460,6 +1475,16 @@ function StoryDetailsModal({
           <DialogDescription>
             Personaliza tu historia o selecciona una plantilla predefinida
           </DialogDescription>
+          {/* Barra de progreso integrada en el modal */}
+          <div className="mt-4">
+            <BookProgressBar
+              currentStep={currentStep}
+              totalSteps={totalSteps}
+              bookDraft={bookDraft}
+              onLoadDraft={onLoadDraft}
+              onSaveDraft={onSaveDraft}
+            />
+          </div>
         </DialogHeader>
         
         <Form {...form}>
@@ -2159,6 +2184,12 @@ interface TechnicalSettingsModalProps {
   onPrevious: () => void;
   onComplete: () => void;
   form: any;
+  // Props para BookProgressBar
+  currentStep: number;
+  totalSteps: number;
+  bookDraft: BookDraft | null;
+  onLoadDraft: (draft: BookDraft) => void;
+  onSaveDraft: () => void;
 }
 
 function TechnicalSettingsModal({
@@ -2166,7 +2197,12 @@ function TechnicalSettingsModal({
   onOpenChange,
   onPrevious,
   onComplete,
-  form
+  form,
+  currentStep,
+  totalSteps,
+  bookDraft,
+  onLoadDraft,
+  onSaveDraft
 }: TechnicalSettingsModalProps) {
   const { toast } = useToast();
   // Opciones de estilo de fuente con ejemplos
@@ -2198,6 +2234,16 @@ function TechnicalSettingsModal({
           <DialogDescription>
             Ajusta los aspectos técnicos y estéticos de tu libro
           </DialogDescription>
+          {/* Barra de progreso integrada en el modal */}
+          <div className="mt-4">
+            <BookProgressBar
+              currentStep={currentStep}
+              totalSteps={totalSteps}
+              bookDraft={bookDraft}
+              onLoadDraft={onLoadDraft}
+              onSaveDraft={onSaveDraft}
+            />
+          </div>
         </DialogHeader>
         
         <Form {...form}>
