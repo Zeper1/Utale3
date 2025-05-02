@@ -2650,7 +2650,9 @@ export default function CreateBook() {
     
     // Limpiar el temporizador al desmontar el componente
     return () => clearTimeout(autoSaveTimer);
-  }, [currentStep, selectedCharacterIds, form, autoSaveEnabled]);
+  // Eliminar form de las dependencias para evitar re-ejecuciones constantes
+  // que puedan causar reinicio de la aplicación
+  }, [currentStep, selectedCharacterIds, autoSaveEnabled]);
   
   // Efecto para cargar un borrador existente si se proporciona un ID
   useEffect(() => {
@@ -2667,37 +2669,65 @@ export default function CreateBook() {
   const saveDraftProgress = async () => {
     if (!autoSaveEnabled || !user) return;
     
-    // Obtener los valores actuales del formulario
-    const formValues = form.getValues();
-    
-    // Crear o actualizar el objeto del borrador
-    const draft: BookDraft = {
-      ...bookDraft,
-      userId: user.id, // Obtener el ID del usuario del contexto de autenticación
-      step: currentStep,
-      characterIds: selectedCharacterIds.map(id => parseInt(id)),
-      themeId: formValues.themeId ? parseInt(formValues.themeId) : undefined,
-      storyDetails: {
-        title: formValues.title,
-        theme: formValues.themeId,
-        description: "", // No tenemos campo para esto aún
-        ageRange: "", // No tenemos campo para esto aún
-        complexity: "", // No tenemos campo para esto aún
-        length: formValues.pageCount ? formValues.pageCount.toString() : "20",
-        tone: formValues.tone ? formValues.tone.join(", ") : "",
-        style: formValues.artStyle,
-        subject: formValues.adventureType,
-        setting: `${formValues.scenario} - ${formValues.era}`,
-        additionalDetails: formValues.storyObjective
-      },
-      fontStyle: formValues.fontStyle,
-    };
-    
     try {
-      // Ejecutar la mutación
-      await saveDraftMutation.mutateAsync(draft);
+      // Obtener los valores actuales del formulario
+      const formValues = form.getValues();
+      
+      // Evitar registrar errores innecesarios para campos opcionales
+      const safeFormValues = {
+        title: formValues.title || "",
+        themeId: formValues.themeId || "1",
+        scenario: formValues.scenario || "",
+        era: formValues.era || "",
+        adventureType: formValues.adventureType || "",
+        tone: formValues.tone || [],
+        pageCount: formValues.pageCount || 20,
+        artStyle: formValues.artStyle || "",
+        storyObjective: formValues.storyObjective || "",
+        fontStyle: formValues.fontStyle || "casual"
+      };
+
+      // Crear o actualizar el objeto del borrador
+      const draft: BookDraft = {
+        ...(bookDraft || {}),
+        id: bookDraft?.id, // Mantener el ID si existe
+        userId: user.id, // Obtener el ID del usuario del contexto de autenticación
+        step: currentStep,
+        characterIds: selectedCharacterIds.map(id => parseInt(id)),
+        themeId: safeFormValues.themeId ? parseInt(safeFormValues.themeId) : undefined,
+        storyDetails: {
+          title: safeFormValues.title,
+          theme: safeFormValues.themeId,
+          description: "", // No tenemos campo para esto aún
+          ageRange: "", // No tenemos campo para esto aún
+          complexity: "", // No tenemos campo para esto aún
+          length: safeFormValues.pageCount ? safeFormValues.pageCount.toString() : "20",
+          tone: safeFormValues.tone ? safeFormValues.tone.join(", ") : "",
+          style: safeFormValues.artStyle,
+          subject: safeFormValues.adventureType,
+          setting: `${safeFormValues.scenario} - ${safeFormValues.era}`,
+          additionalDetails: safeFormValues.storyObjective
+        },
+        fontStyle: safeFormValues.fontStyle,
+        // Añadir campos obligatorios que podrían faltar
+        progressPercent: bookDraft?.progressPercent || 0,
+        lastUpdated: new Date().toISOString(),
+        created: bookDraft?.created || new Date().toISOString(),
+        status: "in_progress",
+        characterSelectionComplete: currentStep > 1,
+        storyDetailsComplete: currentStep > 2,
+        technicalSettingsComplete: currentStep > 3,
+        formData: safeFormValues
+      };
+      
+      // Ejecutar la mutación sin await para evitar bloquear la UI
+      saveDraftMutation.mutate(draft, {
+        onError: (error) => {
+          console.error("Error al guardar el borrador:", error);
+        }
+      });
     } catch (error) {
-      console.error("Error al guardar el borrador:", error);
+      console.error("Error al preparar el borrador:", error);
     }
   };
 
