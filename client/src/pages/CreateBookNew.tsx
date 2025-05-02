@@ -2403,10 +2403,16 @@ export default function CreateBook() {
   const [selectedTemplate, setSelectedTemplate] = useState("fairy_tale");
   const [storyTabActive, setStoryTabActive] = useState("custom");
   
+  // Estado para los borradores
+  const [bookDraft, setBookDraft] = useState<BookDraft | null>(null);
+  const [currentStep, setCurrentStep] = useState<number>(1);
+  const [autoSaveEnabled, setAutoSaveEnabled] = useState<boolean>(true);
+  
   // Determinar si hay un personaje preseleccionado (de la URL)
   // Usar window.location.search directamente para acceder a los parámetros de la URL
   const urlSearchParams = new URLSearchParams(window.location.search);
   const rawCharacterId = urlSearchParams.get('characterId') || urlSearchParams.get('character');
+  const draftId = urlSearchParams.get('draftId');
   
   // Asegurarse de que siempre sea string para mantener consistencia
   const preselectedCharacterId = rawCharacterId ? rawCharacterId.toString() : null;
@@ -2415,6 +2421,7 @@ export default function CreateBook() {
   console.log("Parámetros de búsqueda:", window.location.search);
   console.log("ID de personaje extraído de URL:", rawCharacterId);
   console.log("ID de personaje preseleccionado (final):", preselectedCharacterId);
+  console.log("ID de borrador:", draftId);
   
   // Formulario con validación
   const form = useForm<BookFormValues>({
