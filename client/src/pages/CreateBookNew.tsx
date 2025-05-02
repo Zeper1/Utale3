@@ -6,6 +6,7 @@ import { z } from "zod";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 import BookProgressBar, { BookDraft } from "@/components/BookProgressBar";
 import {
   Dialog,
@@ -221,6 +222,12 @@ interface CharacterSelectionModalProps {
   onOpenChange: (open: boolean) => void;
   characterDetails: {[key: string]: CharacterStoryDetails};
   setCharacterDetails: (details: {[key: string]: CharacterStoryDetails}) => void;
+  // Props para BookProgressBar
+  currentStep: number;
+  totalSteps: number;
+  bookDraft: BookDraft | null;
+  onLoadDraft: (draft: BookDraft) => void;
+  onSaveDraft: () => void;
 }
 
 // Componente para configurar detalles específicos del personaje
@@ -1363,6 +1370,12 @@ interface StoryDetailsModalProps {
   form: any;
   activeTab: string;
   setActiveTab: (tab: string) => void;
+  // Props para BookProgressBar
+  currentStep: number;
+  totalSteps: number;
+  bookDraft: BookDraft | null;
+  onLoadDraft: (draft: BookDraft) => void;
+  onSaveDraft: () => void;
 }
 
 function StoryDetailsModal({
@@ -1374,7 +1387,12 @@ function StoryDetailsModal({
   setSelectedTemplate,
   form,
   activeTab,
-  setActiveTab
+  setActiveTab,
+  currentStep,
+  totalSteps,
+  bookDraft,
+  onLoadDraft,
+  onSaveDraft
 }: StoryDetailsModalProps) {
   const { toast } = useToast();
   const selectedTemplateDetails = getTemplateDetails(selectedTemplate);
@@ -2596,9 +2614,12 @@ export default function CreateBook() {
     }
   }, [draftId, loadedDraft]);
   
+  // Obtener información del usuario autenticado
+  const { user } = useAuth();
+  
   // Función para guardar el progreso actual como borrador
   const saveDraftProgress = async () => {
-    if (!autoSaveEnabled) return;
+    if (!autoSaveEnabled || !user) return;
     
     // Obtener los valores actuales del formulario
     const formValues = form.getValues();
@@ -2606,7 +2627,7 @@ export default function CreateBook() {
     // Crear o actualizar el objeto del borrador
     const draft: BookDraft = {
       ...bookDraft,
-      userId: 1, // Se podría obtener del contexto de autenticación
+      userId: user.id, // Obtener el ID del usuario del contexto de autenticación
       step: currentStep,
       characterIds: selectedCharacterIds.map(id => parseInt(id)),
       themeId: formValues.themeId ? parseInt(formValues.themeId) : undefined,
@@ -2833,19 +2854,6 @@ export default function CreateBook() {
 
   return (
     <>
-      {/* Barra de progreso de creación del libro */}
-      <div className="fixed top-16 left-0 right-0 z-50 bg-background border-b">
-        <div className="container py-2">
-          <BookProgressBar
-            currentStep={currentStep}
-            totalSteps={3}
-            bookDraft={bookDraft}
-            onLoadDraft={handleLoadDraft}
-            onSaveDraft={handleSaveDraft}
-          />
-        </div>
-      </div>
-      
       {/* Modales del asistente */}
       <CharacterSelectionModal
         childProfiles={childProfiles}
@@ -2857,6 +2865,11 @@ export default function CreateBook() {
         onOpenChange={handleFirstModalClose}
         characterDetails={characterDetails}
         setCharacterDetails={setCharacterDetails}
+        currentStep={currentStep}
+        totalSteps={3}
+        bookDraft={bookDraft}
+        onLoadDraft={handleLoadDraft}
+        onSaveDraft={handleSaveDraft}
       />
       
       <StoryDetailsModal
@@ -2869,6 +2882,11 @@ export default function CreateBook() {
         form={form}
         activeTab={storyTabActive}
         setActiveTab={setStoryTabActive}
+        currentStep={currentStep}
+        totalSteps={3}
+        bookDraft={bookDraft}
+        onLoadDraft={handleLoadDraft}
+        onSaveDraft={handleSaveDraft}
       />
       
       <TechnicalSettingsModal
@@ -2877,6 +2895,11 @@ export default function CreateBook() {
         onPrevious={() => goToStep(2)}
         onComplete={startBookGeneration}
         form={form}
+        currentStep={currentStep}
+        totalSteps={3}
+        bookDraft={bookDraft}
+        onLoadDraft={handleLoadDraft}
+        onSaveDraft={handleSaveDraft}
       />
 
       {/* Modal para la generación de libros */}
