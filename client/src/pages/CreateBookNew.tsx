@@ -1316,6 +1316,8 @@ interface StoryDetailsModalProps {
   selectedTemplate: string;
   setSelectedTemplate: (id: string) => void;
   form: any;
+  activeTab: string;
+  setActiveTab: (tab: string) => void;
 }
 
 function StoryDetailsModal({
@@ -1325,7 +1327,9 @@ function StoryDetailsModal({
   onPrevious,
   selectedTemplate,
   setSelectedTemplate,
-  form
+  form,
+  activeTab,
+  setActiveTab
 }: StoryDetailsModalProps) {
   const { toast } = useToast();
   const selectedTemplateDetails = getTemplateDetails(selectedTemplate);
@@ -2300,8 +2304,9 @@ export default function CreateBook() {
   const [selectedCharacterIds, setSelectedCharacterIds] = useState<string[]>([]);
   const [characterDetails, setCharacterDetails] = useState<{[key: string]: CharacterStoryDetails}>({});
   
-  // Estado para la plantilla
-  const [selectedTemplate, setSelectedTemplate] = useState("adventure");
+  // Estado para la plantilla y la pestaña activa
+  const [selectedTemplate, setSelectedTemplate] = useState("fairy_tale");
+  const [storyTabActive, setStoryTabActive] = useState("templates");
   
   // Determinar si hay un personaje preseleccionado (de la URL)
   const urlParams = new URLSearchParams(location.search.toString());
@@ -2494,6 +2499,8 @@ export default function CreateBook() {
         selectedTemplate={selectedTemplate}
         setSelectedTemplate={setSelectedTemplate}
         form={form}
+        activeTab={storyTabActive}
+        setActiveTab={setStoryTabActive}
       />
       
       <TechnicalSettingsModal
