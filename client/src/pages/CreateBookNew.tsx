@@ -2392,9 +2392,13 @@ export default function CreateBook() {
   const childProfiles = childProfilesData as any[];
   
   // Preseleccionar un personaje si viene en la URL y asignarle rol de protagonista
+  // Este useEffect se ejecuta cuando carga la página o cambian los perfiles
   useEffect(() => {
     if (preselectedCharacterId && childProfiles && childProfiles.length > 0) {
       console.log("Aplicando preselección y rol de protagonista para:", preselectedCharacterId);
+      
+      // Obtener perfiles disponibles
+      console.log("Perfiles disponibles:", childProfiles.map(c => c.id.toString()));
       
       // Verificar que el ID existe en los perfiles
       const characterExists = childProfiles.some(c => c.id.toString() === preselectedCharacterId);
@@ -2406,16 +2410,20 @@ export default function CreateBook() {
         setSelectedCharacterIds([preselectedCharacterId]);
         
         // Asignarle automáticamente el rol de protagonista
-        setCharacterDetails(prevDetails => ({
-          ...prevDetails,
-          [preselectedCharacterId]: {
-            role: 'protagonist',
-            specificTraits: ['Valiente', 'Curioso'],
-            storyBackground: '',
-            specialAbilities: [],
-            customDescription: ''
-          }
-        }));
+        setCharacterDetails(prevDetails => {
+          const updatedDetails = {
+            ...prevDetails,
+            [preselectedCharacterId]: {
+              role: 'protagonist',
+              specificTraits: ['Valiente', 'Curioso'],
+              storyBackground: '',
+              specialAbilities: [],
+              customDescription: ''
+            }
+          };
+          console.log("Detalles de personaje actualizados:", updatedDetails);
+          return updatedDetails;
+        });
         
         // También actualizar el formulario
         form.setValue('characterIds', [preselectedCharacterId]);
@@ -2423,7 +2431,7 @@ export default function CreateBook() {
         console.warn("El personaje preseleccionado no existe:", preselectedCharacterId);
       }
     }
-  }, [preselectedCharacterId, childProfiles, form]);
+  }, [preselectedCharacterId, childProfiles, form, characterSelectionOpen]);
   
   // Función para navegar entre pasos
   const goToStep = (step: number) => {
