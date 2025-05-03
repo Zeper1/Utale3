@@ -7,9 +7,9 @@ const firebaseConfig = {
   authDomain: `${import.meta.env.VITE_FIREBASE_PROJECT_ID}.firebaseapp.com`,
   projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
   storageBucket: `${import.meta.env.VITE_FIREBASE_PROJECT_ID}.firebasestorage.app`,
-  messagingSenderId: "221474372169",
+  messagingSenderId: "290082779890",
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
-  measurementId: "G-S0VF8DV45J"
+  measurementId: "G-NLQK6PJVCC"
 };
 
 export const firebaseApp = initializeApp(firebaseConfig);
