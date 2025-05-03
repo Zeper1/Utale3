@@ -1432,7 +1432,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const drafts = await storage.getUserBookDrafts(userId);
       res.json(drafts);
     } catch (error) {
-      serverLogger.error(`Error en endpoint GET /api/book-drafts: ${error instanceof Error ? error.message : String(error)}`);
+      apiLogger.error(`Error en endpoint GET /api/book-drafts: ${error instanceof Error ? error.message : String(error)}`);
       res.status(500).json({ error: "Error al obtener los borradores" });
     }
   });
@@ -1464,7 +1464,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.json(draft);
     } catch (error) {
-      serverLogger.error(`Error en endpoint GET /api/book-drafts/:id: ${error instanceof Error ? error.message : String(error)}`);
+      apiLogger.error(`Error en endpoint GET /api/book-drafts/:id: ${error instanceof Error ? error.message : String(error)}`);
       res.status(500).json({ error: "Error al obtener el borrador" });
     }
   });
@@ -1487,7 +1487,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.json(draft);
     } catch (error) {
-      serverLogger.error(`Error en endpoint POST /api/book-drafts: ${error instanceof Error ? error.message : String(error)}`);
+      apiLogger.error(`Error en endpoint POST /api/book-drafts: ${error instanceof Error ? error.message : String(error)}`);
       res.status(500).json({ error: "Error al guardar el borrador" });
     }
   });
@@ -1523,7 +1523,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.json(updatedDraft);
     } catch (error) {
-      serverLogger.error(`Error en endpoint PUT /api/book-drafts/:id: ${error instanceof Error ? error.message : String(error)}`);
+      apiLogger.error(`Error en endpoint PUT /api/book-drafts/:id: ${error instanceof Error ? error.message : String(error)}`);
       res.status(500).json({ error: "Error al actualizar el borrador" });
     }
   });
@@ -1561,7 +1561,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         res.status(500).json({ error: "No se pudo eliminar el borrador" });
       }
     } catch (error) {
-      serverLogger.error(`Error en endpoint DELETE /api/book-drafts/:id: ${error instanceof Error ? error.message : String(error)}`);
+      apiLogger.error(`Error en endpoint DELETE /api/book-drafts/:id: ${error instanceof Error ? error.message : String(error)}`);
       res.status(500).json({ error: "Error al eliminar el borrador" });
     }
   });
