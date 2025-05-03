@@ -1,33 +1,42 @@
 import * as admin from 'firebase-admin';
+import { getApps, initializeApp, cert, App } from 'firebase-admin/app';
+import { getStorage } from 'firebase-admin/storage';
 import { Readable } from 'stream';
 import * as fs from 'fs';
 import * as path from 'path';
 import { log } from '../vite';
 
 // Inicializamos Firebase Admin SDK (para el backend)
-let firebaseApp: admin.app.App;
+let firebaseApp: App;
 
 try {
   // Verificamos si ya hay una aplicación inicializada
-  if (admin.apps.length > 0) {
-    firebaseApp = admin.apps[0] as admin.app.App;
+  const apps = getApps();
+  if (apps.length > 0) {
+    firebaseApp = apps[0];
+    log('Firebase Admin ya estaba inicializado', 'firebase-storage');
   } else {
-    // Definimos la configuración de la aplicación
-    const serviceAccountPath = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
-
-    if (!serviceAccountPath) {
-      throw new Error('FIREBASE_SERVICE_ACCOUNT_KEY no está definido en las variables de entorno');
+    // Usamos una ruta fija para mayor consistencia en vez de depender de variables de entorno
+    const serviceAccountPath = './server/firebase-service-account.json';
+    
+    log(`Usando archivo de credenciales en: ${serviceAccountPath}`, 'firebase-storage');
+    
+    // Verificamos que el archivo existe
+    if (!fs.existsSync(serviceAccountPath)) {
+      throw new Error(`El archivo de credenciales no existe en: ${serviceAccountPath}`);
     }
-
+    
     // Cargamos el archivo de credenciales
     const serviceAccount = JSON.parse(
-      fs.readFileSync(path.resolve(serviceAccountPath), 'utf8')
+      fs.readFileSync(serviceAccountPath, 'utf8')
     );
+    
+    log('Archivo de credenciales cargado correctamente', 'firebase-storage');
 
     // Inicializamos Firebase Admin
-    firebaseApp = admin.initializeApp({
-      credential: admin.credential.cert(serviceAccount),
-      storageBucket: process.env.FIREBASE_STORAGE_BUCKET
+    firebaseApp = initializeApp({
+      credential: cert(serviceAccount),
+      storageBucket: 'crafty-shelter-458717-d8.firebasestorage.app'
     });
 
     log('Firebase Admin inicializado correctamente', 'firebase-storage');
@@ -38,7 +47,7 @@ try {
 }
 
 // Obtenemos una referencia al bucket de almacenamiento
-const bucket = admin.storage().bucket();
+const bucket = getStorage().bucket();
 
 /**
  * Clase para gestionar el almacenamiento de archivos en Firebase Storage desde el backend

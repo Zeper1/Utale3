@@ -116,6 +116,8 @@ export const books = pgTable(
     customThemeId: integer("custom_theme_id").references(() => customBookThemes.id),
     content: jsonb("content").$type<Record<string, any>>(),
     previewImage: text("preview_image"),
+    coverUrl: text("cover_url"), // URL de la imagen de portada en Firebase Storage
+    pdfUrl: text("pdf_url"), // URL del PDF completo en Firebase Storage
     numPages: integer("num_pages").default(10).notNull(),
     format: text("format").notNull().default('digital'), // digital, softcover, hardcover
     status: text("status").notNull().default('draft'), // draft, preview, completed, ordered

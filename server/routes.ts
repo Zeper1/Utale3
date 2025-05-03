@@ -32,7 +32,8 @@ import {
   generateBookContentSchema, 
   generateBookImagesSchema 
 } from "./lib/validationHelpers";
-import { storageService } from "./services/storage-service";
+// Usamos el servicio de almacenamiento simple (local) mientras configuramos Firebase completamente
+import { storageService } from "./services/simple-storage-service";
 
 // Crear loggers específicos para diferentes operaciones
 const apiLogger = createLogger('api');
@@ -1564,6 +1565,320 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       apiLogger.error(`Error en endpoint DELETE /api/book-drafts/:id: ${error instanceof Error ? error.message : String(error)}`);
       res.status(500).json({ error: "Error al eliminar el borrador" });
+    }
+  });
+
+  // Crear logger específico para Firebase Storage
+  const storageLogger = createLogger('firebase-storage');
+
+  // Configurar multer para almacenamiento temporal de archivos antes de subirlos a Firebase
+  const firebaseMulterStorage = multer.memoryStorage();
+  const firebaseUpload = multer({
+    storage: firebaseMulterStorage,
+    limits: {
+      fileSize: 10 * 1024 * 1024 // Límite de 10MB para archivos
+    }
+  });
+
+  // --- Firebase Storage Routes ---
+  
+  // Endpoint para subir imagen de portada o página de un libro
+  app.post("/api/books/:bookId/images", firebaseUpload.single('image'), async (req, res) => {
+    try {
+      if (!req.file) {
+        storageLogger.warn("Solicitud rechazada: No se proporcionó ninguna imagen");
+        return res.status(400).json({ message: "No se proporcionó ninguna imagen" });
+      }
+      
+      const bookId = parseInt(req.params.bookId);
+      const userId = parseInt(req.query.userId as string);
+      const pageNumber = parseInt(req.query.page as string) || 0;
+      
+      storageLogger.info(`Subiendo imagen para libro ID ${bookId}, usuario ID ${userId}, página ${pageNumber}`);
+      
+      // Verificar que el libro existe y pertenece al usuario
+      const book = await storage.getBook(bookId);
+      if (!book) {
+        storageLogger.warn(`Libro con ID ${bookId} no encontrado`);
+        return res.status(404).json({ message: "Libro no encontrado" });
+      }
+      
+      if (book.userId !== userId) {
+        storageLogger.warn(`Intento de acceso no autorizado: El usuario ${userId} no es propietario del libro ${bookId}`);
+        return res.status(403).json({ message: "No autorizado: Este libro no pertenece al usuario" });
+      }
+      
+      // Subir imagen a Firebase Storage
+      const imageUrl = await storageService.uploadBookImage(
+        userId,
+        bookId,
+        req.file.buffer,
+        pageNumber
+      );
+      
+      storageLogger.info(`Imagen subida exitosamente para libro ${bookId}, página ${pageNumber}`);
+      
+      // Si es la portada (pageNumber = 0), actualizar el campo coverUrl en la base de datos
+      if (pageNumber === 0) {
+        await storage.updateBook(bookId, { coverUrl: imageUrl });
+      }
+      
+      res.status(200).json({ 
+        success: true, 
+        imageUrl: imageUrl,
+        message: pageNumber === 0 ? "Portada subida exitosamente" : `Imagen de página ${pageNumber} subida exitosamente`
+      });
+    } catch (error) {
+      storageLogger.error(`Error en endpoint POST /api/books/:bookId/images: ${error instanceof Error ? error.message : String(error)}`);
+      res.status(500).json({ message: "Error al subir imagen" });
+    }
+  });
+  
+  // Endpoint para subir PDF completo de un libro
+  app.post("/api/books/:bookId/pdf", firebaseUpload.single('pdf'), async (req, res) => {
+    try {
+      if (!req.file) {
+        storageLogger.warn("Solicitud rechazada: No se proporcionó ningún PDF");
+        return res.status(400).json({ message: "No se proporcionó ningún PDF" });
+      }
+      
+      const bookId = parseInt(req.params.bookId);
+      const userId = parseInt(req.query.userId as string);
+      
+      storageLogger.info(`Subiendo PDF para libro ID ${bookId}, usuario ID ${userId}`);
+      
+      // Verificar que el libro existe y pertenece al usuario
+      const book = await storage.getBook(bookId);
+      if (!book) {
+        storageLogger.warn(`Libro con ID ${bookId} no encontrado`);
+        return res.status(404).json({ message: "Libro no encontrado" });
+      }
+      
+      if (book.userId !== userId) {
+        storageLogger.warn(`Intento de acceso no autorizado: El usuario ${userId} no es propietario del libro ${bookId}`);
+        return res.status(403).json({ message: "No autorizado: Este libro no pertenece al usuario" });
+      }
+      
+      // Subir PDF a Firebase Storage
+      const pdfUrl = await storageService.uploadBookPDF(
+        userId,
+        bookId,
+        req.file.buffer
+      );
+      
+      storageLogger.info(`PDF subido exitosamente para libro ${bookId}`);
+      
+      // Actualizar el campo pdfUrl en la base de datos
+      await storage.updateBook(bookId, { pdfUrl: pdfUrl });
+      
+      res.status(200).json({ 
+        success: true, 
+        pdfUrl: pdfUrl,
+        message: "PDF subido exitosamente"
+      });
+    } catch (error) {
+      storageLogger.error(`Error en endpoint POST /api/books/:bookId/pdf: ${error instanceof Error ? error.message : String(error)}`);
+      res.status(500).json({ message: "Error al subir PDF" });
+    }
+  });
+  
+  // Endpoint para obtener una imagen de un libro (portada o página)
+  app.get("/api/books/:bookId/images/:page", async (req, res) => {
+    try {
+      const bookId = parseInt(req.params.bookId);
+      const userId = parseInt(req.query.userId as string);
+      const pageNumber = parseInt(req.params.page);
+      
+      storageLogger.info(`Solicitud de imagen para libro ID ${bookId}, usuario ID ${userId}, página ${pageNumber}`);
+      
+      // Verificar que el libro existe
+      const book = await storage.getBook(bookId);
+      if (!book) {
+        storageLogger.warn(`Libro con ID ${bookId} no encontrado`);
+        return res.status(404).json({ message: "Libro no encontrado" });
+      }
+      
+      try {
+        // Obtener imagen de Firebase Storage
+        const imageBuffer = await storageService.downloadBookImage(userId, bookId, pageNumber);
+        
+        storageLogger.info(`Imagen descargada exitosamente para libro ${bookId}, página ${pageNumber}`);
+        
+        // Determinar el tipo de contenido
+        const contentType = 'image/jpeg';
+        
+        // Enviar la imagen como respuesta
+        res.setHeader('Content-Type', contentType);
+        res.setHeader('Content-Length', imageBuffer.length);
+        res.send(imageBuffer);
+      } catch (error) {
+        // Si no podemos obtener la imagen de Firebase, intentamos usar la URL
+        if (pageNumber === 0 && book.coverUrl) {
+          storageLogger.info(`Redirigiendo a URL de portada para libro ${bookId}`);
+          return res.redirect(book.coverUrl);
+        }
+        throw error;
+      }
+    } catch (error) {
+      storageLogger.error(`Error en endpoint GET /api/books/:bookId/images/:page: ${error instanceof Error ? error.message : String(error)}`);
+      res.status(500).json({ message: "Error al obtener imagen" });
+    }
+  });
+  
+  // Endpoint para obtener el PDF de un libro
+  app.get("/api/books/:bookId/pdf", async (req, res) => {
+    try {
+      const bookId = parseInt(req.params.bookId);
+      const userId = parseInt(req.query.userId as string);
+      
+      storageLogger.info(`Solicitud de PDF para libro ID ${bookId}, usuario ID ${userId}`);
+      
+      // Verificar que el libro existe
+      const book = await storage.getBook(bookId);
+      if (!book) {
+        storageLogger.warn(`Libro con ID ${bookId} no encontrado`);
+        return res.status(404).json({ message: "Libro no encontrado" });
+      }
+      
+      try {
+        // Obtener PDF de Firebase Storage
+        const pdfBuffer = await storageService.downloadBookPDF(userId, bookId);
+        
+        storageLogger.info(`PDF descargado exitosamente para libro ${bookId}`);
+        
+        // Enviar el PDF como respuesta para descarga
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename="libro_${bookId}.pdf"`);
+        res.setHeader('Content-Length', pdfBuffer.length);
+        res.send(pdfBuffer);
+      } catch (error) {
+        // Si no podemos obtener el PDF de Firebase, intentamos usar la URL
+        if (book.pdfUrl) {
+          storageLogger.info(`Redirigiendo a URL de PDF para libro ${bookId}`);
+          return res.redirect(book.pdfUrl);
+        }
+        throw error;
+      }
+    } catch (error) {
+      storageLogger.error(`Error en endpoint GET /api/books/:bookId/pdf: ${error instanceof Error ? error.message : String(error)}`);
+      res.status(500).json({ message: "Error al obtener PDF" });
+    }
+  });
+  
+  // Endpoint para eliminar una imagen de un libro
+  app.delete("/api/books/:bookId/images/:page", async (req, res) => {
+    try {
+      const bookId = parseInt(req.params.bookId);
+      const userId = parseInt(req.query.userId as string);
+      const pageNumber = parseInt(req.params.page);
+      
+      storageLogger.info(`Eliminando imagen para libro ID ${bookId}, usuario ID ${userId}, página ${pageNumber}`);
+      
+      // Verificar que el libro existe y pertenece al usuario
+      const book = await storage.getBook(bookId);
+      if (!book) {
+        storageLogger.warn(`Libro con ID ${bookId} no encontrado`);
+        return res.status(404).json({ message: "Libro no encontrado" });
+      }
+      
+      if (book.userId !== userId) {
+        storageLogger.warn(`Intento de acceso no autorizado: El usuario ${userId} no es propietario del libro ${bookId}`);
+        return res.status(403).json({ message: "No autorizado: Este libro no pertenece al usuario" });
+      }
+      
+      // Eliminar imagen de Firebase Storage
+      await storageService.deleteBookImage(userId, bookId, pageNumber);
+      
+      storageLogger.info(`Imagen eliminada exitosamente para libro ${bookId}, página ${pageNumber}`);
+      
+      // Si es la portada (pageNumber = 0), actualizar el campo coverUrl en la base de datos
+      if (pageNumber === 0) {
+        await storage.updateBook(bookId, { coverUrl: null });
+      }
+      
+      res.status(200).json({ 
+        success: true, 
+        message: pageNumber === 0 ? "Portada eliminada exitosamente" : `Imagen de página ${pageNumber} eliminada exitosamente`
+      });
+    } catch (error) {
+      storageLogger.error(`Error en endpoint DELETE /api/books/:bookId/images/:page: ${error instanceof Error ? error.message : String(error)}`);
+      res.status(500).json({ message: "Error al eliminar imagen" });
+    }
+  });
+  
+  // Endpoint para eliminar el PDF de un libro
+  app.delete("/api/books/:bookId/pdf", async (req, res) => {
+    try {
+      const bookId = parseInt(req.params.bookId);
+      const userId = parseInt(req.query.userId as string);
+      
+      storageLogger.info(`Eliminando PDF para libro ID ${bookId}, usuario ID ${userId}`);
+      
+      // Verificar que el libro existe y pertenece al usuario
+      const book = await storage.getBook(bookId);
+      if (!book) {
+        storageLogger.warn(`Libro con ID ${bookId} no encontrado`);
+        return res.status(404).json({ message: "Libro no encontrado" });
+      }
+      
+      if (book.userId !== userId) {
+        storageLogger.warn(`Intento de acceso no autorizado: El usuario ${userId} no es propietario del libro ${bookId}`);
+        return res.status(403).json({ message: "No autorizado: Este libro no pertenece al usuario" });
+      }
+      
+      // Eliminar PDF de Firebase Storage
+      await storageService.deleteBookPDF(userId, bookId);
+      
+      storageLogger.info(`PDF eliminado exitosamente para libro ${bookId}`);
+      
+      // Actualizar el campo pdfUrl en la base de datos
+      await storage.updateBook(bookId, { pdfUrl: null });
+      
+      res.status(200).json({ 
+        success: true, 
+        message: "PDF eliminado exitosamente"
+      });
+    } catch (error) {
+      storageLogger.error(`Error en endpoint DELETE /api/books/:bookId/pdf: ${error instanceof Error ? error.message : String(error)}`);
+      res.status(500).json({ message: "Error al eliminar PDF" });
+    }
+  });
+  
+  // Endpoint para eliminar todos los archivos de un libro
+  app.delete("/api/books/:bookId/files", async (req, res) => {
+    try {
+      const bookId = parseInt(req.params.bookId);
+      const userId = parseInt(req.query.userId as string);
+      
+      storageLogger.info(`Eliminando todos los archivos para libro ID ${bookId}, usuario ID ${userId}`);
+      
+      // Verificar que el libro existe y pertenece al usuario
+      const book = await storage.getBook(bookId);
+      if (!book) {
+        storageLogger.warn(`Libro con ID ${bookId} no encontrado`);
+        return res.status(404).json({ message: "Libro no encontrado" });
+      }
+      
+      if (book.userId !== userId) {
+        storageLogger.warn(`Intento de acceso no autorizado: El usuario ${userId} no es propietario del libro ${bookId}`);
+        return res.status(403).json({ message: "No autorizado: Este libro no pertenece al usuario" });
+      }
+      
+      // Eliminar todos los archivos del libro de Firebase Storage
+      await storageService.deleteAllBookFiles(userId, bookId);
+      
+      storageLogger.info(`Todos los archivos eliminados exitosamente para libro ${bookId}`);
+      
+      // Actualizar campos de URL en la base de datos
+      await storage.updateBook(bookId, { coverUrl: null, pdfUrl: null });
+      
+      res.status(200).json({ 
+        success: true, 
+        message: "Todos los archivos del libro eliminados exitosamente"
+      });
+    } catch (error) {
+      storageLogger.error(`Error en endpoint DELETE /api/books/:bookId/files: ${error instanceof Error ? error.message : String(error)}`);
+      res.status(500).json({ message: "Error al eliminar archivos del libro" });
     }
   });
 
