@@ -2519,51 +2519,23 @@ export default function CreateBook() {
   const childProfiles = childProfilesData as any[];
   
   // Consulta para cargar un borrador si se proporciona un ID
-  const { data: loadedDraft, isLoading: isLoadingDraft } = useQuery({
+  const { data: loadedDraft, isLoading: isLoadingDraft, error: loadDraftError } = useQuery({
     queryKey: ['/api/book-drafts', draftId],
     queryFn: () => apiRequest('GET', `/api/book-drafts/${draftId}`).then(res => res.json()),
     enabled: !!draftId,
-    onSuccess: (data) => {
-      console.log("Borrador cargado:", data);
-      // Actualizar el estado con los datos del borrador
-      setBookDraft(data);
-      setCurrentStep(data.step || 1);
-      
-      // Si el borrador tiene datos de personajes, actualizarlos
-      if (data.characterIds && data.characterIds.length > 0) {
-        const charIds = data.characterIds.map(id => id.toString());
-        setSelectedCharacterIds(charIds);
-        
-        // También actualizar el formulario
-        form.setValue('characterIds', charIds);
-      }
-      
-      // Si el borrador tiene detalles de historia, actualizar el formulario
-      if (data.storyDetails) {
-        Object.entries(data.storyDetails).forEach(([key, value]) => {
-          if (value !== undefined && value !== null) {
-            form.setValue(key as any, value);
-          }
-        });
-      }
-      
-      // Si el borrador tiene estilo de fuente, actualizarlo
-      if (data.fontStyle) {
-        form.setValue('fontStyle', data.fontStyle);
-      }
-      
-      // Abrir el modal correspondiente según el paso actual
-      goToStep(data.step || 1);
-    },
-    onError: (error) => {
-      console.error("Error al cargar el borrador:", error);
+  });
+  
+  // Mostrar error si falla la carga
+  useEffect(() => {
+    if (loadDraftError) {
+      console.error("Error al cargar el borrador:", loadDraftError);
       toast({
         title: "Error al cargar el borrador",
         description: "No se pudo cargar el borrador solicitado. Por favor, inténtalo de nuevo.",
         variant: "destructive",
       });
     }
-  });
+  }, [loadDraftError]);
   
   // Mutación para guardar o actualizar borradores
   const saveDraftMutation = useMutation({
