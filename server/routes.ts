@@ -32,6 +32,7 @@ import {
   generateBookContentSchema, 
   generateBookImagesSchema 
 } from "./lib/validationHelpers";
+import { storageService } from "./services/storage-service";
 
 // Crear loggers específicos para diferentes operaciones
 const apiLogger = createLogger('api');
