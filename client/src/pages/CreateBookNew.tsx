@@ -2637,22 +2637,34 @@ export default function CreateBook() {
   
   // Efecto para el guardado automático
   useEffect(() => {
-    if (!autoSaveEnabled || currentStep === 0) return;
+    if (!autoSaveEnabled || currentStep === 0 || !user) return;
+    
+    // Variable para rastrear si el componente está montado
+    let isMounted = true;
     
     // Configurar un temporizador para guardar el progreso automáticamente
     const autoSaveTimer = setTimeout(() => {
       // No guardar en el primer paso si no hay personajes seleccionados
-      if (currentStep === 1 && selectedCharacterIds.length === 0) return;
+      if (!isMounted || (currentStep === 1 && selectedCharacterIds.length === 0)) return;
       
-      console.log("Guardando automáticamente el progreso...");
-      saveDraftProgress();
-    }, 30000); // Guardar cada 30 segundos
+      try {
+        console.log("Guardando automáticamente el progreso...");
+        // Envolver en try/catch para evitar errores no controlados
+        saveDraftProgress();
+      } catch (error) {
+        // Registrar el error pero evitar que explote la aplicación
+        console.error("Error durante el autoguardado:", error);
+        // No propagar el error para evitar ciclos de actualización destructivos
+      }
+    }, 60000); // Aumentamos a 60 segundos para reducir la presión en el servidor
     
     // Limpiar el temporizador al desmontar el componente
-    return () => clearTimeout(autoSaveTimer);
-  // Eliminar form de las dependencias para evitar re-ejecuciones constantes
-  // que puedan causar reinicio de la aplicación
-  }, [currentStep, selectedCharacterIds, autoSaveEnabled]);
+    return () => {
+      isMounted = false;
+      clearTimeout(autoSaveTimer);
+    };
+  // Mantenemos user en las dependencias para asegurar que tenemos un usuario válido
+  }, [currentStep, selectedCharacterIds, autoSaveEnabled, user]);
   
   // Efecto para cargar un borrador existente si se proporciona un ID
   useEffect(() => {
@@ -2687,36 +2699,41 @@ export default function CreateBook() {
         fontStyle: formValues.fontStyle || "casual"
       };
 
-      // Crear o actualizar el objeto del borrador
-      const draft: BookDraft = {
-        ...(bookDraft || {}),
+      // Preparar los datos según el esquema esperado en la base de datos
+      // IMPORTANTE: Asegurarnos de que el objeto cumple con el esquema en shared/schema.ts
+      const draft = {
         id: bookDraft?.id, // Mantener el ID si existe
-        userId: user.id, // Obtener el ID del usuario del contexto de autenticación
-        step: currentStep,
-        characterIds: selectedCharacterIds.map(id => parseInt(id)),
-        themeId: safeFormValues.themeId ? parseInt(safeFormValues.themeId) : undefined,
-        storyDetails: {
-          title: safeFormValues.title,
-          theme: safeFormValues.themeId,
-          description: "", // No tenemos campo para esto aún
-          ageRange: "", // No tenemos campo para esto aún
-          complexity: "", // No tenemos campo para esto aún
-          length: safeFormValues.pageCount ? safeFormValues.pageCount.toString() : "20",
-          tone: safeFormValues.tone ? safeFormValues.tone.join(", ") : "",
-          style: safeFormValues.artStyle,
-          subject: safeFormValues.adventureType,
-          setting: `${safeFormValues.scenario} - ${safeFormValues.era}`,
-          additionalDetails: safeFormValues.storyObjective
-        },
-        fontStyle: safeFormValues.fontStyle,
-        // Actualizar campos calculados
-        lastUpdated: new Date().toISOString(),
-        createdAt: bookDraft?.createdAt ? new Date(bookDraft.createdAt) : new Date(),
-        status: "in_progress"
+        userId: user.id,
+        title: safeFormValues.title || "Borrador sin título",
+        
+        // Seguimiento de progreso
+        progressPercent: Math.min(((currentStep - 1) / 3) * 100, 100),
+        currentStep: currentStep,
+        
+        // Tracking de compleción por etapas
+        characterSelectionComplete: currentStep > 1,
+        storyDetailsComplete: currentStep > 2,
+        technicalSettingsComplete: currentStep > 3,
+        
+        // Campos de estado
+        status: "in_progress",
+        
+        // IDs de personajes seleccionados
+        selectedCharacterIds: selectedCharacterIds.map(id => id),
+        
+        // Detalles de personajes y datos del formulario
+        characterDetails: characterDetails || {},
+        formData: safeFormValues
       };
+      
+      // Log para depuración
+      console.log("Guardando borrador:", draft);
       
       // Ejecutar la mutación sin await para evitar bloquear la UI
       saveDraftMutation.mutate(draft, {
+        onSuccess: (data) => {
+          console.log("Borrador guardado exitosamente:", data);
+        },
         onError: (error) => {
           console.error("Error al guardar el borrador:", error);
         }
@@ -2866,51 +2883,44 @@ export default function CreateBook() {
   }
   
   // Función para cargar un borrador
-  const handleLoadDraft = (draft: BookDraft) => {
+  const handleLoadDraft = (draft: any) => {
     console.log("Cargando borrador:", draft);
     setBookDraft(draft);
     
     // Establecer el paso actual
-    setCurrentStep(draft.step || 1);
+    setCurrentStep(draft.currentStep || 1);
     
     // Cargar los datos del borrador
-    if (draft.characterIds && draft.characterIds.length > 0) {
-      const charIds = draft.characterIds.map(id => id.toString());
+    if (draft.selectedCharacterIds && draft.selectedCharacterIds.length > 0) {
+      const charIds = draft.selectedCharacterIds.map((id: any) => id.toString());
       setSelectedCharacterIds(charIds);
       form.setValue('characterIds', charIds);
     }
     
-    // Si el borrador tiene detalles de historia, actualizar el formulario
-    if (draft.storyDetails) {
-      if (draft.storyDetails.title) form.setValue('title', draft.storyDetails.title);
-      if (draft.storyDetails.theme) form.setValue('themeId', draft.storyDetails.theme);
-      if (draft.storyDetails.subject) form.setValue('adventureType', draft.storyDetails.subject);
-      if (draft.storyDetails.style) form.setValue('artStyle', draft.storyDetails.style);
-      if (draft.storyDetails.tone) {
-        const tones = draft.storyDetails.tone.split(",").map(t => t.trim());
-        form.setValue('tone', tones);
-      }
-      if (draft.storyDetails.length) {
-        const pageCount = parseInt(draft.storyDetails.length);
-        if (!isNaN(pageCount)) form.setValue('pageCount', pageCount);
-      }
-      if (draft.storyDetails.setting) {
-        const [scenario, era] = draft.storyDetails.setting.split('-').map(s => s.trim());
-        if (scenario) form.setValue('scenario', scenario);
-        if (era) form.setValue('era', era);
-      }
-      if (draft.storyDetails.additionalDetails) {
-        form.setValue('storyObjective', draft.storyDetails.additionalDetails);
-      }
+    // Si el borrador tiene datos de formulario, cargarlos en el formulario
+    if (draft.formData) {
+      // Restaurar todos los valores del formulario que estén en formData
+      Object.entries(draft.formData).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          try {
+            form.setValue(key as any, value);
+          } catch (error) {
+            console.warn(`Error al establecer valor de formulario para ${key}:`, error);
+          }
+        }
+      });
     }
     
-    // Si el borrador tiene estilo de fuente, actualizarlo
-    if (draft.fontStyle) {
-      form.setValue('fontStyle', draft.fontStyle as any);
+    // Cargar detalles de personajes si existen
+    if (draft.characterDetails) {
+      setCharacterDetails(draft.characterDetails);
     }
     
-    // Ir al paso correspondiente
-    goToStep(draft.step || 1);
+    // Ir al paso correspondiente (sin activar el guardado automático para evitar ciclos)
+    const step = draft.currentStep || 1;
+    setCharacterSelectionOpen(step === 1);
+    setStoryDetailsOpen(step === 2);
+    setTechnicalSettingsOpen(step === 3);
     
     toast({
       title: "Borrador cargado",
