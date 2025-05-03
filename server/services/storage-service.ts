@@ -14,24 +14,21 @@ try {
   const apps = getApps();
   if (apps.length > 0) {
     firebaseApp = apps[0];
-    log('Firebase Admin ya estaba inicializado', 'firebase-storage');
   } else {
-    // Usamos una ruta fija para mayor consistencia en vez de depender de variables de entorno
+    // Definimos la configuración de la aplicación
+    
+    // Ruta fija para mayor consistencia
     const serviceAccountPath = './server/firebase-service-account.json';
     
-    log(`Usando archivo de credenciales en: ${serviceAccountPath}`, 'firebase-storage');
-    
-    // Verificamos que el archivo existe
+    // Verifica que el archivo existe
     if (!fs.existsSync(serviceAccountPath)) {
-      throw new Error(`El archivo de credenciales no existe en: ${serviceAccountPath}`);
+      throw new Error(`El archivo de credenciales no existe en la ruta: ${serviceAccountPath}`);
     }
     
     // Cargamos el archivo de credenciales
     const serviceAccount = JSON.parse(
       fs.readFileSync(serviceAccountPath, 'utf8')
     );
-    
-    log('Archivo de credenciales cargado correctamente', 'firebase-storage');
 
     // Inicializamos Firebase Admin
     firebaseApp = initializeApp({

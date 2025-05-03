@@ -32,8 +32,7 @@ import {
   generateBookContentSchema, 
   generateBookImagesSchema 
 } from "./lib/validationHelpers";
-// Usamos el servicio de almacenamiento simple (local) mientras configuramos Firebase completamente
-import { storageService } from "./services/simple-storage-service";
+import { storageService } from "./services/storage-service";
 
 // Crear loggers específicos para diferentes operaciones
 const apiLogger = createLogger('api');
