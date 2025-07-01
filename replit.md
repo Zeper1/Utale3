@@ -101,6 +101,9 @@ The application uses a comprehensive schema supporting:
 The application is configured for deployment on Replit with:
 - Environment-based configuration management
 - PostgreSQL database connection via environment variables
+- Provide Firebase service account credentials using the
+  `FIREBASE_SERVICE_ACCOUNT` environment variable or a file path in
+  `FIREBASE_SERVICE_ACCOUNT_PATH`
 - Vite build process for optimized frontend assets
 - Express server with static file serving in production
 - Proper error handling and logging throughout the application
