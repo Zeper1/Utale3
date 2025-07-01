@@ -1,7 +1,45 @@
 import { log } from '../vite';
+import admin, { ServiceAccount } from 'firebase-admin';
+import fs from 'fs';
+import path from 'path';
 
-// Configuración simplificada - Firebase es opcional
+// Inicialización de Firebase Admin
 let isFirebaseAvailable = false;
+let bucket: admin.storage.Bucket | null = null;
+
+try {
+  let serviceAccount: ServiceAccount | undefined;
+
+  if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+    serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+  } else {
+    const serviceAccountPath =
+      process.env.FIREBASE_SERVICE_ACCOUNT_PATH ||
+      path.resolve(__dirname, '../firebase-service-account.json');
+    if (fs.existsSync(serviceAccountPath)) {
+      serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, 'utf8'));
+    }
+  }
+
+  if (serviceAccount) {
+    admin.initializeApp({
+      credential: admin.credential.cert(serviceAccount),
+      storageBucket:
+        process.env.FIREBASE_STORAGE_BUCKET ||
+        `${serviceAccount.project_id}.appspot.com`,
+    });
+    bucket = admin.storage().bucket();
+    isFirebaseAvailable = true;
+    log(`Firebase Admin inicializado con bucket ${bucket.name}`, 'firebase-storage');
+  } else {
+    log('Credenciales de Firebase no encontradas. Firebase Storage deshabilitado', 'firebase-storage');
+  }
+} catch (error) {
+  log(
+    `Error al inicializar Firebase Admin: ${error instanceof Error ? error.message : String(error)}`,
+    'firebase-storage'
+  );
+}
 
 /**
  * Clase para gestionar el almacenamiento de archivos
@@ -16,17 +54,19 @@ export class StorageService {
    * @returns URL de descarga del archivo
    */
   async uploadFile(
-    buffer: Buffer, 
-    filePath: string, 
+    buffer: Buffer,
+    filePath: string,
     contentType: string
   ): Promise<string> {
-    if (!isFirebaseAvailable) {
-      throw new Error('Firebase Storage no está disponible. Por favor, configura las credenciales de Firebase.');
+    if (!isFirebaseAvailable || !bucket) {
+      throw new Error(
+        'Firebase Storage no está disponible. Por favor, configura las credenciales de Firebase.'
+      );
     }
-    
-    // Simulamos la respuesta para que la app funcione sin Firebase
-    log(`Simulando subida de archivo: ${filePath}`, 'firebase-storage');
-    return `https://storage.googleapis.com/mock-bucket/${filePath}`;
+
+    const file = bucket.file(filePath);
+    await file.save(buffer, { metadata: { contentType } });
+    return `https://storage.googleapis.com/${bucket.name}/${filePath}`;
   }
   
   /**
@@ -72,13 +112,14 @@ export class StorageService {
    * @returns Buffer con los datos del archivo
    */
   async downloadFile(filePath: string): Promise<Buffer> {
-    if (!isFirebaseAvailable) {
-      throw new Error('Firebase Storage no está disponible. Por favor, configura las credenciales de Firebase.');
+    if (!isFirebaseAvailable || !bucket) {
+      throw new Error(
+        'Firebase Storage no está disponible. Por favor, configura las credenciales de Firebase.'
+      );
     }
-    
-    // Simulamos la respuesta para que la app funcione sin Firebase
-    log(`Simulando descarga de archivo: ${filePath}`, 'firebase-storage');
-    return Buffer.from('mock-file-content');
+
+    const [data] = await bucket.file(filePath).download();
+    return data;
   }
   
   /**
@@ -116,12 +157,15 @@ export class StorageService {
    * @param filePath - Ruta del archivo en Firebase Storage
    */
   async deleteFile(filePath: string): Promise<void> {
-    if (!isFirebaseAvailable) {
-      log(`Firebase Storage no disponible - simulando eliminación: ${filePath}`, 'firebase-storage');
+    if (!isFirebaseAvailable || !bucket) {
+      log(
+        `Firebase Storage no disponible - simulando eliminación: ${filePath}`,
+        'firebase-storage'
+      );
       return;
     }
-    
-    log(`Simulando eliminación de archivo: ${filePath}`, 'firebase-storage');
+
+    await bucket.file(filePath).delete({ ignoreNotFound: true });
   }
   
   /**
@@ -158,12 +202,15 @@ export class StorageService {
    * @param bookId - ID del libro
    */
   async deleteAllBookFiles(userId: number, bookId: number): Promise<void> {
-    if (!isFirebaseAvailable) {
-      log(`Firebase Storage no disponible - simulando eliminación de archivos del libro ${bookId}`, 'firebase-storage');
+    if (!isFirebaseAvailable || !bucket) {
+      log(
+        `Firebase Storage no disponible - simulando eliminación de archivos del libro ${bookId}`,
+        'firebase-storage'
+      );
       return;
     }
-    
-    log(`Simulando eliminación de todos los archivos del libro ${bookId}`, 'firebase-storage');
+
+    await bucket.deleteFiles({ prefix: `usuarios/${userId}/libros/${bookId}/` });
   }
   
   /**
@@ -171,12 +218,15 @@ export class StorageService {
    * @param userId - ID del usuario
    */
   async deleteAllUserFiles(userId: number): Promise<void> {
-    if (!isFirebaseAvailable) {
-      log(`Firebase Storage no disponible - simulando eliminación de archivos del usuario ${userId}`, 'firebase-storage');
+    if (!isFirebaseAvailable || !bucket) {
+      log(
+        `Firebase Storage no disponible - simulando eliminación de archivos del usuario ${userId}`,
+        'firebase-storage'
+      );
       return;
     }
-    
-    log(`Simulando eliminación de todos los archivos del usuario ${userId}`, 'firebase-storage');
+
+    await bucket.deleteFiles({ prefix: `usuarios/${userId}/` });
   }
 }
 
