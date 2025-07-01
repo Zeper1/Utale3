@@ -24,18 +24,29 @@ export const enhancedCharacterSchema = insertCharacterSchema
     (data) => {
       // La edad es obligatoria solo para tipos específicos
       if (["niño", "niña", "adulto", "adulta"].includes(data.type || "")) {
-        // Verificar si age es un número o string
-        if (typeof data.age === 'number') {
-          return data.age > 0;
-        } else if (typeof data.age === 'string') {
-          return data.age !== null && data.age !== undefined && data.age !== '';
-        }
-        return false;
+        return data.age !== null && data.age !== undefined && data.age !== '';
       }
       return true;
     },
     {
       message: "La edad es obligatoria para personajes de tipo niño/a o adulto",
+      path: ["age"],
+    }
+  )
+  .refine(
+    (data) => {
+      if (["niño", "niña"].includes(data.type || "")) {
+        const ageNumber = typeof data.age === 'number' ? data.age : Number(data.age);
+        return !isNaN(ageNumber) && ageNumber >= 0 && ageNumber <= 18;
+      }
+      if (["adulto", "adulta"].includes(data.type || "")) {
+        const ageNumber = typeof data.age === 'number' ? data.age : Number(data.age);
+        return !isNaN(ageNumber) && ageNumber >= 0 && ageNumber <= 150;
+      }
+      return true;
+    },
+    {
+      message: "La edad debe estar entre 0 y 18 años para niño/a y 0 a 150 para adulto/a",
       path: ["age"],
     }
   );
