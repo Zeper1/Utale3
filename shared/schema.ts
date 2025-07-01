@@ -1,4 +1,5 @@
-import { pgTable, text, serial, integer, boolean, jsonb, timestamp, date, index } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, jsonb, timestamp, date, index, check } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -51,6 +52,15 @@ export const characters = pgTable(
       userIdIdx: index("characters_user_id_idx").on(table.userId),
       // Índice para buscar personajes por nombre y usuario
       userIdNameIdx: index("characters_user_id_name_idx").on(table.userId, table.name),
+      // Restricción para validar rangos de edad según el tipo de personaje
+      ageRange: check(
+        "characters_age_range_check",
+        sql`(
+          (${table.type} IN ('niño','niña') AND ${table.age} >= 0 AND ${table.age} <= 18) OR
+          (${table.type} IN ('adulto','adulta') AND ${table.age} >= 0 AND ${table.age} <= 150) OR
+          (${table.type} NOT IN ('niño','niña','adulto','adulta'))
+        )`
+      ),
     };
   }
 );
