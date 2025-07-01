@@ -1,7 +1,11 @@
 import { log } from '../vite';
 
 // Configuración simplificada - Firebase es opcional
-let isFirebaseAvailable = false;
+export let isFirebaseAvailable = false;
+
+export function enableFirebase() {
+  isFirebaseAvailable = true;
+}
 
 /**
  * Clase para gestionar el almacenamiento de archivos

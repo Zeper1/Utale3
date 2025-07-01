@@ -2,6 +2,9 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic } from "./vite";
 import { serverLogger, createLogger } from "./lib/logger";
+import admin from "firebase-admin";
+import fs from "fs";
+import { enableFirebase } from "./services/storage-service";
 
 const app = express();
 app.use(express.json({ limit: '50mb' }));
@@ -115,6 +118,33 @@ app.use(async (req: Request, res: Response, next: NextFunction) => {
 });
 
 (async () => {
+  try {
+    let credentials: admin.ServiceAccount | undefined;
+    if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+      credentials = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+    } else if (process.env.FIREBASE_SERVICE_ACCOUNT_PATH) {
+      const p = process.env.FIREBASE_SERVICE_ACCOUNT_PATH;
+      if (fs.existsSync(p)) {
+        const content = fs.readFileSync(p, "utf8");
+        credentials = JSON.parse(content);
+      }
+    }
+
+    if (credentials) {
+      admin.initializeApp({
+        credential: admin.credential.cert(credentials),
+        storageBucket: `${credentials.project_id}.appspot.com`,
+      });
+      enableFirebase();
+      serverLogger.info("Firebase inicializado correctamente");
+    } else {
+      serverLogger.warn("Credenciales de Firebase no proporcionadas. Storage deshabilitado");
+    }
+  } catch (firebaseError) {
+    serverLogger.error("No se pudo inicializar Firebase", {
+      error: firebaseError instanceof Error ? firebaseError.stack : String(firebaseError)
+    });
+  }
   // Verificar la conexión a la base de datos antes de iniciar el servidor
   try {
     const { testDatabaseConnection } = await import("./db");
