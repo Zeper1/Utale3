@@ -859,8 +859,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         pageCount: bookContent.pages.length
       });
       
-      // Importamos el servicio de Cloudinary
-      const { cloudinaryService } = await import('./services/cloudinaryService');
+      // Servicio de almacenamiento para imágenes
       
       // Process each page and generate an image
       const processedContent = { ...bookContent };
@@ -940,46 +939,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
             throw new Error("No se obtuvo URL de imagen desde OpenAI");
           }
           
-          bookLogger.debug(`Imagen generada con DALL-E, subiendo a Cloudinary`, {
+          bookLogger.debug(`Imagen generada con DALL-E, subiendo a Firebase`, {
             pageNumber: page.pageNumber,
             hasImageUrl: !!tempImageUrl,
             processTimeMs: Date.now() - pageStartTime
           });
           
-          // Subimos la imagen a Cloudinary y obtenemos una URL permanente
-          let cloudinaryResult;
+          // Subimos la imagen a Firebase Storage y obtenemos una URL permanente
+          let uploadedUrl;
           
           if (bookId) {
             // Si tenemos un ID de libro, almacenamos en la estructura de carpetas correcta
-            cloudinaryResult = await cloudinaryService.uploadBookImage(
-              userId, 
-              typeof bookId === 'string' ? parseInt(bookId) : bookId, 
-              page.pageNumber, 
-              tempImageUrl
+            const respImg = await fetch(tempImageUrl);
+            const buffer = Buffer.from(await respImg.arrayBuffer());
+            uploadedUrl = await storageService.uploadBookImage(
+              userId,
+              typeof bookId === 'string' ? parseInt(bookId) : bookId,
+              buffer,
+              page.pageNumber
             );
           } else {
             // Si no hay ID (modo preview), usamos una carpeta temporal
-            cloudinaryResult = await cloudinaryService.uploadImage(tempImageUrl, {
-              folder: `utale/temp/${userId}`,
-              public_id: `preview_page_${page.pageNumber}_${Date.now()}`,
-              transformation: [
-                { quality: "auto:good" },
-                { fetch_format: "auto" }
-              ]
-            });
+            const respImg = await fetch(tempImageUrl);
+            const buffer = Buffer.from(await respImg.arrayBuffer());
+            const filePath = `temp/${userId}/preview_page_${page.pageNumber}_${Date.now()}.jpg`;
+            uploadedUrl = await storageService.uploadFile(buffer, filePath, 'image/jpeg');
           }
-          
-          // Guardamos la URL optimizada de Cloudinary
-          processedContent.pages[i].imageUrl = cloudinaryResult.url;
-          
-          // También guardamos el public_id para posible eliminación futura si es necesario
-          processedContent.pages[i].imagePublicId = cloudinaryResult.public_id;
-          
+
+          // Guardamos la URL del archivo en Firebase
+          processedContent.pages[i].imageUrl = uploadedUrl;
+
+          // También guardamos la ruta para posible eliminación futura
+          processedContent.pages[i].imagePublicId = uploadedUrl.split(process.env.FIREBASE_STORAGE_BUCKET + '/')[1];
+
           bookLogger.info(`Imagen para página ${page.pageNumber} generada y almacenada correctamente`, {
             pageNumber: page.pageNumber,
             bookId: bookId || 'preview',
-            cloudinaryPublicId: cloudinaryResult.public_id,
-            cloudinaryFolder: (cloudinaryResult as any).folder,
+            storagePath: processedContent.pages[i].imagePublicId,
             totalProcessTimeMs: Date.now() - pageStartTime
           });
           
@@ -1235,24 +1231,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "El libro no tiene imagen de portada" });
       }
       
-      // Importamos el servicio de Cloudinary
-      const { cloudinaryService } = await import('./services/cloudinaryService');
+      // Servicio de almacenamiento para la portada
       
       try {
-        // Subir la imagen de portada a Cloudinary como portada del libro
-        const uploadResult = await cloudinaryService.uploadBookCover(
+        const responseImg = await fetch(coverPage.imageUrl);
+        const buffer = Buffer.from(await responseImg.arrayBuffer());
+        const previewUrl = await storageService.uploadBookImage(
           book.userId,
           bookId,
-          coverPage.imageUrl
+          buffer,
+          0
         );
-        
-        bookLogger.debug("Imagen de portada subida a Cloudinary", {
-          bookId,
-          publicId: uploadResult.public_id
+
+        bookLogger.debug("Imagen de portada subida a Firebase", {
+          bookId
         });
-        
-        // Obtener una URL optimizada para la previsualización (tamaño reducido)
-        const previewImage = cloudinaryService.getOptimizedUrl(uploadResult.url, 'preview');
+
+        const previewImage = previewUrl;
         
         // Actualizar el libro con la URL de la previsualización
         const updatedBook = await storage.updateBook(bookId, { previewImage });
@@ -1264,16 +1259,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         res.status(200).json({ 
           previewImage,
-          fullCoverUrl: cloudinaryService.getOptimizedUrl(uploadResult.url, 'full')
+          fullCoverUrl: previewUrl
         });
-      } catch (cloudinaryError) {
-        bookLogger.error("Error con Cloudinary al procesar la imagen de portada", {
-          error: cloudinaryError instanceof Error ? cloudinaryError.stack : String(cloudinaryError),
+      } catch (storageError) {
+        bookLogger.error("Error al subir portada a Firebase", {
+          error: storageError instanceof Error ? storageError.stack : String(storageError),
           bookId,
           coverImageUrl: 'usando URL original como fallback'
         });
         
-        // En caso de error de Cloudinary, usar la URL original como fallback
+        // En caso de error, usar la URL original como fallback
         const previewImage = coverPage.imageUrl;
         await storage.updateBook(bookId, { previewImage });
         
@@ -1326,7 +1321,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Ruta para subir imagen de personaje usando Cloudinary
+  // Ruta para subir imagen de personaje usando Firebase Storage
   app.post('/api/characters/:id/avatar', upload.single('avatar'), async (req, res) => {
     try {
       if (!req.file) {
@@ -1344,44 +1339,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: 'Personaje no encontrado' });
       }
       
-      // Importamos el servicio de Cloudinary
-      const { cloudinaryService } = await import('./services/cloudinaryService');
+      // Servicio de almacenamiento para el avatar
       
       // Obtener el userId para la estructura de carpetas
       const userId = character.userId;
       
       // Leer el archivo temporal subido
       const fileBuffer = fs.readFileSync(req.file.path);
-      const base64Image = `data:${req.file.mimetype};base64,${fileBuffer.toString('base64')}`;
       
       try {
-        // Subir imagen a Cloudinary 
-        const uploadResult = await cloudinaryService.uploadCharacterImage(
+        // Subir imagen a Firebase Storage
+        const uploadUrl = await storageService.uploadCharacterImage(
           userId,
           characterId,
-          base64Image
+          fileBuffer
         );
         
         // Eliminar el archivo temporal
         fs.unlinkSync(req.file.path);
         
-        // Si el personaje ya tenía una imagen en Cloudinary, eliminarla
-        if (character.avatarUrl && character.avatarUrl.includes('cloudinary.com')) {
-          try {
-            // Intentar extraer el public_id del URL anterior
-            const oldPublicId = character.avatarUrl.split('/').slice(-2).join('/').split('.')[0];
-            if (oldPublicId) {
-              await cloudinaryService.deleteImage(oldPublicId);
-            }
-          } catch (cloudError) {
-            console.error('Error al eliminar imagen anterior:', cloudError);
-            // Continuamos aunque falle la eliminación
+        // Eliminar la imagen anterior si es del bucket de Firebase
+        if (character.avatarUrl && process.env.FIREBASE_STORAGE_BUCKET && character.avatarUrl.includes(process.env.FIREBASE_STORAGE_BUCKET)) {
+          const oldPath = character.avatarUrl.split(process.env.FIREBASE_STORAGE_BUCKET + '/')[1];
+          if (oldPath) {
+            try { await storageService.deleteFile(oldPath); } catch {}
           }
         }
         
         // Actualizar el personaje con la URL de la imagen
         const updatedCharacter = await storage.updateCharacter(characterId, { 
-          avatarUrl: uploadResult.url 
+          avatarUrl: uploadUrl
         });
         
         if (!updatedCharacter) {
@@ -1390,18 +1377,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         res.status(200).json({ 
           characterId, 
-          avatarUrl: uploadResult.url, 
-          message: 'Imagen de personaje actualizada exitosamente' 
+          avatarUrl: uploadUrl,
+          message: 'Imagen de personaje actualizada exitosamente'
         });
-      } catch (cloudinaryError) {
-        console.error('Error al subir imagen a Cloudinary:', cloudinaryError);
+      } catch (storageError) {
+        console.error('Error al subir imagen a Firebase:', storageError);
         
         // En caso de error, eliminar el archivo temporal
         if (fs.existsSync(req.file.path)) {
           fs.unlinkSync(req.file.path);
         }
         
-        res.status(500).json({ message: 'Error al procesar la imagen en Cloudinary' });
+        res.status(500).json({ message: 'Error al procesar la imagen en Firebase' });
       }
     } catch (error) {
       console.error('Error en subida de imagen:', error);
