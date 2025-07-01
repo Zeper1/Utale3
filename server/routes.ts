@@ -1629,6 +1629,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       storageLogger.error(`Error en endpoint POST /api/books/:bookId/images: ${error instanceof Error ? error.message : String(error)}`);
+      if (error instanceof Error && error.message.includes('Firebase Storage no está disponible')) {
+        return res.status(503).json({ message: error.message });
+      }
       res.status(500).json({ message: "Error al subir imagen" });
     }
   });
@@ -1670,13 +1673,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Actualizar el campo pdfUrl en la base de datos
       await storage.updateBook(bookId, { pdfUrl: pdfUrl });
       
-      res.status(200).json({ 
-        success: true, 
+      res.status(200).json({
+        success: true,
         pdfUrl: pdfUrl,
         message: "PDF subido exitosamente"
       });
     } catch (error) {
       storageLogger.error(`Error en endpoint POST /api/books/:bookId/pdf: ${error instanceof Error ? error.message : String(error)}`);
+      if (error instanceof Error && error.message.includes('Firebase Storage no está disponible')) {
+        return res.status(503).json({ message: error.message });
+      }
       res.status(500).json({ message: "Error al subir PDF" });
     }
   });
@@ -1720,6 +1726,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     } catch (error) {
       storageLogger.error(`Error en endpoint GET /api/books/:bookId/images/:page: ${error instanceof Error ? error.message : String(error)}`);
+      if (error instanceof Error && error.message.includes('Firebase Storage no está disponible')) {
+        return res.status(503).json({ message: error.message });
+      }
       res.status(500).json({ message: "Error al obtener imagen" });
     }
   });
@@ -1760,6 +1769,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     } catch (error) {
       storageLogger.error(`Error en endpoint GET /api/books/:bookId/pdf: ${error instanceof Error ? error.message : String(error)}`);
+      if (error instanceof Error && error.message.includes('Firebase Storage no está disponible')) {
+        return res.status(503).json({ message: error.message });
+      }
       res.status(500).json({ message: "Error al obtener PDF" });
     }
   });
@@ -1795,12 +1807,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         await storage.updateBook(bookId, { coverUrl: null });
       }
       
-      res.status(200).json({ 
-        success: true, 
+      res.status(200).json({
+        success: true,
         message: pageNumber === 0 ? "Portada eliminada exitosamente" : `Imagen de página ${pageNumber} eliminada exitosamente`
       });
     } catch (error) {
       storageLogger.error(`Error en endpoint DELETE /api/books/:bookId/images/:page: ${error instanceof Error ? error.message : String(error)}`);
+      if (error instanceof Error && error.message.includes('Firebase Storage no está disponible')) {
+        return res.status(503).json({ message: error.message });
+      }
       res.status(500).json({ message: "Error al eliminar imagen" });
     }
   });
@@ -1833,12 +1848,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Actualizar el campo pdfUrl en la base de datos
       await storage.updateBook(bookId, { pdfUrl: null });
       
-      res.status(200).json({ 
-        success: true, 
+      res.status(200).json({
+        success: true,
         message: "PDF eliminado exitosamente"
       });
     } catch (error) {
       storageLogger.error(`Error en endpoint DELETE /api/books/:bookId/pdf: ${error instanceof Error ? error.message : String(error)}`);
+      if (error instanceof Error && error.message.includes('Firebase Storage no está disponible')) {
+        return res.status(503).json({ message: error.message });
+      }
       res.status(500).json({ message: "Error al eliminar PDF" });
     }
   });
@@ -1870,13 +1888,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Actualizar campos de URL en la base de datos
       await storage.updateBook(bookId, { coverUrl: null, pdfUrl: null });
-      
-      res.status(200).json({ 
-        success: true, 
+
+      res.status(200).json({
+        success: true,
         message: "Todos los archivos del libro eliminados exitosamente"
       });
     } catch (error) {
       storageLogger.error(`Error en endpoint DELETE /api/books/:bookId/files: ${error instanceof Error ? error.message : String(error)}`);
+      if (error instanceof Error && error.message.includes('Firebase Storage no está disponible')) {
+        return res.status(503).json({ message: error.message });
+      }
       res.status(500).json({ message: "Error al eliminar archivos del libro" });
     }
   });
