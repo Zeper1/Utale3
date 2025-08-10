@@ -1,4 +1,4 @@
-import express, { type Express, Request, Response } from "express";
+import express, { type Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { 
@@ -53,6 +53,25 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "dummy_key_for_develo
 });
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  const requireAuth = (req: Request, res: Response, next: NextFunction) => {
+    if (!(req as any).user) {
+      return res.status(401).json({ error: "Acceso no autorizado" });
+    }
+    next();
+  };
+
+  const verifyUserParam = (param: string) => {
+    return (req: Request, res: Response, next: NextFunction) => {
+      if (!(req as any).user) {
+        return res.status(401).json({ error: "Acceso no autorizado" });
+      }
+      const paramId = parseInt(req.params[param]);
+      if (isNaN(paramId) || paramId !== (req as any).user.id) {
+        return res.status(403).json({ error: "No tienes permiso para realizar esta acción" });
+      }
+      next();
+    };
+  };
   // --- User Routes ---
   app.post("/api/auth/register", async (req, res) => {
     try {
@@ -181,7 +200,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/users/:id", async (req, res) => {
+  app.get("/api/users/:id", verifyUserParam("id"), async (req, res) => {
     try {
       const userId = parseInt(req.params.id);
       const user = await storage.getUser(userId);
@@ -202,7 +221,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // --- Character Routes ---
-  app.get("/api/users/:userId/characters", async (req, res) => {
+  app.get("/api/users/:userId/characters", verifyUserParam("userId"), async (req, res) => {
     try {
       const userId = parseInt(req.params.userId);
       const characters = await storage.getCharacters(userId);
@@ -213,7 +232,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Ruta legacy para mantener compatibilidad
-  app.get("/api/users/:userId/profiles", async (req, res) => {
+  app.get("/api/users/:userId/profiles", verifyUserParam("userId"), async (req, res) => {
     try {
       const userId = parseInt(req.params.userId);
       const characters = await storage.getCharacters(userId);
@@ -223,24 +242,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/profiles/:id", async (req, res) => {
+  app.get("/api/profiles/:id", requireAuth, async (req, res) => {
     try {
       const characterId = parseInt(req.params.id);
       const character = await storage.getCharacter(characterId);
-      
-      if (!character) {
+
+      if (!character || character.userId !== (req as any).user.id) {
         return res.status(404).json({ message: "Character profile not found" });
       }
-      
       res.status(200).json(character);
     } catch (error) {
       res.status(500).json({ message: "Failed to retrieve character profile" });
     }
   });
 
-  app.post("/api/profiles", async (req, res) => {
+  app.post("/api/profiles", requireAuth, async (req, res) => {
     try {
       const characterData = insertCharacterSchema.parse(req.body);
+
+      if (characterData.userId !== (req as any).user.id) {
+        return res.status(403).json({ error: "No tienes permiso para crear este perfil" });
+      }
+
       const newCharacter = await storage.createCharacter(characterData);
       res.status(201).json(newCharacter);
     } catch (error) {
@@ -251,13 +274,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/profiles/:id", async (req, res) => {
+  app.put("/api/profiles/:id", requireAuth, async (req, res) => {
     try {
       const characterId = parseInt(req.params.id);
       const characterData = req.body;
-      
+
+      const existingCharacter = await storage.getCharacter(characterId);
+
+      if (!existingCharacter || existingCharacter.userId !== (req as any).user.id) {
+        return res.status(404).json({ message: "Character profile not found" });
+      }
+
+      if (characterData.userId && characterData.userId !== (req as any).user.id) {
+        return res.status(403).json({ error: "No tienes permiso para modificar este perfil" });
+      }
+
       const updatedCharacter = await storage.updateCharacter(characterId, characterData);
-      
+
       if (!updatedCharacter) {
         return res.status(404).json({ message: "Character profile not found" });
       }
@@ -268,9 +301,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/profiles/:id", async (req, res) => {
+  app.delete("/api/profiles/:id", requireAuth, async (req, res) => {
     try {
       const characterId = parseInt(req.params.id);
+      const character = await storage.getCharacter(characterId);
+
+      if (!character || character.userId !== (req as any).user.id) {
+        return res.status(404).json({ message: "Character profile not found" });
+      }
+
       const success = await storage.deleteCharacter(characterId);
       
       if (!success) {
@@ -309,7 +348,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // --- Book Routes ---
-  app.get("/api/users/:userId/books", async (req, res) => {
+  app.get("/api/users/:userId/books", verifyUserParam("userId"), async (req, res) => {
     try {
       const userId = parseInt(req.params.userId);
       const books = await storage.getBooks(userId);
@@ -319,9 +358,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/profiles/:profileId/books", async (req, res) => {
+  app.get("/api/profiles/:profileId/books", requireAuth, async (req, res) => {
     try {
       const characterId = parseInt(req.params.profileId);
+      const character = await storage.getCharacter(characterId);
+
+      if (!character || character.userId !== (req as any).user.id) {
+        return res.status(404).json({ message: "Character profile not found" });
+      }
+
       const books = await storage.getBooksByCharacter(characterId);
       res.status(200).json(books);
     } catch (error) {
@@ -659,7 +704,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // --- Order Routes ---
-  app.get("/api/users/:userId/orders", async (req, res) => {
+  app.get("/api/users/:userId/orders", verifyUserParam("userId"), async (req, res) => {
     try {
       const userId = parseInt(req.params.userId);
       const orders = await storage.getOrders(userId);
@@ -1914,7 +1959,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // --- Subscription Routes ---
-  app.get("/api/users/:userId/subscriptions", async (req, res) => {
+  app.get("/api/users/:userId/subscriptions", verifyUserParam("userId"), async (req, res) => {
     try {
       const userId = parseInt(req.params.userId);
       const subscriptions = await storage.getUserSubscriptions(userId);
@@ -1991,7 +2036,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // --- Book Delivery Routes ---
-  app.get("/api/users/:userId/deliveries", async (req, res) => {
+  app.get("/api/users/:userId/deliveries", verifyUserParam("userId"), async (req, res) => {
     try {
       const userId = parseInt(req.params.userId);
       const deliveries = await storage.getBookDeliveries(userId);
