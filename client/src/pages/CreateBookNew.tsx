@@ -7,6 +7,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
+import { uploadBookImage } from "@/lib/firebase";
 import BookProgressBar, { BookDraft } from "@/components/BookProgressBar";
 import {
   Dialog,
@@ -454,6 +455,7 @@ function CreateCharacterModal({
   onCharacterCreated
 }: CreateCharacterModalProps) {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [characterType, setCharacterType] = useState<string>('child');
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -528,13 +530,21 @@ function CreateCharacterModal({
   const onSubmit = async (data: CreateCharacterFormValues) => {
     try {
       setIsSubmitting(true);
-      
-      // TODO: Si hay imagen, subirla a Cloudinary y obtener la URL
-      
-      // Enviar la solicitud de creación (usando el endpoint correcto)
+
+      let avatarUrl: string | undefined = undefined;
+
+      if (imageFile && user?.id) {
+        try {
+          avatarUrl = await uploadBookImage(user.id, Date.now(), imageFile, 0);
+        } catch (uploadError) {
+          console.error('Error uploading image:', uploadError);
+        }
+      }
+
       const response = await apiRequest('POST', '/api/profiles', {
         ...data,
-        userId: 1 // TODO: Obtener el userId del contexto de autenticación
+        ...(avatarUrl ? { avatarUrl } : {}),
+        userId: user?.id
       });
       
       if (!response.ok) {
